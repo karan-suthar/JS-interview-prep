@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frontend Interview Prep Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f12;--bg2:#13161b;--bg3:#1a1e25;--bg4:#22272f;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text:#e8eaf0;--text2:#8a90a0;--text3:#555d6e;
+    --accent:#4f8ef7;--green:#3ecf8e;--amber:#f5a623;--red:#f06060;--pink:#f47fbf;--teal:#38c9c9;
+    --r:10px;--r2:14px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;}
+  .app{display:grid;grid-template-columns:268px 1fr;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:28px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .sidebar-logo{padding:0 24px 24px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+  .sidebar-logo .tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;}
+  .sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:var(--text);line-height:1.2;}
+  .sidebar-logo h1 em{font-style:italic;color:var(--accent);}
+  .overall-progress{padding:16px 24px;margin:0 16px 16px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);}
+  .overall-progress .label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'DM Mono',monospace;}
+  .overall-progress .number{font-size:28px;font-weight:600;color:var(--green);line-height:1;margin-bottom:10px;}
+  .overall-progress .number span{font-size:14px;color:var(--text3);font-weight:400;}
+  .prog-bar{height:4px;background:var(--bg4);border-radius:99px;overflow:hidden;}
+  .prog-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .5s cubic-bezier(.4,0,.2,1);}
+  .nav-section-label{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);padding:8px 24px 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;font-size:14px;color:var(--text2);}
+  .nav-item:hover{background:var(--bg3);color:var(--text);}
+  .nav-item.active{background:var(--bg3);color:var(--text);border-left-color:var(--accent);}
+  .nav-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .nav-item .nav-pct{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);}
+  .nav-item.active .nav-pct{color:var(--accent);}
+
+  /* Main */
+  .main{padding:40px 48px;overflow-y:auto;}
+  .page{display:none;}.page.active{display:block;animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Page header */
+  .page-header{margin-bottom:32px;}
+  .page-header .week-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
+  .page-header h2{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;color:var(--text);line-height:1.2;margin-bottom:8px;}
+  .page-header p{font-size:15px;color:var(--text2);max-width:600px;}
+
+  /* Stats */
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px;}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;}
+  .stat-card .stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:'DM Mono',monospace;margin-bottom:8px;}
+  .stat-card .stat-val{font-size:26px;font-weight:600;line-height:1;}
+
+  /* Section divider with label */
+  .section-divider{display:flex;align-items:center;gap:12px;margin:32px 0 18px;}
+  .section-divider .sd-label{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.14em;padding:3px 10px;border-radius:99px;white-space:nowrap;}
+  .sd-basics{background:rgba(62,207,142,.1);color:var(--green);}
+  .sd-advanced{background:rgba(79,142,247,.1);color:var(--accent);}
+  .section-divider .sd-line{flex:1;height:1px;background:var(--border);}
+
+  /* Topic sections */
+  .topic-section{margin-bottom:28px;}
+  .topic-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .topic-pill{font-size:11px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:99px;font-weight:500;letter-spacing:.05em;}
+  .topic-prog{margin-left:auto;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;}
+
+  /* Task grid */
+  .task-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .task-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:default;transition:border-color .15s,background .15s;position:relative;overflow:hidden;}
+  .task-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:background .2s;}
+  .task-item:hover{border-color:var(--border2);background:var(--bg3);}
+  .task-item.done{background:var(--bg3);}
+  .task-item.done::before{background:var(--green);}
+  .task-item.done .task-title{color:var(--text2);text-decoration:line-through;}
+  .task-item.inprogress::before{background:var(--amber);}
+  .checkbox{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s;background:var(--bg);}
+  .task-item.done .checkbox{background:var(--green);border-color:var(--green);}
+  .checkbox svg{opacity:0;transition:opacity .15s;}
+  .task-item.done .checkbox svg{opacity:1;}
+  .task-body{flex:1;min-width:0;}
+  .task-title{font-size:14px;color:var(--text);line-height:1.4;font-weight:400;}
+  .task-meta{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .task-tag{font-size:11px;padding:2px 8px;border-radius:99px;font-family:'DM Mono',monospace;}
+  .status-select{margin-left:auto;background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:12px;padding:2px 8px;border-radius:6px;font-family:'Outfit',sans-serif;cursor:pointer;outline:none;}
+  .status-select:hover{border-color:var(--border2);}
+
+  /* Priority legend */
+  .priority-legend{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+  .legend-dot{width:8px;height:8px;border-radius:50%;}
+
+  /* Callout */
+  .callout{background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--r);padding:16px 20px;font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px;}
+  .callout strong{color:var(--accent);font-weight:500;}
+
+  /* Dashboard */
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px;}
+  .dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:24px;}
+  .dash-card h3{font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:18px;}
+  .week-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .15s;}
+  .week-row:last-child{border-bottom:none;}
+  .week-row:hover{opacity:.8;}
+  .week-row .week-num{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text3);width:36px;flex-shrink:0;line-height:1;}
+  .week-row.active-week .week-num{color:var(--accent);}
+  .week-row .week-info{flex:1;}
+  .week-row .week-name{font-size:14px;color:var(--text);font-weight:500;}
+  .week-row .week-topics{font-size:12px;color:var(--text3);margin-top:2px;}
+  .mini-prog{height:3px;background:var(--bg4);border-radius:99px;overflow:hidden;margin-top:4px;}
+  .mini-prog-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+  .week-row .week-pct{font-size:12px;font-family:'DM Mono',monospace;color:var(--text3);width:36px;text-align:right;}
+
+  /* Heatmap */
+  .heatmap-grid{display:flex;gap:4px;flex-wrap:wrap;}
+  .heat-day{width:14px;height:14px;border-radius:3px;background:var(--bg4);cursor:default;transition:transform .1s;position:relative;}
+  .heat-day:hover{transform:scale(1.3);}
+  .heat-day.h1{background:rgba(62,207,142,.2);}
+  .heat-day.h2{background:rgba(62,207,142,.45);}
+  .heat-day.h3{background:rgba(62,207,142,.7);}
+  .heat-day.h4{background:var(--green);}
+  .heat-day.today{outline:2px solid var(--accent);outline-offset:1px;}
+
+  /* Confetti */
+  .confetti{position:fixed;pointer-events:none;font-size:20px;animation:cffall 1s ease-out forwards;z-index:9999;}
+  @keyframes cffall{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(80px) rotate(360deg)}}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px;}
+
+  @media(max-width:900px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .main{padding:24px 20px;}
+    .stats-row{grid-template-columns:1fr 1fr;}
+    .task-grid{grid-template-columns:1fr;}
+    .dash-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="tag">7 YOE · Frontend</div>
+    <h1>Interview<br><em>Prep Tracker</em></h1>
+  </div>
+  <div class="overall-progress">
+    <div class="label">Overall Progress</div>
+    <div class="number" id="overall-num">0<span>%</span></div>
+    <div class="prog-bar"><div class="prog-bar-fill" id="overall-bar" style="width:0%"></div></div>
+  </div>
+  <div class="nav-section-label">Overview</div>
+  <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)">
+    <div class="dot" style="background:var(--accent)"></div>Dashboard
+  </div>
+  <div class="nav-section-label" style="margin-top:8px;">Weekly Plan</div>
+  <div class="nav-item" data-page="week1" onclick="showPage('week1',this)">
+    <div class="dot" style="background:#4f8ef7"></div>Week 1 — JS Core
+    <span class="nav-pct" id="pct-week1">0%</span>
+  </div>
+  <div class="nav-item" data-page="week2" onclick="showPage('week2',this)">
+    <div class="dot" style="background:#7c6ff7"></div>Week 2 — React Deep
+    <span class="nav-pct" id="pct-week2">0%</span>
+  </div>
+  <div class="nav-item" data-page="week3" onclick="showPage('week3',this)">
+    <div class="dot" style="background:#38c9c9"></div>Week 3 — Perf & Browser
+    <span class="nav-pct" id="pct-week3">0%</span>
+  </div>
+  <div class="nav-item" data-page="week4" onclick="showPage('week4',this)">
+    <div class="dot" style="background:#f5a623"></div>Week 4 — System Design
+    <span class="nav-pct" id="pct-week4">0%</span>
+  </div>
+  <div class="nav-item" data-page="week5" onclick="showPage('week5',this)">
+    <div class="dot" style="background:#3ecf8e"></div>Week 5 — DSA & Coding
+    <span class="nav-pct" id="pct-week5">0%</span>
+  </div>
+  <div class="nav-item" data-page="week6" onclick="showPage('week6',this)">
+    <div class="dot" style="background:#f47fbf"></div>Week 6 — Mock & Polish
+    <span class="nav-pct" id="pct-week6">0%</span>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+<!-- ── DASHBOARD ── -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="week-label">Control Center</div>
+    <h2>Your Prep Dashboard</h2>
+    <p>6-week plan to get interview-ready. Every week now includes basics + advanced tasks.</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Tasks Done</div><div class="stat-val" id="dash-done" style="color:var(--green)">0</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-val" id="dash-inprog" style="color:var(--amber)">0</div></div>
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-val" id="dash-remain" style="color:var(--text2)">0</div></div>
+    <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-val" id="dash-total" style="color:var(--text)">0</div></div>
+  </div>
+  <div class="dash-grid">
+    <div class="dash-card"><h3>Weekly Progress</h3><div id="week-rows"></div></div>
+    <div class="dash-card">
+      <h3>Activity (last 42 days)</h3>
+      <div class="heatmap-grid" id="heatmap"></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:12px;">
+        <span style="font-size:11px;color:var(--text3)">Less</span>
+        <div class="heat-day"></div><div class="heat-day h1"></div><div class="heat-day h2"></div><div class="heat-day h3"></div><div class="heat-day h4"></div>
+        <span style="font-size:11px;color:var(--text3)">More</span>
+      </div>
+    </div>
+  </div>
+  <div class="callout"><strong>Strategy for 7 YOE:</strong> Basics tasks are warmup — complete them first to build confidence, then tackle advanced tasks. Interviewers probe trade-offs, not just syntax. For each concept ask: <em>"What breaks if I do it differently?"</em></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 1 — JS CORE
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week1">
+  <div class="page-header">
+    <div class="week-label">Week 1 of 6</div>
+    <h2>JavaScript Fundamentals</h2>
+    <p>Start with the basics to warm up, then push into the deep mechanics that separate senior candidates.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <!-- BASICS -->
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">JS Basics</div>
+      <span class="topic-prog" id="tprog-w1-basics">0/5</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w1-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Revise primitive types vs reference types — string, number, boolean, null, undefined, symbol, bigint; how objects and arrays are stored by reference</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w1-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand type coercion — == vs === rules, truthy/falsy values, typeof and instanceof operators</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w1-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Review ES6+ syntax — destructuring, spread/rest, optional chaining, nullish coalescing, template literals, shorthand properties</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w1-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-b4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know array methods cold — map, filter, reduce, find, findIndex, every, some, flat, flatMap — write examples for each</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w1-b4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-b5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand how functions work — function declarations vs expressions vs arrow functions, arguments object, default params</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w1-b5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <!-- ADVANCED -->
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Closures & Scope</div>
+      <span class="topic-prog" id="tprog-w1-closures">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w1-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Master lexical scoping, closure traps in loops with var vs let, and hoisting rules</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Practice 10 closure "what does this output?" problems — especially with setTimeout and async contexts</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Study temporal dead zone, IIFE patterns, and module scope differences</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w1-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Async & Event Loop</div>
+      <span class="topic-prog" id="tprog-w1-async">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w1-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Draw the event loop — call stack, web APIs, callback queue, microtask queue — and trace 5 execution order problems</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement Promise.all, Promise.race, and Promise.allSettled from scratch</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Master async/await error handling patterns — try/catch, unhandled rejections, AbortController</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Study generators and async iterators — lazy evaluation and pagination use cases</div><div class="task-meta"><span class="task-tag" style="background:rgba(56,201,201,.1);color:var(--teal)">good</span><select class="status-select" onchange="setStatus('t-w1-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(245,166,35,.12);color:var(--amber)">Prototype & this</div>
+      <span class="topic-prog" id="tprog-w1-proto">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w1-8"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand prototype chain traversal, Object.create, and what the new keyword does step by step</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w1-8',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-9"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Practice all 4 `this` binding rules: default, implicit, explicit (call/apply/bind), new binding</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-9',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w1-10"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement debounce, throttle, memoize, and curry functions without referencing any docs</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w1-10',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 2 — REACT
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week2">
+  <div class="page-header">
+    <div class="week-label">Week 2 of 6</div>
+    <h2>React — Deep Internals</h2>
+    <p>Basics ground your mental model. Advanced topics show you understand the machine, not just the APIs.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <!-- BASICS -->
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">React Fundamentals</div>
+      <span class="topic-prog" id="tprog-w2-basics">0/5</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w2-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Revise JSX — how it compiles to React.createElement, why key prop matters, fragments, conditional rendering patterns</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w2-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand props vs state — when to lift state, unidirectional data flow, prop drilling and why it becomes a problem</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w2-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Review useState and useEffect basics — state updates are async, batching behavior, cleanup functions</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w2-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-b4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know controlled vs uncontrolled components — when to use refs, forwardRef, and when not to use them</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w2-b4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-b5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Revise component lifecycle phases — mount, update, unmount — and their hook equivalents in functional components</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w2-b5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <!-- ADVANCED -->
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Rendering & Reconciliation</div>
+      <span class="topic-prog" id="tprog-w2-render">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w2-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Explain Fiber architecture — why React switched from stack reconciler, how it enables time-slicing and prioritization</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w2-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand React 18 batching, Suspense, useTransition, and useDeferredValue — when and why to use each</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w2-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Deep dive on React Server Components — what renders where, how they differ from SSR, and current limitations</div><div class="task-meta"><span class="task-tag" style="background:rgba(56,201,201,.1);color:var(--teal)">good</span><select class="status-select" onchange="setStatus('t-w2-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Hooks Mastery</div>
+      <span class="topic-prog" id="tprog-w2-hooks">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w2-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Identify and fix stale closure bugs in useEffect — practice with 5 buggy examples, focus on deps array</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w2-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build 3 reusable custom hooks: useDebounce, useFetch with caching, useLocalStorage</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w2-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">When to reach for useMemo vs useCallback vs neither — justify with concrete performance examples</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w2-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Study compound components, render props patterns, and HOC trade-offs — when each pattern earns its place</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w2-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(245,166,35,.12);color:var(--amber)">State Management at Scale</div>
+      <span class="topic-prog" id="tprog-w2-state">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w2-8"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know when Context causes performance issues and how to fix it (memoization, splitting contexts, external store)</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w2-8',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-9"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Compare Redux, Zustand, Jotai, Recoil — pick one scenario and justify which you'd choose and why</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w2-9',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w2-10"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement optimistic updates with React Query — including rollback on failure</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w2-10',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 3 — PERFORMANCE & BROWSER
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week3">
+  <div class="page-header">
+    <div class="week-label">Week 3 of 6</div>
+    <h2>Performance & Browser</h2>
+    <p>Performance is the most measurable proxy for engineering quality. Know every lever.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">Perf & Browser Basics</div>
+      <span class="topic-prog" id="tprog-w3-basics">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w3-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand the browser rendering pipeline at a high level — what happens from URL enter to pixels on screen</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w3-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know the difference between render-blocking resources, async scripts, defer scripts, and preload/prefetch hints</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w3-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Review basic HTTP caching — Cache-Control, ETag, max-age, no-cache vs no-store, and when each applies</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w3-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-b4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know image formats — JPEG vs PNG vs WebP vs AVIF trade-offs, lazy loading, and responsive images with srcset</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w3-b4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Core Web Vitals</div>
+      <span class="topic-prog" id="tprog-w3-cwv">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w3-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand LCP, INP, and CLS — what causes degradation and 3 concrete fixes for each metric</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w3-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Run a Lighthouse audit on any public app, diagnose issues, and write out a structured fix plan</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w3-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Explain critical rendering path — DOM → CSSOM → Render Tree → Layout → Paint → Composite, step by step</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w3-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(245,166,35,.12);color:var(--amber)">Rendering Strategies</div>
+      <span class="topic-prog" id="tprog-w3-render">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w3-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build a decision matrix: CSR vs SSR vs SSG vs ISR — when to pick each and why</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w3-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand hydration — what causes hydration mismatches in Next.js and how to debug them</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w3-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement a virtualized list from scratch — understand the math behind windowing (offset, item height, visible range)</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w3-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(56,201,201,.1);color:var(--teal)">Browser & Network</div>
+      <span class="topic-prog" id="tprog-w3-browser">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w3-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Compare HTTP/1.1, HTTP/2, HTTP/3 — head-of-line blocking, multiplexing, QUIC protocol differences</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w3-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-8"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">List 10 CSS properties that trigger reflow vs repaint only — and how to avoid forced synchronous layout</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w3-8',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w3-9"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Study XSS, CSRF, CSP headers, CORS, and secure cookie attributes — explain each clearly in plain English</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w3-9',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 4 — SYSTEM DESIGN & CSS
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week4">
+  <div class="page-header">
+    <div class="week-label">Week 4 of 6</div>
+    <h2>System Design & CSS</h2>
+    <p>Senior engineers are judged on architecture. Have a clear, repeatable framework for design problems.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">CSS & Design Basics</div>
+      <span class="topic-prog" id="tprog-w4-basics">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w4-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Revise CSS specificity rules, cascade order, and inheritance — be able to debug any specificity conflict quickly</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w4-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Practice flexbox and grid layouts — build a 2-col sidebar layout, a card grid, and a centered modal using only these</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w4-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Know ARIA roles and semantic HTML — when to use button vs div, role="dialog", aria-label, aria-live</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w4-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-b4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand CSS custom properties (variables) — defining, overriding, and using them for theming and design tokens</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w4-b4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Frontend System Design</div>
+      <span class="topic-prog" id="tprog-w4-sys">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w4-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Design an autocomplete — cover debouncing, caching, keyboard nav, accessibility, and API contract</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w4-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Design a news feed (infinite scroll, optimistic likes, real-time updates via WebSocket, offline support)</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w4-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Design a scalable design system / component library — tokens, theming, versioning, and API decisions</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w4-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand micro-frontend architecture — use cases, trade-offs, module federation, and team topology</div><div class="task-meta"><span class="task-tag" style="background:rgba(56,201,201,.1);color:var(--teal)">good</span><select class="status-select" onchange="setStatus('t-w4-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(245,166,35,.12);color:var(--amber)">CSS Architecture & a11y</div>
+      <span class="topic-prog" id="tprog-w4-css">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w4-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build a CSS-only layout challenge: holy grail, sidebar dashboard, masonry grid — using grid and flexbox only</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w4-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Make a modal fully accessible — focus trap, ARIA attributes, escape key, return focus — code it live</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w4-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w4-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Compare CSS-in-JS vs CSS Modules vs Tailwind — trade-offs at scale, SSR implications, DX</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w4-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 5 — DSA & UI CODING
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week5">
+  <div class="page-header">
+    <div class="week-label">Week 5 of 6</div>
+    <h2>DSA & UI Coding</h2>
+    <p>Two distinct skills: algorithmic problem solving and building polished UI components fast.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">DSA Basics</div>
+      <span class="topic-prog" id="tprog-w5-basics">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w5-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Revise Big O notation — time and space complexity for common operations on arrays, objects, Map, Set</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w5-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Solve 10 LeetCode Easy problems — two sum, valid parentheses, reverse linked list, palindrome check</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w5-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Understand recursion — base case, call stack behavior, and converting common recursive solutions to iterative</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w5-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-b4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build a simple accordion, tabs, and star-rating component in plain HTML/CSS/JS — timed at 20 min each</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w5-b4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Coding: JS Utilities</div>
+      <span class="topic-prog" id="tprog-w5-util">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w5-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement: deep clone, flatten array to N depth, group-by function, pipe/compose — without lodash</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w5-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build an EventEmitter class from scratch (on, off, emit, once) — classic senior interview question</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w5-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Implement an LRU Cache using a doubly linked list + hash map — O(1) get and put</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w5-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Solve 15 LeetCode Medium problems — arrays, strings, sliding window, BFS/DFS, and two pointers</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w5-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">UI Component Builds</div>
+      <span class="topic-prog" id="tprog-w5-ui">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w5-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build an autocomplete input in vanilla JS — debounced API call, keyboard nav, highlight match</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w5-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build infinite scroll with IntersectionObserver — handle loading states, errors, and deduplication</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w5-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build a drag-and-drop kanban board with the HTML5 Drag API — no libraries</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w5-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w5-8"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Build a multi-step form with validation, step progress, and state that persists on back navigation</div><div class="task-meta"><span class="task-tag" style="background:rgba(56,201,201,.1);color:var(--teal)">good</span><select class="status-select" onchange="setStatus('t-w5-8',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WEEK 6 — MOCK & POLISH
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-week6">
+  <div class="page-header">
+    <div class="week-label">Week 6 of 6</div>
+    <h2>Mock Interviews & Polish</h2>
+    <p>Execution under pressure is a different skill. Practice the full loop, not just the content.</p>
+  </div>
+  <div class="priority-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Must-know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>High priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Good to have</div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-basics">Basics — Warm Up</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(62,207,142,.12);color:var(--green)">Soft Skills Basics</div>
+      <span class="topic-prog" id="tprog-w6-basics">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w6-b1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Draft a clear "tell me about yourself" — 90 seconds max, career arc, most impactful project, why you're looking now</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w6-b1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-b2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Prepare 3 standard STAR stories — one for a failure, one for a conflict, one for a time you led something difficult</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w6-b2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-b3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Research each target company's tech stack, recent engineering blog posts, and known interview format</div><div class="task-meta"><span class="task-tag" style="background:rgba(62,207,142,.1);color:var(--green)">basics</span><select class="status-select" onchange="setStatus('t-w6-b3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+
+  <div class="section-divider"><div class="sd-label sd-advanced">Advanced — Interview Ready</div><div class="sd-line"></div></div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(240,96,96,.1);color:var(--red)">Mock Practice</div>
+      <span class="topic-prog" id="tprog-w6-mock">0/4</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w6-1"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Do 2 full mock technical interviews (Pramp, interviewing.io, or a peer) — time-boxed coding rounds</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w6-1',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-2"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Record yourself doing a 30-min system design walkthrough — watch it back for clarity and pacing</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w6-2',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-3"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Prepare 6 STAR behavioral stories — at least 2 showing technical leadership and 2 with quantified impact</div><div class="task-meta"><span class="task-tag" style="background:rgba(240,96,96,.1);color:var(--red)">must</span><select class="status-select" onchange="setStatus('t-w6-3',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-4"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Review your weakest week (lowest % progress) and redo the hardest 3 tasks cold — no notes</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w6-4',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+  <div class="topic-section">
+    <div class="topic-header">
+      <div class="topic-pill" style="background:rgba(56,201,201,.1);color:var(--teal)">Final Checklist</div>
+      <span class="topic-prog" id="tprog-w6-check">0/3</span>
+    </div>
+    <div class="task-grid">
+      <div class="task-item" id="t-w6-5"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Update your résumé — each bullet starts with an action verb and includes a measurable result</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w6-5',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-6"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Polish LinkedIn — headline, about section, and at least 3 projects with tech stack and outcomes</div><div class="task-meta"><span class="task-tag" style="background:rgba(245,166,35,.12);color:var(--amber)">high</span><select class="status-select" onchange="setStatus('t-w6-6',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+      <div class="task-item" id="t-w6-7"><div class="checkbox"><svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="task-body"><div class="task-title">Write 5 sharp questions to ask interviewers — about tech decisions, team structure, eng culture, and growth paths</div><div class="task-meta"><span class="task-tag" style="background:rgba(56,201,201,.1);color:var(--teal)">good</span><select class="status-select" onchange="setStatus('t-w6-7',this.value)"><option value="todo">To do</option><option value="inprogress">In progress</option><option value="done">Done</option></select></div></div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const WEEKS = {
+  week1:{ name:'JS Core', color:'#4f8ef7', topics:{ 'w1-basics':['t-w1-b1','t-w1-b2','t-w1-b3','t-w1-b4','t-w1-b5'], 'w1-closures':['t-w1-1','t-w1-2','t-w1-3'], 'w1-async':['t-w1-4','t-w1-5','t-w1-6','t-w1-7'], 'w1-proto':['t-w1-8','t-w1-9','t-w1-10'] } },
+  week2:{ name:'React Deep', color:'#7c6ff7', topics:{ 'w2-basics':['t-w2-b1','t-w2-b2','t-w2-b3','t-w2-b4','t-w2-b5'], 'w2-render':['t-w2-1','t-w2-2','t-w2-3'], 'w2-hooks':['t-w2-4','t-w2-5','t-w2-6','t-w2-7'], 'w2-state':['t-w2-8','t-w2-9','t-w2-10'] } },
+  week3:{ name:'Perf & Browser', color:'#38c9c9', topics:{ 'w3-basics':['t-w3-b1','t-w3-b2','t-w3-b3','t-w3-b4'], 'w3-cwv':['t-w3-1','t-w3-2','t-w3-3'], 'w3-render':['t-w3-4','t-w3-5','t-w3-6'], 'w3-browser':['t-w3-7','t-w3-8','t-w3-9'] } },
+  week4:{ name:'System Design', color:'#f5a623', topics:{ 'w4-basics':['t-w4-b1','t-w4-b2','t-w4-b3','t-w4-b4'], 'w4-sys':['t-w4-1','t-w4-2','t-w4-3','t-w4-4'], 'w4-css':['t-w4-5','t-w4-6','t-w4-7'] } },
+  week5:{ name:'DSA & Coding', color:'#3ecf8e', topics:{ 'w5-basics':['t-w5-b1','t-w5-b2','t-w5-b3','t-w5-b4'], 'w5-util':['t-w5-1','t-w5-2','t-w5-3','t-w5-4'], 'w5-ui':['t-w5-5','t-w5-6','t-w5-7','t-w5-8'] } },
+  week6:{ name:'Mock & Polish', color:'#f47fbf', topics:{ 'w6-basics':['t-w6-b1','t-w6-b2','t-w6-b3'], 'w6-mock':['t-w6-1','t-w6-2','t-w6-3','t-w6-4'], 'w6-check':['t-w6-5','t-w6-6','t-w6-7'] } }
+};
+
+let state={}, activity={};
+
+function loadState(){
+  try{ state=JSON.parse(localStorage.getItem('fip_state')||'{}'); activity=JSON.parse(localStorage.getItem('fip_activity')||'{}'); }
+  catch(e){ state={}; activity={}; }
+}
+
+function saveState(){ localStorage.setItem('fip_state',JSON.stringify(state)); localStorage.setItem('fip_activity',JSON.stringify(activity)); }
+
+function setStatus(taskId,value){
+  state[taskId]=value;
+  const el=document.getElementById(taskId);
+  if(!el) return;
+  el.classList.remove('done','inprogress');
+  if(value==='done'){
+    el.classList.add('done');
+    const today=new Date().toISOString().split('T')[0];
+    activity[today]=(activity[today]||0)+1;
+    spawnConfetti(el);
+  } else if(value==='inprogress'){
+    el.classList.add('inprogress');
+  }
+  const sel=el.querySelector('.status-select');
+  if(sel) sel.value=value;
+  saveState();
+  updateAll();
+}
+
+function spawnConfetti(anchor){
+  const rect=anchor.getBoundingClientRect();
+  const emojis=['✅','⚡','🎯','🔥','💪'];
+  for(let i=0;i<5;i++){
+    const el=document.createElement('div');
+    el.className='confetti';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left=(rect.left+Math.random()*rect.width)+'px';
+    el.style.top=(rect.top+window.scrollY)+'px';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1000);
+  }
+}
+
+function updateAll(){
+  let totalTasks=0,totalDone=0,totalInProg=0;
+  Object.entries(WEEKS).forEach(([weekKey,weekData])=>{
+    let weekTotal=0,weekDone=0;
+    Object.entries(weekData.topics).forEach(([topicKey,tasks])=>{
+      let topicDone=0;
+      tasks.forEach(tid=>{ const s=state[tid]||'todo'; if(s==='done'){topicDone++;weekDone++;} weekTotal++; });
+      const progEl=document.getElementById('tprog-'+topicKey);
+      if(progEl) progEl.textContent=topicDone+'/'+tasks.length;
+    });
+    const pct=weekTotal>0?Math.round((weekDone/weekTotal)*100):0;
+    const pctEl=document.getElementById('pct-'+weekKey);
+    if(pctEl) pctEl.textContent=pct+'%';
+    totalTasks+=weekTotal; totalDone+=weekDone;
+  });
+  Object.values(state).forEach(s=>{ if(s==='inprogress') totalInProg++; });
+  const overallPct=totalTasks>0?Math.round((totalDone/totalTasks)*100):0;
+  document.getElementById('overall-num').innerHTML=overallPct+'<span>%</span>';
+  document.getElementById('overall-bar').style.width=overallPct+'%';
+  document.getElementById('dash-done').textContent=totalDone;
+  document.getElementById('dash-inprog').textContent=totalInProg;
+  document.getElementById('dash-remain').textContent=totalTasks-totalDone-totalInProg;
+  document.getElementById('dash-total').textContent=totalTasks;
+  buildWeekRows();
+  buildHeatmap();
+}
+
+function buildWeekRows(){
+  const container=document.getElementById('week-rows');
+  if(!container) return;
+  container.innerHTML='';
+  const activeWeek=document.querySelector('.nav-item.active')?.dataset?.page;
+  Object.entries(WEEKS).forEach(([weekKey,weekData],i)=>{
+    let total=0,done=0;
+    Object.values(weekData.topics).forEach(tasks=>{ tasks.forEach(tid=>{ total++; if((state[tid]||'todo')==='done') done++; }); });
+    const pct=total>0?Math.round((done/total)*100):0;
+    const div=document.createElement('div');
+    div.className='week-row'+(weekKey===activeWeek?' active-week':'');
+    div.onclick=()=>showPage(weekKey,document.querySelector('[data-page="'+weekKey+'"]'));
+    div.innerHTML=`<div class="week-num">${i+1}</div><div class="week-info"><div class="week-name">Week ${i+1} — ${weekData.name}</div><div class="week-topics">${Object.values(weekData.topics).flat().length} tasks</div><div class="mini-prog"><div class="mini-prog-fill" style="width:${pct}%;background:${weekData.color}"></div></div></div><div class="week-pct" style="color:${weekData.color}">${pct}%</div>`;
+    container.appendChild(div);
+  });
+}
+
+function buildHeatmap(){
+  const container=document.getElementById('heatmap');
+  if(!container) return;
+  container.innerHTML='';
+  const today=new Date();
+  for(let i=41;i>=0;i--){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const count=activity[key]||0;
+    const div=document.createElement('div');
+    div.className='heat-day'+(count>5?' h4':count>3?' h3':count>1?' h2':count>0?' h1':'');
+    if(i===0) div.classList.add('today');
+    div.title=key+': '+count+' tasks';
+    container.appendChild(div);
+  }
+}
+
+function showPage(pageId,navEl){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page=document.getElementById('page-'+pageId);
+  if(page) page.classList.add('active');
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo(0,0);
+  buildWeekRows();
+}
+
+function restoreState(){
+  Object.entries(state).forEach(([taskId,status])=>{
+    const el=document.getElementById(taskId);
+    if(!el) return;
+    el.classList.remove('done','inprogress');
+    if(status==='done') el.classList.add('done');
+    if(status==='inprogress') el.classList.add('inprogress');
+    const sel=el.querySelector('.status-select');
+    if(sel) sel.value=status;
+  });
+}
+
+loadState(); restoreState(); updateAll();
+</script>
+</body>
+</html>
