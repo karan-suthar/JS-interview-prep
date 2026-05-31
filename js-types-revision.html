@@ -1,988 +1,1609 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Types — Interview Revision Guide</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
-
-  :root {
-    --bg: #0d0f14;
-    --bg2: #13161e;
-    --bg3: #1a1e28;
-    --bg4: #212638;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #e8eaf0;
-    --text2: #8b90a0;
-    --text3: #555a6e;
-    --accent: #7c6aff;
-    --accent2: #5cffb0;
-    --accent3: #ff6b6b;
-    --amber: #ffb86c;
-    --blue: #6ab0ff;
-    --pink: #ff79c6;
-    --teal: #5cffb0;
-    --font-head: 'Syne', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    --radius: 10px;
-    --radius-lg: 14px;
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: var(--font-body);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
-
-  /* ── Grid background ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 4rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* ── Header ── */
-  .site-header {
-    margin-bottom: 3rem;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 1.5rem;
-  }
-
-  .header-tag {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    background: rgba(124,106,255,0.15);
-    color: var(--accent);
-    border: 1px solid rgba(124,106,255,0.3);
-    border-radius: 4px;
-    padding: 3px 10px;
-    margin-bottom: 1rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    font-family: var(--font-head);
-    font-size: clamp(28px, 5vw, 42px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #fff 0%, #a89aff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .site-header p {
-    color: var(--text2);
-    font-size: 15px;
-  }
-
-  /* ── Section ── */
-  .section {
-    margin-bottom: 3rem;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 1.25rem;
-  }
-
-  .section-num {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), #4d3dcc);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-head);
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-  }
-
-  .section-header h2 {
-    font-family: var(--font-head);
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.01em;
-  }
-
-  .badge {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    vertical-align: middle;
-    margin-left: 8px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-  }
-
-  .badge-prim { background: rgba(92,255,176,0.12); color: var(--teal); border: 1px solid rgba(92,255,176,0.25); }
-  .badge-ref  { background: rgba(124,106,255,0.12); color: var(--accent); border: 1px solid rgba(124,106,255,0.25); }
-
-  /* ── Type Cards Grid ── */
-  .type-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-    gap: 10px;
-    margin-bottom: 1.25rem;
-  }
-
-  .type-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    transition: border-color 0.2s, transform 0.2s;
-    border-top: 3px solid transparent;
-  }
-
-  .type-card:hover {
-    border-color: var(--border2);
-    transform: translateY(-2px);
-  }
-
-  .tc-string  { border-top-color: #5cffb0; }
-  .tc-number  { border-top-color: #6ab0ff; }
-  .tc-boolean { border-top-color: #ffb86c; }
-  .tc-null    { border-top-color: #ff6b6b; }
-  .tc-undef   { border-top-color: #8b90a0; }
-  .tc-symbol  { border-top-color: #ff79c6; }
-  .tc-bigint  { border-top-color: #bd93f9; }
-
-  .type-name {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .type-vals {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: var(--text2);
-    line-height: 1.7;
-    margin-bottom: 8px;
-  }
-
-  .type-note {
-    font-size: 11px;
-    color: var(--text3);
-    line-height: 1.5;
-  }
-
-  /* ── Callouts ── */
-  .callout {
-    border-radius: var(--radius);
-    padding: 0.75rem 1rem;
-    font-size: 13.5px;
-    margin-bottom: 0.85rem;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
-
-  .callout-green {
-    background: rgba(92,255,176,0.07);
-    border: 1px solid rgba(92,255,176,0.2);
-    color: #9affd4;
-  }
-
-  .callout-amber {
-    background: rgba(255,184,108,0.07);
-    border: 1px solid rgba(255,184,108,0.2);
-    color: #ffd49a;
-  }
-
-  .callout-red {
-    background: rgba(255,107,107,0.07);
-    border: 1px solid rgba(255,107,107,0.2);
-    color: #ffaaaa;
-  }
-
-  /* ── Code Blocks ── */
-  .code-block {
-    background: #090b10;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.1rem 1.25rem;
-    font-family: var(--font-mono);
-    font-size: 12.5px;
-    line-height: 1.85;
-    overflow-x: auto;
-    margin-bottom: 1rem;
-    position: relative;
-  }
-
-  .code-block .line { display: block; }
-  .cm  { color: #555a6e; font-style: italic; }   /* comment */
-  .ck  { color: #ff79c6; }  /* keyword */
-  .cs  { color: #f1fa8c; }  /* string */
-  .cn  { color: #bd93f9; }  /* number */
-  .cf  { color: #6ab0ff; }  /* function */
-  .cp  { color: #5cffb0; }  /* property */
-
-  /* ── Memory Diagram ── */
-  .mem-diagram {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .mem-diagram-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 1rem;
-  }
-
-  .mem-cols {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  @media (max-width: 500px) { .mem-cols { grid-template-columns: 1fr; } }
-
-  .mem-col-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
-  }
-
-  .mem-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-
-  .mem-var { background: rgba(92,255,176,0.12); color: var(--teal); border: 1px solid rgba(92,255,176,0.2); border-radius: 4px; padding: 3px 9px; min-width: 48px; text-align: center; }
-  .mem-val { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 4px; padding: 3px 9px; }
-  .mem-ref { background: rgba(124,106,255,0.12); color: var(--accent); border: 1px solid rgba(124,106,255,0.2); border-radius: 4px; padding: 3px 9px; }
-  .mem-arrow { color: var(--text3); }
-  .mem-note { font-size: 10px; color: var(--text3); }
-
-  .heap-box {
-    background: rgba(124,106,255,0.07);
-    border: 1px dashed rgba(124,106,255,0.25);
-    border-radius: var(--radius);
-    padding: 0.75rem;
-  }
-
-  .heap-addr { font-family: var(--font-mono); font-size: 10px; color: var(--accent); margin-bottom: 8px; }
-  .heap-row  { font-family: var(--font-mono); font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-
-  /* ── Tabs ── */
-  .tab-bar {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .tab-btn {
-    font-family: var(--font-body);
-    font-size: 13px;
-    padding: 6px 16px;
-    border-radius: 99px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .tab-btn:hover { background: var(--bg3); color: var(--text); }
-  .tab-btn.active { background: rgba(124,106,255,0.18); color: #c4baff; border-color: rgba(124,106,255,0.4); font-weight: 500; }
-
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* ── Compare Grid ── */
-  .compare-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 1rem;
-  }
-
-  @media (max-width: 500px) { .compare-grid { grid-template-columns: 1fr; } }
-
-  .compare-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.9rem;
-  }
-
-  .compare-card .code-block { margin-bottom: 0; }
-
-  /* ── typeof table ── */
-  .typeof-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    margin-bottom: 1rem;
-  }
-
-  .typeof-table th {
-    text-align: left;
-    font-family: var(--font-body);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text3);
-    padding: 6px 12px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .typeof-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text2);
-  }
-
-  .typeof-table td:first-child { color: #f1fa8c; }
-  .typeof-table td:nth-child(2) { color: #bd93f9; }
-  .typeof-table td:last-child { color: var(--text3); font-size: 11px; font-family: var(--font-body); }
-
-  .typeof-table tr:last-child td { border-bottom: none; }
-  .typeof-table tr.warn-row td:nth-child(2) { color: var(--accent3); }
-
-  /* ── Q&A Section ── */
-  .qa-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 10px;
-    overflow: hidden;
-  }
-
-  .qa-question {
-    padding: 0.9rem 1rem;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    user-select: none;
-    transition: background 0.15s;
-  }
-
-  .qa-question:hover { background: var(--bg3); }
-  .qa-question .q-text { font-weight: 500; flex: 1; }
-
-  .qa-toggle {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1px solid var(--border2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: var(--text3);
-    flex-shrink: 0;
-    transition: transform 0.2s, background 0.2s;
-  }
-
-  .qa-card.open .qa-toggle {
-    transform: rotate(45deg);
-    background: rgba(92,255,176,0.12);
-    border-color: rgba(92,255,176,0.3);
-    color: var(--teal);
-  }
-
-  .qa-answer {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-  }
-
-  .qa-card.open .qa-answer { max-height: 600px; }
-
-  .qa-answer-inner {
-    padding: 0 1rem 1rem;
-    font-size: 13.5px;
-    color: var(--text2);
-    line-height: 1.7;
-    border-top: 1px solid var(--border);
-    padding-top: 0.85rem;
-  }
-
-  .qa-answer-inner code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    background: rgba(255,255,255,0.06);
-    padding: 1px 6px;
-    border-radius: 3px;
-    color: #f1fa8c;
-  }
-
-  /* ── Divider ── */
-  .divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border2), transparent);
-    margin: 2.5rem 0;
-  }
-
-  /* ── Footer ── */
-  .footer {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text3);
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-    font-family: var(--font-mono);
-  }
-
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
-
-  /* ── Animations ── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .section {
-    animation: fadeUp 0.4s ease both;
-  }
-
-  .section:nth-child(1) { animation-delay: 0.05s; }
-  .section:nth-child(2) { animation-delay: 0.10s; }
-  .section:nth-child(3) { animation-delay: 0.15s; }
-  .section:nth-child(4) { animation-delay: 0.20s; }
-  .section:nth-child(5) { animation-delay: 0.25s; }
-  .section:nth-child(6) { animation-delay: 0.30s; }
-</style>
-</head>
-<body>
-
-<div class="container">
-
-  <!-- Header -->
-  <header class="site-header">
-    <div class="header-tag">JS Interview Prep</div>
-    <h1>Primitive Types vs Reference Types</h1>
-    <p>All 7 primitives, the reference model, memory layout, copy patterns &amp; interview Q&amp;A</p>
-  </header>
-
-  <!-- ── SECTION 1: 7 Primitives ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">1</div>
-      <h2>The 7 primitive types <span class="badge badge-prim">stored by value</span></h2>
-    </div>
-
-    <div class="type-grid">
-      <div class="type-card tc-string">
-        <div class="type-name">string</div>
-        <div class="type-vals">"hello"<br>'world'<br>`template`</div>
-        <div class="type-note">Immutable UTF-16 char sequence</div>
-      </div>
-      <div class="type-card tc-number">
-        <div class="type-name">number</div>
-        <div class="type-vals">42<br>3.14<br>NaN<br>Infinity</div>
-        <div class="type-note">IEEE-754 64-bit float. NaN is still type "number"!</div>
-      </div>
-      <div class="type-card tc-boolean">
-        <div class="type-name">boolean</div>
-        <div class="type-vals">true<br>false</div>
-        <div class="type-note">Logical true or false only</div>
-      </div>
-      <div class="type-card tc-null">
-        <div class="type-name">null</div>
-        <div class="type-vals">null</div>
-        <div class="type-note">Intentional absence — assigned by developer</div>
-      </div>
-      <div class="type-card tc-undef">
-        <div class="type-name">undefined</div>
-        <div class="type-vals">undefined</div>
-        <div class="type-note">Declared but not yet assigned — set by JS engine</div>
-      </div>
-      <div class="type-card tc-symbol">
-        <div class="type-name">symbol</div>
-        <div class="type-vals">Symbol("id")</div>
-        <div class="type-note">Unique &amp; immutable identifier (ES6+)</div>
-      </div>
-      <div class="type-card tc-bigint">
-        <div class="type-name">bigint</div>
-        <div class="type-vals">9007199254<br>740993n</div>
-        <div class="type-note">Beyond Number.MAX_SAFE_INTEGER (ES2020+)</div>
-      </div>
-    </div>
-
-    <div class="callout callout-green">
-      <span class="callout-icon">✓</span>
-      <span>Primitives are <strong>immutable</strong> — operations always produce a new value; the original is never changed in-place. Variables hold the actual value on the stack.</span>
-    </div>
-    <div class="callout callout-amber">
-      <span class="callout-icon">⚠</span>
-      <span><strong>typeof null === "object"</strong> — a historic JS bug kept for backward compatibility. null is a primitive, not an object. Always use <code style="font-family:monospace;font-size:12px;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:3px;">val === null</code> to detect null.</span>
-    </div>
-
-    <div class="code-block">
-<span class="line"><span class="cm">// Primitive copy — always by value</span></span>
-<span class="line"><span class="ck">let</span> a = <span class="cn">42</span>;</span>
-<span class="line"><span class="ck">let</span> b = a;          <span class="cm">// b gets a COPY of the value</span></span>
-<span class="line">b = <span class="cn">100</span>;</span>
-<span class="line">console.log(a);      <span class="cm">// → 42  (unchanged!)</span></span>
-<span class="line">console.log(b);      <span class="cm">// → 100</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// String immutability</span></span>
-<span class="line"><span class="ck">let</span> str = <span class="cs">"hello"</span>;</span>
-<span class="line">str[<span class="cn">0</span>] = <span class="cs">"H"</span>;         <span class="cm">// silently fails (throws in strict mode)</span></span>
-<span class="line">console.log(str);    <span class="cm">// → "hello"  (still lowercase!)</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// null vs undefined</span></span>
-<span class="line"><span class="ck">let</span> x;               <span class="cm">// → undefined (not assigned)</span></span>
-<span class="line"><span class="ck">let</span> y = <span class="ck">null</span>;        <span class="cm">// → null (explicitly empty)</span></span>
-<span class="line">console.log(<span class="ck">typeof</span> x); <span class="cm">// → "undefined"</span></span>
-<span class="line">console.log(<span class="ck">typeof</span> y); <span class="cm">// → "object" ← famous gotcha!</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// Symbol — always unique</span></span>
-<span class="line"><span class="ck">const</span> s1 = Symbol(<span class="cs">"id"</span>);</span>
-<span class="line"><span class="ck">const</span> s2 = Symbol(<span class="cs">"id"</span>);</span>
-<span class="line">console.log(s1 === s2); <span class="cm">// → false (always unique!)</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// BigInt — precision beyond Number.MAX_SAFE_INTEGER</span></span>
-<span class="line"><span class="ck">const</span> big = <span class="cn">9007199254740993n</span>;</span>
-<span class="line">console.log(big + <span class="cn">1n</span>);                 <span class="cm">// → 9007199254740994n  ✓</span></span>
-<span class="line">console.log(<span class="cn">9007199254740993</span> + <span class="cn">1</span>);      <span class="cm">// → 9007199254740992   ✗ precision lost!</span></span>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- ── SECTION 2: Reference Types ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">2</div>
-      <h2>Reference types <span class="badge badge-ref">stored by reference</span></h2>
-    </div>
-
-    <p style="color:var(--text2);font-size:14px;margin-bottom:1rem;">Objects, Arrays, Functions, Maps, Sets, Dates — anything that is an <strong>Object</strong> under the hood.</p>
-
-    <div class="callout callout-green">
-      <span class="callout-icon">→</span>
-      <span>A variable does <strong>not</strong> hold the object itself — it holds a <em>memory address</em> (reference / pointer) to where the object lives on the heap.</span>
-    </div>
-
-    <!-- Memory diagram -->
-    <div class="mem-diagram">
-      <div class="mem-diagram-title">Memory model — primitives live on the stack; objects live on the heap</div>
-      <div class="mem-cols">
-        <div>
-          <div class="mem-col-label">Stack</div>
-          <div class="mem-row">
-            <div class="mem-var">a</div>
-            <div class="mem-arrow">→</div>
-            <div class="mem-val">42</div>
-            <div class="mem-note">value</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JS Types — Interview Revision Guide</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap");
+
+      :root {
+        --bg: #0d0f14;
+        --bg2: #13161e;
+        --bg3: #1a1e28;
+        --bg4: #212638;
+        --border: rgba(255, 255, 255, 0.07);
+        --border2: rgba(255, 255, 255, 0.12);
+        --text: #e8eaf0;
+        --text2: #8b90a0;
+        --text3: #555a6e;
+        --accent: #7c6aff;
+        --accent2: #5cffb0;
+        --accent3: #ff6b6b;
+        --amber: #ffb86c;
+        --blue: #6ab0ff;
+        --pink: #ff79c6;
+        --teal: #5cffb0;
+        --font-head: "Syne", sans-serif;
+        --font-body: "Inter", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --radius: 10px;
+        --radius-lg: 14px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.6;
+      }
+
+      /* ── Grid background ── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(124, 106, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 106, 255, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 4rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── Header ── */
+      .site-header {
+        margin-bottom: 3rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+      }
+
+      .header-tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        background: rgba(124, 106, 255, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(124, 106, 255, 0.3);
+        border-radius: 4px;
+        padding: 3px 10px;
+        margin-bottom: 1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        font-family: var(--font-head);
+        font-size: clamp(28px, 5vw, 42px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #fff 0%, #a89aff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .site-header p {
+        color: var(--text2);
+        font-size: 15px;
+      }
+
+      /* ── Section ── */
+      .section {
+        margin-bottom: 3rem;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 1.25rem;
+      }
+
+      .section-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #4d3dcc);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-head);
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .section-header h2 {
+        font-family: var(--font-head);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        vertical-align: middle;
+        margin-left: 8px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+      }
+
+      .badge-prim {
+        background: rgba(92, 255, 176, 0.12);
+        color: var(--teal);
+        border: 1px solid rgba(92, 255, 176, 0.25);
+      }
+      .badge-ref {
+        background: rgba(124, 106, 255, 0.12);
+        color: var(--accent);
+        border: 1px solid rgba(124, 106, 255, 0.25);
+      }
+
+      /* ── Type Cards Grid ── */
+      .type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+        gap: 10px;
+        margin-bottom: 1.25rem;
+      }
+
+      .type-card {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+        border-top: 3px solid transparent;
+      }
+
+      .type-card:hover {
+        border-color: var(--border2);
+        transform: translateY(-2px);
+      }
+
+      .tc-string {
+        border-top-color: #5cffb0;
+      }
+      .tc-number {
+        border-top-color: #6ab0ff;
+      }
+      .tc-boolean {
+        border-top-color: #ffb86c;
+      }
+      .tc-null {
+        border-top-color: #ff6b6b;
+      }
+      .tc-undef {
+        border-top-color: #8b90a0;
+      }
+      .tc-symbol {
+        border-top-color: #ff79c6;
+      }
+      .tc-bigint {
+        border-top-color: #bd93f9;
+      }
+
+      .type-name {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+
+      .type-vals {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--text2);
+        line-height: 1.7;
+        margin-bottom: 8px;
+      }
+
+      .type-note {
+        font-size: 11px;
+        color: var(--text3);
+        line-height: 1.5;
+      }
+
+      /* ── Callouts ── */
+      .callout {
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+        font-size: 13.5px;
+        margin-bottom: 0.85rem;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .callout-icon {
+        flex-shrink: 0;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .callout-green {
+        background: rgba(92, 255, 176, 0.07);
+        border: 1px solid rgba(92, 255, 176, 0.2);
+        color: #9affd4;
+      }
+
+      .callout-amber {
+        background: rgba(255, 184, 108, 0.07);
+        border: 1px solid rgba(255, 184, 108, 0.2);
+        color: #ffd49a;
+      }
+
+      .callout-red {
+        background: rgba(255, 107, 107, 0.07);
+        border: 1px solid rgba(255, 107, 107, 0.2);
+        color: #ffaaaa;
+      }
+
+      /* ── Code Blocks ── */
+      .code-block {
+        background: #090b10;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.25rem;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        line-height: 1.85;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        position: relative;
+      }
+
+      .code-block .line {
+        display: block;
+      }
+      .cm {
+        color: #555a6e;
+        font-style: italic;
+      } /* comment */
+      .ck {
+        color: #ff79c6;
+      } /* keyword */
+      .cs {
+        color: #f1fa8c;
+      } /* string */
+      .cn {
+        color: #bd93f9;
+      } /* number */
+      .cf {
+        color: #6ab0ff;
+      } /* function */
+      .cp {
+        color: #5cffb0;
+      } /* property */
+
+      /* ── Memory Diagram ── */
+      .mem-diagram {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .mem-diagram-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 1rem;
+      }
+
+      .mem-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      @media (max-width: 500px) {
+        .mem-cols {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .mem-col-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 6px;
+      }
+
+      .mem-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+
+      .mem-var {
+        background: rgba(92, 255, 176, 0.12);
+        color: var(--teal);
+        border: 1px solid rgba(92, 255, 176, 0.2);
+        border-radius: 4px;
+        padding: 3px 9px;
+        min-width: 48px;
+        text-align: center;
+      }
+      .mem-val {
+        background: var(--bg3);
+        color: var(--text);
+        border: 1px solid var(--border2);
+        border-radius: 4px;
+        padding: 3px 9px;
+      }
+      .mem-ref {
+        background: rgba(124, 106, 255, 0.12);
+        color: var(--accent);
+        border: 1px solid rgba(124, 106, 255, 0.2);
+        border-radius: 4px;
+        padding: 3px 9px;
+      }
+      .mem-arrow {
+        color: var(--text3);
+      }
+      .mem-note {
+        font-size: 10px;
+        color: var(--text3);
+      }
+
+      .heap-box {
+        background: rgba(124, 106, 255, 0.07);
+        border: 1px dashed rgba(124, 106, 255, 0.25);
+        border-radius: var(--radius);
+        padding: 0.75rem;
+      }
+
+      .heap-addr {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+      .heap-row {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text2);
+        margin-bottom: 4px;
+      }
+
+      /* ── Tabs ── */
+      .tab-bar {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        font-family: var(--font-body);
+        font-size: 13px;
+        padding: 6px 16px;
+        border-radius: 99px;
+        border: 1px solid var(--border2);
+        background: transparent;
+        color: var(--text2);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .tab-btn:hover {
+        background: var(--bg3);
+        color: var(--text);
+      }
+      .tab-btn.active {
+        background: rgba(124, 106, 255, 0.18);
+        color: #c4baff;
+        border-color: rgba(124, 106, 255, 0.4);
+        font-weight: 500;
+      }
+
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
+
+      /* ── Compare Grid ── */
+      .compare-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 1rem;
+      }
+
+      @media (max-width: 500px) {
+        .compare-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .compare-card {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.9rem;
+      }
+
+      .compare-card .code-block {
+        margin-bottom: 0;
+      }
+
+      /* ── typeof table ── */
+      .typeof-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        margin-bottom: 1rem;
+      }
+
+      .typeof-table th {
+        text-align: left;
+        font-family: var(--font-body);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text3);
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .typeof-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text2);
+      }
+
+      .typeof-table td:first-child {
+        color: #f1fa8c;
+      }
+      .typeof-table td:nth-child(2) {
+        color: #bd93f9;
+      }
+      .typeof-table td:last-child {
+        color: var(--text3);
+        font-size: 11px;
+        font-family: var(--font-body);
+      }
+
+      .typeof-table tr:last-child td {
+        border-bottom: none;
+      }
+      .typeof-table tr.warn-row td:nth-child(2) {
+        color: var(--accent3);
+      }
+
+      /* ── Q&A Section ── */
+      .qa-card {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+
+      .qa-question {
+        padding: 0.9rem 1rem;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        user-select: none;
+        transition: background 0.15s;
+      }
+
+      .qa-question:hover {
+        background: var(--bg3);
+      }
+      .qa-question .q-text {
+        font-weight: 500;
+        flex: 1;
+      }
+
+      .qa-toggle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid var(--border2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--text3);
+        flex-shrink: 0;
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+
+      .qa-card.open .qa-toggle {
+        transform: rotate(45deg);
+        background: rgba(92, 255, 176, 0.12);
+        border-color: rgba(92, 255, 176, 0.3);
+        color: var(--teal);
+      }
+
+      .qa-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+
+      .qa-card.open .qa-answer {
+        max-height: 600px;
+      }
+
+      .qa-answer-inner {
+        padding: 0 1rem 1rem;
+        font-size: 13.5px;
+        color: var(--text2);
+        line-height: 1.7;
+        border-top: 1px solid var(--border);
+        padding-top: 0.85rem;
+      }
+
+      .qa-answer-inner code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 1px 6px;
+        border-radius: 3px;
+        color: #f1fa8c;
+      }
+
+      /* ── Divider ── */
+      .divider {
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--border2),
+          transparent
+        );
+        margin: 2.5rem 0;
+      }
+
+      /* ── Footer ── */
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: var(--text3);
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+      }
+
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--bg4);
+        border-radius: 99px;
+      }
+
+      /* ── Animations ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .section {
+        animation: fadeUp 0.4s ease both;
+      }
+
+      .section:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .section:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .section:nth-child(3) {
+        animation-delay: 0.15s;
+      }
+      .section:nth-child(4) {
+        animation-delay: 0.2s;
+      }
+      .section:nth-child(5) {
+        animation-delay: 0.25s;
+      }
+      .section:nth-child(6) {
+        animation-delay: 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="site-header">
+        <div class="header-tag">JS Interview Prep</div>
+        <h1>Primitive Types vs Reference Types</h1>
+        <p>
+          All 7 primitives, the reference model, memory layout, copy patterns
+          &amp; interview Q&amp;A
+        </p>
+      </header>
+
+      <!-- ── SECTION 1: 7 Primitives ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">1</div>
+          <h2>
+            The 7 primitive types
+            <span class="badge badge-prim">stored by value</span>
+          </h2>
+        </div>
+
+        <div class="type-grid">
+          <div class="type-card tc-string">
+            <div class="type-name">string</div>
+            <div class="type-vals">"hello"<br />'world'<br />`template`</div>
+            <div class="type-note">Immutable UTF-16 char sequence</div>
           </div>
-          <div class="mem-row">
-            <div class="mem-var">b</div>
-            <div class="mem-arrow">→</div>
-            <div class="mem-val">42</div>
-            <div class="mem-note">copy</div>
+          <div class="type-card tc-number">
+            <div class="type-name">number</div>
+            <div class="type-vals">42<br />3.14<br />NaN<br />Infinity</div>
+            <div class="type-note">
+              IEEE-754 64-bit float. NaN is still type "number"!
+            </div>
           </div>
-          <div style="height:14px"></div>
-          <div class="mem-row">
-            <div class="mem-var">obj1</div>
-            <div class="mem-arrow">→</div>
-            <div class="mem-ref">@0x1a2</div>
-            <div class="mem-note">ref</div>
+          <div class="type-card tc-boolean">
+            <div class="type-name">boolean</div>
+            <div class="type-vals">true<br />false</div>
+            <div class="type-note">Logical true or false only</div>
           </div>
-          <div class="mem-row">
-            <div class="mem-var">obj2</div>
-            <div class="mem-arrow">→</div>
-            <div class="mem-ref">@0x1a2</div>
-            <div class="mem-note">same ref!</div>
+          <div class="type-card tc-null">
+            <div class="type-name">null</div>
+            <div class="type-vals">null</div>
+            <div class="type-note">
+              Intentional absence — assigned by developer
+            </div>
+          </div>
+          <div class="type-card tc-undef">
+            <div class="type-name">undefined</div>
+            <div class="type-vals">undefined</div>
+            <div class="type-note">
+              Declared but not yet assigned — set by JS engine
+            </div>
+          </div>
+          <div class="type-card tc-symbol">
+            <div class="type-name">symbol</div>
+            <div class="type-vals">Symbol("id")</div>
+            <div class="type-note">
+              Unique &amp; immutable identifier (ES6+)
+            </div>
+          </div>
+          <div class="type-card tc-bigint">
+            <div class="type-name">bigint</div>
+            <div class="type-vals">9007199254<br />740993n</div>
+            <div class="type-note">
+              Beyond Number.MAX_SAFE_INTEGER (ES2020+)
+            </div>
           </div>
         </div>
-        <div>
-          <div class="mem-col-label">Heap</div>
-          <div class="heap-box">
-            <div class="heap-addr">@0x1a2 — Object</div>
-            <div class="heap-row">name: "Alice"</div>
-            <div class="heap-row">age: 30</div>
+
+        <div class="callout callout-green">
+          <span class="callout-icon">✓</span>
+          <span
+            >Primitives are <strong>immutable</strong> — operations always
+            produce a new value; the original is never changed in-place.
+            Variables hold the actual value on the stack.</span
+          >
+        </div>
+        <div class="callout callout-amber">
+          <span class="callout-icon">⚠</span>
+          <span
+            ><strong>typeof null === "object"</strong> — a historic JS bug kept
+            for backward compatibility. null is a primitive, not an object.
+            Always use
+            <code
+              style="
+                font-family: monospace;
+                font-size: 12px;
+                background: rgba(255, 255, 255, 0.08);
+                padding: 1px 6px;
+                border-radius: 3px;
+              "
+              >val === null</code
+            >
+            to detect null.</span
+          >
+        </div>
+
+        <div class="code-block">
+          <span class="line"
+            ><span class="cm">// Primitive copy — always by value</span></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> a = <span class="cn">42</span>;</span
+          >
+          <span class="line"
+            ><span class="ck">let</span> b = a;
+            <span class="cm">// b gets a COPY of the value</span></span
+          >
+          <span class="line">b = <span class="cn">100</span>;</span>
+          <span class="line"
+            >console.log(a); <span class="cm">// → 42 (unchanged!)</span></span
+          >
+          <span class="line"
+            >console.log(b); <span class="cm">// → 100</span></span
+          >
+          <span class="line"></span>
+          <span class="line"
+            ><span class="cm">// String immutability</span></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> str =
+            <span class="cs">"hello"</span>;</span
+          >
+          <span class="line"
+            >str[<span class="cn">0</span>] = <span class="cs">"H"</span>;
+            <span class="cm"
+              >// silently fails (throws in strict mode)</span
+            ></span
+          >
+          <span class="line"
+            >console.log(str);
+            <span class="cm">// → "hello" (still lowercase!)</span></span
+          >
+          <span class="line"></span>
+          <span class="line"><span class="cm">// null vs undefined</span></span>
+          <span class="line"
+            ><span class="ck">let</span> x;
+            <span class="cm">// → undefined (not assigned)</span></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> y = <span class="ck">null</span>;
+            <span class="cm">// → null (explicitly empty)</span></span
+          >
+          <span class="line"
+            >console.log(<span class="ck">typeof</span> x);
+            <span class="cm">// → "undefined"</span></span
+          >
+          <span class="line"
+            >console.log(<span class="ck">typeof</span> y);
+            <span class="cm">// → "object" ← famous gotcha!</span></span
+          >
+          <span class="line"></span>
+          <span class="line"
+            ><span class="cm">// Symbol — always unique</span></span
+          >
+          <span class="line"
+            ><span class="ck">const</span> s1 = Symbol(<span class="cs"
+              >"id"</span
+            >);</span
+          >
+          <span class="line"
+            ><span class="ck">const</span> s2 = Symbol(<span class="cs"
+              >"id"</span
+            >);</span
+          >
+          <span class="line"
+            >console.log(s1 === s2);
+            <span class="cm">// → false (always unique!)</span></span
+          >
+          <span class="line"></span>
+          <span class="line"
+            ><span class="cm"
+              >// BigInt — precision beyond Number.MAX_SAFE_INTEGER</span
+            ></span
+          >
+          <span class="line"
+            ><span class="ck">const</span> big =
+            <span class="cn">9007199254740993n</span>;</span
+          >
+          <span class="line"
+            >console.log(big + <span class="cn">1n</span>);
+            <span class="cm">// → 9007199254740994n ✓</span></span
+          >
+          <span class="line"
+            >console.log(<span class="cn">9007199254740993</span> +
+            <span class="cn">1</span>);
+            <span class="cm"
+              >// → 9007199254740992 ✗ precision lost!</span
+            ></span
+          >
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 2: Reference Types ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">2</div>
+          <h2>
+            Reference types
+            <span class="badge badge-ref">stored by reference</span>
+          </h2>
+        </div>
+
+        <p style="color: var(--text2); font-size: 14px; margin-bottom: 1rem">
+          Objects, Arrays, Functions, Maps, Sets, Dates — anything that is an
+          <strong>Object</strong> under the hood.
+        </p>
+
+        <div class="callout callout-green">
+          <span class="callout-icon">→</span>
+          <span
+            >A variable does <strong>not</strong> hold the object itself — it
+            holds a <em>memory address</em> (reference / pointer) to where the
+            object lives on the heap.</span
+          >
+        </div>
+
+        <!-- Memory diagram -->
+        <div class="mem-diagram">
+          <div class="mem-diagram-title">
+            Memory model — primitives live on the stack; objects live on the
+            heap
+          </div>
+          <div class="mem-cols">
+            <div>
+              <div class="mem-col-label">Stack</div>
+              <div class="mem-row">
+                <div class="mem-var">a</div>
+                <div class="mem-arrow">→</div>
+                <div class="mem-val">42</div>
+                <div class="mem-note">value</div>
+              </div>
+              <div class="mem-row">
+                <div class="mem-var">b</div>
+                <div class="mem-arrow">→</div>
+                <div class="mem-val">42</div>
+                <div class="mem-note">copy</div>
+              </div>
+              <div style="height: 14px"></div>
+              <div class="mem-row">
+                <div class="mem-var">obj1</div>
+                <div class="mem-arrow">→</div>
+                <div class="mem-ref">@0x1a2</div>
+                <div class="mem-note">ref</div>
+              </div>
+              <div class="mem-row">
+                <div class="mem-var">obj2</div>
+                <div class="mem-arrow">→</div>
+                <div class="mem-ref">@0x1a2</div>
+                <div class="mem-note">same ref!</div>
+              </div>
+            </div>
+            <div>
+              <div class="mem-col-label">Heap</div>
+              <div class="heap-box">
+                <div class="heap-addr">@0x1a2 — Object</div>
+                <div class="heap-row">name: "Alice"</div>
+                <div class="heap-row">age: 30</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="code-block">
-<span class="line"><span class="cm">// Objects — stored by reference</span></span>
-<span class="line"><span class="ck">let</span> obj1 = { <span class="cp">name</span>: <span class="cs">"Alice"</span>, <span class="cp">age</span>: <span class="cn">30</span> };</span>
-<span class="line"><span class="ck">let</span> obj2 = obj1;     <span class="cm">// obj2 points to the SAME object in memory</span></span>
-<span class="line"></span>
-<span class="line">obj2.age = <span class="cn">99</span>;</span>
-<span class="line">console.log(obj1.age); <span class="cm">// → 99  ← obj1 also changed!</span></span>
-<span class="line">console.log(obj2.age); <span class="cm">// → 99</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// Arrays — also reference types</span></span>
-<span class="line"><span class="ck">let</span> arr1 = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>];</span>
-<span class="line"><span class="ck">let</span> arr2 = arr1;</span>
-<span class="line">arr2.push(<span class="cn">4</span>);</span>
-<span class="line">console.log(arr1); <span class="cm">// → [1, 2, 3, 4]  ← arr1 affected too!</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// Equality — compares references, NOT content</span></span>
-<span class="line"><span class="ck">let</span> p = { x: <span class="cn">1</span> };</span>
-<span class="line"><span class="ck">let</span> q = { x: <span class="cn">1</span> };</span>
-<span class="line">console.log(p === q); <span class="cm">// → false (different objects in memory)</span></span>
-<span class="line">console.log(p === p); <span class="cm">// → true  (same reference)</span></span>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- ── SECTION 3: Copying ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">3</div>
-      <h2>Copying objects safely</h2>
-    </div>
-
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="showTab(event, 'shallow')">Shallow copy</button>
-      <button class="tab-btn" onclick="showTab(event, 'deep')">Deep copy</button>
-      <button class="tab-btn" onclick="showTab(event, 'freeze')">Object.freeze</button>
-    </div>
-
-    <div id="tab-shallow" class="tab-panel active">
-      <div class="callout callout-amber">
-        <span class="callout-icon">⚠</span>
-        <span><strong>Shallow copy</strong> — copies one level deep. Top-level primitives are independent, but nested objects/arrays are still shared references!</span>
-      </div>
-      <div class="code-block">
-<span class="line"><span class="cm">// 3 ways to shallow copy an object</span></span>
-<span class="line"><span class="ck">const</span> original = { <span class="cp">name</span>: <span class="cs">"Bob"</span>, <span class="cp">scores</span>: [<span class="cn">10</span>, <span class="cn">20</span>] };</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// 1. Spread operator (most common ✓)</span></span>
-<span class="line"><span class="ck">const</span> copy1 = { ...original };</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// 2. Object.assign()</span></span>
-<span class="line"><span class="ck">const</span> copy2 = Object.assign({}, original);</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// 3. Array spread</span></span>
-<span class="line"><span class="ck">const</span> arrCopy = [...original.scores];</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// ⚠️ Shallow gotcha — nested array is still shared!</span></span>
-<span class="line">copy1.name = <span class="cs">"Charlie"</span>;</span>
-<span class="line">copy1.scores.push(<span class="cn">30</span>);</span>
-<span class="line"></span>
-<span class="line">console.log(original.name);   <span class="cm">// → "Bob"     ✓ (primitive — independent copy)</span></span>
-<span class="line">console.log(original.scores); <span class="cm">// → [10, 20, 30] ← shared! nested ref not copied</span></span>
-      </div>
-    </div>
-
-    <div id="tab-deep" class="tab-panel">
-      <div class="callout callout-green">
-        <span class="callout-icon">✓</span>
-        <span><strong>Deep copy</strong> — fully independent clone, all nested levels included. Use <code style="font-family:monospace;font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">structuredClone()</code> (modern, recommended) or carefully use the JSON trick.</span>
-      </div>
-      <div class="code-block">
-<span class="line"><span class="ck">const</span> original = { <span class="cp">name</span>: <span class="cs">"Alice"</span>, <span class="cp">address</span>: { <span class="cp">city</span>: <span class="cs">"Delhi"</span> } };</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// 1. structuredClone() — modern, recommended (ES2022+)</span></span>
-<span class="line"><span class="ck">const</span> deep1 = structuredClone(original);</span>
-<span class="line"></span>
-<span class="line"><span class="cm">// 2. JSON trick — simple but has caveats</span></span>
-<span class="line"><span class="ck">const</span> deep2 = JSON.parse(JSON.stringify(original));</span>
-<span class="line"><span class="cm">// ⚠️ JSON trick LOSES: undefined, functions, Symbol, Date, RegExp, Map, Set</span></span>
-<span class="line"></span>
-<span class="line">deep1.address.city = <span class="cs">"Mumbai"</span>;</span>
-<span class="line">console.log(original.address.city); <span class="cm">// → "Delhi"  ✓ (truly independent)</span></span>
-<span class="line">console.log(deep1.address.city);    <span class="cm">// → "Mumbai"</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// structuredClone handles more types than JSON</span></span>
-<span class="line"><span class="ck">const</span> withDate = { <span class="cp">date</span>: <span class="ck">new</span> Date(), <span class="cp">map</span>: <span class="ck">new</span> Map([[<span class="cs">"a"</span>, <span class="cn">1</span>]]) };</span>
-<span class="line"><span class="ck">const</span> cloned = structuredClone(withDate);          <span class="cm">// ✓ Date stays Date, Map stays Map</span></span>
-<span class="line"><span class="ck">const</span> broken = JSON.parse(JSON.stringify(withDate)); <span class="cm">// ✗ Date → string, Map → {}</span></span>
-      </div>
-    </div>
-
-    <div id="tab-freeze" class="tab-panel">
-      <div class="callout callout-amber">
-        <span class="callout-icon">⚠</span>
-        <span><strong>Object.freeze()</strong> prevents adding, removing, or editing properties. But it is <em>shallow</em> — nested objects remain mutable.</span>
-      </div>
-      <div class="code-block">
-<span class="line"><span class="ck">const</span> config = Object.freeze({ <span class="cp">env</span>: <span class="cs">"production"</span>, <span class="cp">port</span>: <span class="cn">3000</span> });</span>
-<span class="line"></span>
-<span class="line">config.port = <span class="cn">8080</span>;        <span class="cm">// silently fails (throws TypeError in strict mode)</span></span>
-<span class="line">console.log(config.port);   <span class="cm">// → 3000  (unchanged)</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// ⚠️ Freeze is SHALLOW — nested objects are still mutable</span></span>
-<span class="line"><span class="ck">const</span> obj = Object.freeze({ <span class="cp">nested</span>: { <span class="cp">val</span>: <span class="cn">1</span> } });</span>
-<span class="line">obj.nested.val = <span class="cn">99</span>;        <span class="cm">// ← this DOES work!</span></span>
-<span class="line">console.log(obj.nested.val); <span class="cm">// → 99  (nested was not frozen)</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// Check if frozen</span></span>
-<span class="line">console.log(Object.isFrozen(config)); <span class="cm">// → true</span></span>
-      </div>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- ── SECTION 4: typeof ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">4</div>
-      <h2>typeof — quick reference</h2>
-    </div>
-
-    <table class="typeof-table">
-      <thead>
-        <tr>
-          <th>Expression</th>
-          <th>Result</th>
-          <th>Note</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>typeof "hello"</td><td>"string"</td><td></td></tr>
-        <tr><td>typeof 42</td><td>"number"</td><td></td></tr>
-        <tr><td>typeof 3.14</td><td>"number"</td><td>all numbers are the same type</td></tr>
-        <tr class="warn-row"><td>typeof NaN</td><td>"number"</td><td>⚠ NaN is still type number!</td></tr>
-        <tr><td>typeof true</td><td>"boolean"</td><td></td></tr>
-        <tr><td>typeof undefined</td><td>"undefined"</td><td></td></tr>
-        <tr class="warn-row"><td>typeof null</td><td>"object"</td><td>⚠ famous bug — use val === null</td></tr>
-        <tr><td>typeof Symbol()</td><td>"symbol"</td><td></td></tr>
-        <tr><td>typeof 9007n</td><td>"bigint"</td><td></td></tr>
-        <tr class="warn-row"><td>typeof {}</td><td>"object"</td><td></td></tr>
-        <tr class="warn-row"><td>typeof []</td><td>"object"</td><td>⚠ arrays are objects! use Array.isArray()</td></tr>
-        <tr><td>typeof function(){}</td><td>"function"</td><td>special case for functions</td></tr>
-      </tbody>
-    </table>
-
-    <div class="code-block">
-<span class="line"><span class="cm">// Better checks for arrays and null</span></span>
-<span class="line">Array.isArray([]);           <span class="cm">// → true  ✓</span></span>
-<span class="line">value === <span class="ck">null</span>;             <span class="cm">// → true  ✓</span></span>
-<span class="line">value <span class="ck">instanceof</span> Array;    <span class="cm">// → true  ✓</span></span>
-<span class="line">Object.prototype.toString.call([]); <span class="cm">// → "[object Array]" ✓ (most reliable)</span></span>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- ── SECTION 5: Functions ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">5</div>
-      <h2>Passing to functions — a key gotcha</h2>
-    </div>
-
-    <div class="compare-grid">
-      <div class="compare-card">
-        <div class="badge badge-prim" style="margin:0 0 10px;">primitive — pass by value</div>
-        <div class="code-block" style="margin:0">
-<span class="line"><span class="ck">function</span> <span class="cf">double</span>(n) {</span>
-<span class="line">  n = n * <span class="cn">2</span>; <span class="cm">// only local</span></span>
-<span class="line">}</span>
-<span class="line"><span class="ck">let</span> num = <span class="cn">5</span>;</span>
-<span class="line"><span class="cf">double</span>(num);</span>
-<span class="line">console.log(num); <span class="cm">// → 5 ✓</span></span>
+        <div class="code-block">
+          <span class="line"
+            ><span class="cm">// Objects — stored by reference</span></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> obj1 = { <span class="cp">name</span>:
+            <span class="cs">"Alice"</span>, <span class="cp">age</span>:
+            <span class="cn">30</span> };</span
+          >
+          <span class="line"
+            ><span class="ck">let</span> obj2 = obj1;
+            <span class="cm"
+              >// obj2 points to the SAME object in memory</span
+            ></span
+          >
+          <span class="line"></span>
+          <span class="line">obj2.age = <span class="cn">99</span>;</span>
+          <span class="line"
+            >console.log(obj1.age);
+            <span class="cm">// → 99 ← obj1 also changed!</span></span
+          >
+          <span class="line"
+            >console.log(obj2.age); <span class="cm">// → 99</span></span
+          >
+          <span class="line"></span>
+          <span class="line"
+            ><span class="cm">// Arrays — also reference types</span></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> arr1 = [<span class="cn">1</span>,
+            <span class="cn">2</span>, <span class="cn">3</span>];</span
+          >
+          <span class="line"><span class="ck">let</span> arr2 = arr1;</span>
+          <span class="line">arr2.push(<span class="cn">4</span>);</span>
+          <span class="line"
+            >console.log(arr1);
+            <span class="cm">// → [1, 2, 3, 4] ← arr1 affected too!</span></span
+          >
+          <span class="line"></span>
+          <span class="line"
+            ><span class="cm"
+              >// Equality — compares references, NOT content</span
+            ></span
+          >
+          <span class="line"
+            ><span class="ck">let</span> p = { x:
+            <span class="cn">1</span> };</span
+          >
+          <span class="line"
+            ><span class="ck">let</span> q = { x:
+            <span class="cn">1</span> };</span
+          >
+          <span class="line"
+            >console.log(p === q);
+            <span class="cm"
+              >// → false (different objects in memory)</span
+            ></span
+          >
+          <span class="line"
+            >console.log(p === p);
+            <span class="cm">// → true (same reference)</span></span
+          >
         </div>
-      </div>
-      <div class="compare-card">
-        <div class="badge badge-ref" style="margin:0 0 10px;">object — pass by reference</div>
-        <div class="code-block" style="margin:0">
-<span class="line"><span class="ck">function</span> <span class="cf">rename</span>(obj) {</span>
-<span class="line">  obj.name = <span class="cs">"New"</span>; <span class="cm">// mutates!</span></span>
-<span class="line">}</span>
-<span class="line"><span class="ck">let</span> user = { <span class="cp">name</span>: <span class="cs">"Old"</span> };</span>
-<span class="line"><span class="cf">rename</span>(user);</span>
-<span class="line">console.log(user.name); <span class="cm">// → "New" !</span></span>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 3: Copying ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">3</div>
+          <h2>Copying objects safely</h2>
         </div>
-      </div>
-    </div>
 
-    <div class="callout callout-red">
-      <span class="callout-icon">✗</span>
-      <span><strong>Reassigning the parameter variable</strong> inside a function does NOT affect the original — only mutating the object's properties does.</span>
-    </div>
-
-    <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">tryReassign</span>(obj) {</span>
-<span class="line">  obj = { <span class="cp">name</span>: <span class="cs">"Brand New"</span> }; <span class="cm">// reassigns the LOCAL binding only</span></span>
-<span class="line">}</span>
-<span class="line"><span class="ck">let</span> person = { <span class="cp">name</span>: <span class="cs">"Alice"</span> };</span>
-<span class="line"><span class="cf">tryReassign</span>(person);</span>
-<span class="line">console.log(person.name); <span class="cm">// → "Alice"  (original untouched!)</span></span>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- ── SECTION 6: Q&A ── -->
-  <section class="section">
-    <div class="section-header">
-      <div class="section-num">6</div>
-      <h2>Interview Q&amp;A — click to reveal</h2>
-    </div>
-
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q1: How many primitive types does JS have? Name them all.</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          <strong>7 primitives:</strong> <code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code>, <code>undefined</code>, <code>symbol</code>, <code>bigint</code>. Everything else (objects, arrays, functions, maps, sets, dates…) is a reference type.
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="showTab(event, 'shallow')">
+            Shallow copy
+          </button>
+          <button class="tab-btn" onclick="showTab(event, 'deep')">
+            Deep copy
+          </button>
+          <button class="tab-btn" onclick="showTab(event, 'freeze')">
+            Object.freeze
+          </button>
         </div>
-      </div>
-    </div>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q2: What does <code>typeof null</code> return and why?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          It returns <code>"object"</code> — a well-known bug from the original JS implementation preserved for backward compatibility. <code>null</code> is actually a primitive. To check for null reliably, use <code>value === null</code>.
+        <div id="tab-shallow" class="tab-panel active">
+          <div class="callout callout-amber">
+            <span class="callout-icon">⚠</span>
+            <span
+              ><strong>Shallow copy</strong> — copies one level deep. Top-level
+              primitives are independent, but nested objects/arrays are still
+              shared references!</span
+            >
+          </div>
+          <div class="code-block">
+            <span class="line"
+              ><span class="cm">// 3 ways to shallow copy an object</span></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> original = {
+              <span class="cp">name</span>: <span class="cs">"Bob"</span>,
+              <span class="cp">scores</span>: [<span class="cn">10</span>,
+              <span class="cn">20</span>] };</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// 1. Spread operator (most common ✓)</span
+              ></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> copy1 = { ...original };</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm">// 2. Object.assign()</span></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> copy2 = Object.assign({},
+              original);</span
+            >
+            <span class="line"></span>
+            <span class="line"><span class="cm">// 3. Array spread</span></span>
+            <span class="line"
+              ><span class="ck">const</span> arrCopy =
+              [...original.scores];</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// ⚠️ Shallow gotcha — nested array is still shared!</span
+              ></span
+            >
+            <span class="line"
+              >copy1.name = <span class="cs">"Charlie"</span>;</span
+            >
+            <span class="line"
+              >copy1.scores.push(<span class="cn">30</span>);</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              >console.log(original.name);
+              <span class="cm"
+                >// → "Bob" ✓ (primitive — independent copy)</span
+              ></span
+            >
+            <span class="line"
+              >console.log(original.scores);
+              <span class="cm"
+                >// → [10, 20, 30] ← shared! nested ref not copied</span
+              ></span
+            >
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q3: Will <code>{a:1} === {a:1}</code> be true or false?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          <strong>false</strong> — objects are compared by reference, not by content. These two object literals are stored at different memory addresses. To compare by content use <code>JSON.stringify(a) === JSON.stringify(b)</code> (simple cases) or a deep-equal utility for robust comparison.
+        <div id="tab-deep" class="tab-panel">
+          <div class="callout callout-green">
+            <span class="callout-icon">✓</span>
+            <span
+              ><strong>Deep copy</strong> — fully independent clone, all nested
+              levels included. Use
+              <code
+                style="
+                  font-family: monospace;
+                  font-size: 12px;
+                  background: rgba(255, 255, 255, 0.08);
+                  padding: 1px 5px;
+                  border-radius: 3px;
+                "
+                >structuredClone()</code
+              >
+              (modern, recommended) or carefully use the JSON trick.</span
+            >
+          </div>
+          <div class="code-block">
+            <span class="line"
+              ><span class="ck">const</span> original = {
+              <span class="cp">name</span>: <span class="cs">"Alice"</span>,
+              <span class="cp">address</span>: { <span class="cp">city</span>:
+              <span class="cs">"Delhi"</span> } };</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// 1. structuredClone() — modern, recommended (ES2022+)</span
+              ></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> deep1 =
+              structuredClone(original);</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// 2. JSON trick — simple but has caveats</span
+              ></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> deep2 =
+              JSON.parse(JSON.stringify(original));</span
+            >
+            <span class="line"
+              ><span class="cm"
+                >// ⚠️ JSON trick LOSES: undefined, functions, Symbol, Date,
+                RegExp, Map, Set</span
+              ></span
+            >
+            <span class="line"></span>
+            <span class="line"
+              >deep1.address.city = <span class="cs">"Mumbai"</span>;</span
+            >
+            <span class="line"
+              >console.log(original.address.city);
+              <span class="cm">// → "Delhi" ✓ (truly independent)</span></span
+            >
+            <span class="line"
+              >console.log(deep1.address.city);
+              <span class="cm">// → "Mumbai"</span></span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// structuredClone handles more types than JSON</span
+              ></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> withDate = {
+              <span class="cp">date</span>: <span class="ck">new</span> Date(),
+              <span class="cp">map</span>:
+              <span class="ck">new</span> Map([[<span class="cs">"a"</span>,
+              <span class="cn">1</span>]]) };</span
+            >
+            <span class="line"
+              ><span class="ck">const</span> cloned = structuredClone(withDate);
+              <span class="cm">// ✓ Date stays Date, Map stays Map</span></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> broken =
+              JSON.parse(JSON.stringify(withDate));
+              <span class="cm">// ✗ Date → string, Map → {}</span></span
+            >
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q4: What is the difference between null and undefined?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          <strong>undefined</strong>: set automatically by the JS engine when a variable is declared but not yet assigned, or when a function returns nothing, or when an object property doesn't exist.<br><br>
-          <strong>null</strong>: set intentionally by the developer to signal "no value here on purpose". Think of <code>null</code> as an <em>empty box on purpose</em> and <code>undefined</code> as a box that hasn't been set up yet.
+        <div id="tab-freeze" class="tab-panel">
+          <div class="callout callout-amber">
+            <span class="callout-icon">⚠</span>
+            <span
+              ><strong>Object.freeze()</strong> prevents adding, removing, or
+              editing properties. But it is <em>shallow</em> — nested objects
+              remain mutable.</span
+            >
+          </div>
+          <div class="code-block">
+            <span class="line"
+              ><span class="ck">const</span> config = Object.freeze({
+              <span class="cp">env</span>: <span class="cs">"production"</span>,
+              <span class="cp">port</span>:
+              <span class="cn">3000</span> });</span
+            >
+            <span class="line"></span>
+            <span class="line"
+              >config.port = <span class="cn">8080</span>;
+              <span class="cm"
+                >// silently fails (throws TypeError in strict mode)</span
+              ></span
+            >
+            <span class="line"
+              >console.log(config.port);
+              <span class="cm">// → 3000 (unchanged)</span></span
+            >
+            <span class="line"></span>
+            <span class="line"
+              ><span class="cm"
+                >// ⚠️ Freeze is SHALLOW — nested objects are still
+                mutable</span
+              ></span
+            >
+            <span class="line"
+              ><span class="ck">const</span> obj = Object.freeze({
+              <span class="cp">nested</span>: { <span class="cp">val</span>:
+              <span class="cn">1</span> } });</span
+            >
+            <span class="line"
+              >obj.nested.val = <span class="cn">99</span>;
+              <span class="cm">// ← this DOES work!</span></span
+            >
+            <span class="line"
+              >console.log(obj.nested.val);
+              <span class="cm">// → 99 (nested was not frozen)</span></span
+            >
+            <span class="line"></span>
+            <span class="line"><span class="cm">// Check if frozen</span></span>
+            <span class="line"
+              >console.log(Object.isFrozen(config));
+              <span class="cm">// → true</span></span
+            >
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q5: How do you safely deep-clone an object?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          Use <code>structuredClone(obj)</code> — modern, built-in, handles Date, Map, Set, ArrayBuffer, etc. correctly (ES2022+).<br><br>
-          Avoid the JSON trick (<code>JSON.parse(JSON.stringify(obj))</code>) when the object contains <code>undefined</code>, functions, Symbols, Dates, Maps, or Sets — these are silently lost or corrupted.
+      <div class="divider"></div>
+
+      <!-- ── SECTION 4: typeof ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">4</div>
+          <h2>typeof — quick reference</h2>
         </div>
-      </div>
-    </div>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q6: Are arrays primitives or reference types? How do you check if something is an array?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          Arrays are <strong>reference types</strong> (objects). <code>typeof []</code> returns <code>"object"</code>, not <code>"array"</code>.<br><br>
-          To check for arrays use <code>Array.isArray(value)</code> — this is the most reliable method. You can also use <code>value instanceof Array</code> or <code>Object.prototype.toString.call(value) === "[object Array]"</code>.
+        <table class="typeof-table">
+          <thead>
+            <tr>
+              <th>Expression</th>
+              <th>Result</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>typeof "hello"</td>
+              <td>"string"</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>typeof 42</td>
+              <td>"number"</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>typeof 3.14</td>
+              <td>"number"</td>
+              <td>all numbers are the same type</td>
+            </tr>
+            <tr class="warn-row">
+              <td>typeof NaN</td>
+              <td>"number"</td>
+              <td>⚠ NaN is still type number!</td>
+            </tr>
+            <tr>
+              <td>typeof true</td>
+              <td>"boolean"</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>typeof undefined</td>
+              <td>"undefined"</td>
+              <td></td>
+            </tr>
+            <tr class="warn-row">
+              <td>typeof null</td>
+              <td>"object"</td>
+              <td>⚠ famous bug — use val === null</td>
+            </tr>
+            <tr>
+              <td>typeof Symbol()</td>
+              <td>"symbol"</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>typeof 9007n</td>
+              <td>"bigint"</td>
+              <td></td>
+            </tr>
+            <tr class="warn-row">
+              <td>typeof {}</td>
+              <td>"object"</td>
+              <td></td>
+            </tr>
+            <tr class="warn-row">
+              <td>typeof []</td>
+              <td>"object"</td>
+              <td>⚠ arrays are objects! use Array.isArray()</td>
+            </tr>
+            <tr>
+              <td>typeof function(){}</td>
+              <td>"function"</td>
+              <td>special case for functions</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="code-block">
+          <span class="line"
+            ><span class="cm">// Better checks for arrays and null</span></span
+          >
+          <span class="line"
+            >Array.isArray([]); <span class="cm">// → true ✓</span></span
+          >
+          <span class="line"
+            >value === <span class="ck">null</span>;
+            <span class="cm">// → true ✓</span></span
+          >
+          <span class="line"
+            >value <span class="ck">instanceof</span> Array;
+            <span class="cm">// → true ✓</span></span
+          >
+          <span class="line"
+            >Object.prototype.toString.call([]);
+            <span class="cm"
+              >// → "[object Array]" ✓ (most reliable)</span
+            ></span
+          >
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div class="qa-card" onclick="toggleQA(this)">
-      <div class="qa-question">
-        <span class="q-text">Q7: What happens when you pass an object to a function and reassign the parameter?</span>
-        <div class="qa-toggle">+</div>
-      </div>
-      <div class="qa-answer">
-        <div class="qa-answer-inner">
-          Reassigning the parameter inside the function does <strong>not</strong> affect the original variable — it only changes where the local binding points. However, mutating a <em>property</em> of the object (<code>obj.name = "x"</code>) DOES affect the original because both the outer variable and the parameter reference the same object in memory.
+      <div class="divider"></div>
+
+      <!-- ── SECTION 5: Functions ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">5</div>
+          <h2>Passing to functions — a key gotcha</h2>
         </div>
-      </div>
+
+        <div class="compare-grid">
+          <div class="compare-card">
+            <div class="badge badge-prim" style="margin: 0 0 10px">
+              primitive — pass by value
+            </div>
+            <div class="code-block" style="margin: 0">
+              <span class="line"
+                ><span class="ck">function</span>
+                <span class="cf">double</span>(n) {</span
+              >
+              <span class="line">
+                n = n * <span class="cn">2</span>;
+                <span class="cm">// only local</span></span
+              >
+              <span class="line">}</span>
+              <span class="line"
+                ><span class="ck">let</span> num =
+                <span class="cn">5</span>;</span
+              >
+              <span class="line"><span class="cf">double</span>(num);</span>
+              <span class="line"
+                >console.log(num); <span class="cm">// → 5 ✓</span></span
+              >
+            </div>
+          </div>
+          <div class="compare-card">
+            <div class="badge badge-ref" style="margin: 0 0 10px">
+              object — pass by reference
+            </div>
+            <div class="code-block" style="margin: 0">
+              <span class="line"
+                ><span class="ck">function</span>
+                <span class="cf">rename</span>(obj) {</span
+              >
+              <span class="line">
+                obj.name = <span class="cs">"New"</span>;
+                <span class="cm">// mutates!</span></span
+              >
+              <span class="line">}</span>
+              <span class="line"
+                ><span class="ck">let</span> user = {
+                <span class="cp">name</span>:
+                <span class="cs">"Old"</span> };</span
+              >
+              <span class="line"><span class="cf">rename</span>(user);</span>
+              <span class="line"
+                >console.log(user.name);
+                <span class="cm">// → "New" !</span></span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-red">
+          <span class="callout-icon">✗</span>
+          <span
+            ><strong>Reassigning the parameter variable</strong> inside a
+            function does NOT affect the original — only mutating the object's
+            properties does.</span
+          >
+        </div>
+
+        <div class="code-block">
+          <span class="line"
+            ><span class="ck">function</span>
+            <span class="cf">tryReassign</span>(obj) {</span
+          >
+          <span class="line">
+            obj = { <span class="cp">name</span>:
+            <span class="cs">"Brand New"</span> };
+            <span class="cm">// reassigns the LOCAL binding only</span></span
+          >
+          <span class="line">}</span>
+          <span class="line"
+            ><span class="ck">let</span> person = {
+            <span class="cp">name</span>:
+            <span class="cs">"Alice"</span> };</span
+          >
+          <span class="line"><span class="cf">tryReassign</span>(person);</span>
+          <span class="line"
+            >console.log(person.name);
+            <span class="cm">// → "Alice" (original untouched!)</span></span
+          >
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ── SECTION 6: Q&A ── -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-num">6</div>
+          <h2>Interview Q&amp;A — click to reveal</h2>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q1: How many primitive types does JS have? Name them all.</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              <strong>7 primitives:</strong> <code>string</code>,
+              <code>number</code>, <code>boolean</code>, <code>null</code>,
+              <code>undefined</code>, <code>symbol</code>, <code>bigint</code>.
+              Everything else (objects, arrays, functions, maps, sets, dates…)
+              is a reference type.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q2: What does <code>typeof null</code> return and why?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              It returns <code>"object"</code> — a well-known bug from the
+              original JS implementation preserved for backward compatibility.
+              <code>null</code> is actually a primitive. To check for null
+              reliably, use <code>value === null</code>.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q3: Will <code>{a:1} === {a:1}</code> be true or false?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              <strong>false</strong> — objects are compared by reference, not by
+              content. These two object literals are stored at different memory
+              addresses. To compare by content use
+              <code>JSON.stringify(a) === JSON.stringify(b)</code> (simple
+              cases) or a deep-equal utility for robust comparison.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q4: What is the difference between null and undefined?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              <strong>undefined</strong>: set automatically by the JS engine
+              when a variable is declared but not yet assigned, or when a
+              function returns nothing, or when an object property doesn't
+              exist.<br /><br />
+              <strong>null</strong>: set intentionally by the developer to
+              signal "no value here on purpose". Think of <code>null</code> as
+              an <em>empty box on purpose</em> and <code>undefined</code> as a
+              box that hasn't been set up yet.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q5: How do you safely deep-clone an object?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              Use <code>structuredClone(obj)</code> — modern, built-in, handles
+              Date, Map, Set, ArrayBuffer, etc. correctly (ES2022+).<br /><br />
+              Avoid the JSON trick
+              (<code>JSON.parse(JSON.stringify(obj))</code>) when the object
+              contains <code>undefined</code>, functions, Symbols, Dates, Maps,
+              or Sets — these are silently lost or corrupted.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q6: Are arrays primitives or reference types? How do you check if
+              something is an array?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              Arrays are <strong>reference types</strong> (objects).
+              <code>typeof []</code> returns <code>"object"</code>, not
+              <code>"array"</code>.<br /><br />
+              To check for arrays use <code>Array.isArray(value)</code> — this
+              is the most reliable method. You can also use
+              <code>value instanceof Array</code> or
+              <code
+                >Object.prototype.toString.call(value) === "[object
+                Array]"</code
+              >.
+            </div>
+          </div>
+        </div>
+
+        <div class="qa-card" onclick="toggleQA(this)">
+          <div class="qa-question">
+            <span class="q-text"
+              >Q7: What happens when you pass an object to a function and
+              reassign the parameter?</span
+            >
+            <div class="qa-toggle">+</div>
+          </div>
+          <div class="qa-answer">
+            <div class="qa-answer-inner">
+              Reassigning the parameter inside the function does
+              <strong>not</strong> affect the original variable — it only
+              changes where the local binding points. However, mutating a
+              <em>property</em> of the object (<code>obj.name = "x"</code>) DOES
+              affect the original because both the outer variable and the
+              parameter reference the same object in memory.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <footer class="footer">
+        JS Interview Prep · Primitives vs Reference Types · Revise offline
+        anytime
+      </footer>
     </div>
-  </section>
 
-  <div class="divider"></div>
+    <script>
+      function showTab(event, name) {
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+        event.target.classList.add("active");
+      }
 
-  <footer class="footer">
-    JS Interview Prep · Primitives vs Reference Types · Revise offline anytime
-  </footer>
-
-</div>
-
-<script>
-  function showTab(event, name) {
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    event.target.classList.add('active');
-  }
-
-  function toggleQA(card) {
-    const isOpen = card.classList.contains('open');
-    card.classList.toggle('open', !isOpen);
-  }
-</script>
-</body>
+      function toggleQA(card) {
+        const isOpen = card.classList.contains("open");
+        card.classList.toggle("open", !isOpen);
+      }
+    </script>
+  </body>
 </html>
