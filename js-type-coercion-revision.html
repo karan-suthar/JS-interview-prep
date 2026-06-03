@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Type Coercion — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #7c6aff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+  }
+
+  .header-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(124,106,255,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(124,106,255,0.3);
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 60%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3rem; animation: fadeUp 0.4s ease both; }
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.10s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+  .section:nth-child(4) { animation-delay: 0.20s; }
+  .section:nth-child(5) { animation-delay: 0.25s; }
+  .section:nth-child(6) { animation-delay: 0.30s; }
+  .section:nth-child(7) { animation-delay: 0.35s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb86c, #ff6b6b);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head);
+    font-size: 14px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-head);
+    font-size: 20px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.01em;
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.85;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .code-block .line { display: block; }
+  .cm  { color: #555a6e; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .cb  { color: #ffb86c; }   /* boolean / special */
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 13.5px;
+    margin-bottom: 0.85rem;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body);
+    font-size: 13px; padding: 6px 16px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(255,184,108,0.15); color: #ffd49a; border-color: rgba(255,184,108,0.4); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Big comparison table ── */
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .cmp-table th {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3);
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border2);
+    text-align: left;
+    background: var(--bg3);
+  }
+  .cmp-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text2);
+    vertical-align: middle;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .cmp-table td.expr  { color: var(--yellow); }
+  .cmp-table td.res-t { color: var(--teal); font-weight: 500; }
+  .cmp-table td.res-f { color: var(--red); font-weight: 500; }
+  .cmp-table td.note  { font-family: var(--font-body); font-size: 12px; color: var(--text3); }
+  .cmp-table td.warn  { color: var(--amber); }
+
+  /* ── Two-col grid ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Truthy / Falsy boxes ── */
+  .truth-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+  }
+  .truth-box-title {
+    font-family: var(--font-head);
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .truth-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .dot-green { background: var(--teal); }
+  .dot-red   { background: var(--red);  }
+
+  .truth-pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px; padding: 4px 10px;
+    border-radius: 5px; margin: 3px 3px 3px 0;
+  }
+  .pill-falsy  { background: rgba(255,107,107,0.12); color: #ff9a9a; border: 1px solid rgba(255,107,107,0.2); }
+  .pill-truthy { background: rgba(92,255,176,0.10); color: #7affc4; border: 1px solid rgba(92,255,176,0.2); }
+
+  /* ── typeof / instanceof table ── */
+  .op-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; margin-bottom: 1rem;
+  }
+  .op-table th {
+    font-family: var(--font-body);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); padding: 7px 12px;
+    border-bottom: 1px solid var(--border2);
+    text-align: left; background: var(--bg3);
+  }
+  .op-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .op-table tr:last-child td { border-bottom: none; }
+  .op-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .op-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--yellow); }
+  .op-table td:nth-child(2) { font-family: var(--font-mono); font-size: 12px; color: var(--teal); }
+  .op-table td:last-child { font-size: 12px; color: var(--text3); }
+  .op-table td.warn-val { color: var(--amber) !important; }
+
+  /* ── Coercion flow diagram ── */
+  .flow-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+  }
+  .flow-title {
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+  .flow-steps {
+    display: flex; align-items: stretch;
+    gap: 0; flex-wrap: wrap;
+  }
+  .flow-step {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.6rem 0.9rem;
+    font-size: 12px;
+    text-align: center;
+    min-width: 120px;
+    flex: 1;
+  }
+  .flow-step .step-label { color: var(--text3); font-size: 10px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+  .flow-step .step-val { font-family: var(--font-mono); color: var(--text); font-size: 13px; }
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 8px; color: var(--text3); font-size: 16px; flex-shrink: 0;
+  }
+  .flow-rule {
+    font-size: 10px; color: var(--amber);
+    margin-top: 4px; font-family: var(--font-mono);
+  }
+
+  /* ── Compare cards for == vs === ── */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .vs-grid { grid-template-columns: 1fr; } }
+  .vs-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+  }
+  .vs-card-title {
+    font-family: var(--font-mono);
+    font-size: 18px; font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .vs-card-sub { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
+  .vs-loose .vs-card-title { color: var(--amber); }
+  .vs-strict .vs-card-title { color: var(--teal); }
+  .vs-rule {
+    font-size: 12.5px; color: var(--text2);
+    margin-bottom: 6px; padding-left: 10px;
+    border-left: 2px solid var(--border2);
+    line-height: 1.6;
+  }
+
+  /* ── instanceof section ── */
+  .badge-sm {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 10px;
+    padding: 2px 7px; border-radius: 4px;
+    margin-left: 8px; vertical-align: middle;
+  }
+  .badge-orange { background: rgba(255,184,108,0.15); color: var(--amber); border: 1px solid rgba(255,184,108,0.3); }
+  .badge-teal   { background: rgba(92,255,176,0.12);  color: var(--teal);  border: 1px solid rgba(92,255,176,0.25); }
+
+  /* ── Q&A Section ── */
+  .qa-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .qa-question {
+    padding: 0.9rem 1rem;
+    font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; }
+  .qa-toggle {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text3); flex-shrink: 0;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle {
+    transform: rotate(45deg);
+    background: rgba(255,184,108,0.12);
+    border-color: rgba(255,184,108,0.3);
+    color: var(--amber);
+  }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+  .qa-card.open .qa-answer { max-height: 800px; }
+  .qa-answer-inner {
+    padding: 0.85rem 1rem 1rem;
+    font-size: 13.5px; color: var(--text2); line-height: 1.75;
+    border-top: 1px solid var(--border);
+  }
+  .qa-answer-inner code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .qa-answer-inner strong { color: var(--text); }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; font-size: 12px; color: var(--text3);
+    padding-top: 1rem; border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+  /* inline mono */
+  ic {
+    font-family: var(--font-mono); font-size: 12.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px;
+    color: var(--yellow); display: inline;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep</div>
+    <h1>Type Coercion &amp; Operators</h1>
+    <p>== vs ===, truthy/falsy, type coercion rules, typeof and instanceof — all in one page</p>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 1 — What is Type Coercion?
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What is Type Coercion?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Type coercion</strong> is JavaScript automatically (implicitly) converting a value from one type to another when an operation requires it — e.g. comparing a string to a number, or adding a boolean to a string.</span>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div style="font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Implicit (automatic by JS)</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="cs">"5"</span> + <span class="cn">3</span>       <span class="cm">// → "53"  (+ prefers string)</span></span>
+<span class="line"><span class="cs">"5"</span> - <span class="cn">3</span>       <span class="cm">// → 2     (- forces number)</span></span>
+<span class="line"><span class="ck">true</span> + <span class="cn">1</span>     <span class="cm">// → 2     (true → 1)</span></span>
+<span class="line"><span class="ck">false</span> + <span class="cn">1</span>    <span class="cm">// → 1     (false → 0)</span></span>
+<span class="line"><span class="ck">null</span> + <span class="cn">1</span>     <span class="cm">// → 1     (null → 0)</span></span>
+<span class="line"><span class="ck">undefined</span> + <span class="cn">1</span> <span class="cm">// → NaN  (undefined → NaN)</span></span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Explicit (you convert it)</div>
+        <div class="code-block" style="margin:0">
+<span class="line">Number(<span class="cs">"5"</span>)       <span class="cm">// → 5</span></span>
+<span class="line">String(<span class="cn">42</span>)        <span class="cm">// → "42"</span></span>
+<span class="line">Boolean(<span class="cn">0</span>)       <span class="cm">// → false</span></span>
+<span class="line">parseInt(<span class="cs">"3.9"</span>)  <span class="cm">// → 3</span></span>
+<span class="line">parseFloat(<span class="cs">"3.9"</span>) <span class="cm">// → 3.9</span></span>
+<span class="line">+<span class="cs">"42"</span>            <span class="cm">// → 42  (unary + trick)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- + operator coercion flow -->
+    <div class="flow-diagram">
+      <div class="flow-title">How the + operator decides</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-label">Operands</div>
+          <div class="step-val">"5" + 3</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">Any string?</div>
+          <div class="step-val">YES</div>
+          <div class="flow-rule">→ string concat</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">3 coerced to</div>
+          <div class="step-val">"3"</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">Result</div>
+          <div class="step-val" style="color:var(--teal)">"53"</div>
+        </div>
+      </div>
+      <div style="margin-top:14px" class="flow-steps">
+        <div class="flow-step">
+          <div class="step-label">Operands</div>
+          <div class="step-val">"5" - 3</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">- operator</div>
+          <div class="step-val">numeric</div>
+          <div class="flow-rule">→ coerce both</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">"5" coerced to</div>
+          <div class="step-val">5</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">Result</div>
+          <div class="step-val" style="color:var(--teal)">2</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 2 — == vs ===
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>== vs === — Loose vs Strict Equality</h2>
+    </div>
+
+    <div class="vs-grid">
+      <div class="vs-card vs-loose">
+        <div class="vs-card-title">==</div>
+        <div class="vs-card-sub">Loose / Abstract equality (with coercion)</div>
+        <div class="vs-rule">Converts types before comparing</div>
+        <div class="vs-rule">Follows the Abstract Equality Comparison algorithm</div>
+        <div class="vs-rule">Treats null == undefined as true</div>
+        <div class="vs-rule">Can produce surprising results</div>
+        <div class="vs-rule">Avoid in production code</div>
+      </div>
+      <div class="vs-card vs-strict">
+        <div class="vs-card-title">===</div>
+        <div class="vs-card-sub">Strict equality (no coercion)</div>
+        <div class="vs-rule">No type conversion — types MUST match first</div>
+        <div class="vs-rule">Predictable, fast, safe</div>
+        <div class="vs-rule">null === undefined is false</div>
+        <div class="vs-rule">Always prefer this in real code</div>
+        <div class="vs-rule">NaN === NaN is still false (use Number.isNaN)</div>
+      </div>
+    </div>
+
+    <!-- Loose == examples table -->
+    <div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px;">Loose == results — the ones that trip people up</div>
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Expression</th>
+          <th>Result</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="expr">0 == false</td><td class="res-t">true</td><td class="note">false → 0, then 0 == 0</td></tr>
+        <tr><td class="expr">1 == true</td><td class="res-t">true</td><td class="note">true → 1, then 1 == 1</td></tr>
+        <tr><td class="expr">2 == true</td><td class="res-f">false</td><td class="note warn">true → 1, then 2 != 1 ← gotcha!</td></tr>
+        <tr><td class="expr">"" == false</td><td class="res-t">true</td><td class="note">"" → 0, false → 0</td></tr>
+        <tr><td class="expr">"0" == false</td><td class="res-t">true</td><td class="note">"0" → 0, false → 0</td></tr>
+        <tr><td class="expr">null == undefined</td><td class="res-t">true</td><td class="note">Special rule — only these two are == to each other</td></tr>
+        <tr><td class="expr">null == false</td><td class="res-f">false</td><td class="note">null only == null or undefined</td></tr>
+        <tr><td class="expr">null == 0</td><td class="res-f">false</td><td class="note">null only == null or undefined ← gotcha!</td></tr>
+        <tr><td class="expr">NaN == NaN</td><td class="res-f">false</td><td class="note warn">NaN never equals anything, even itself!</td></tr>
+        <tr><td class="expr">[] == false</td><td class="res-t">true</td><td class="note">[] → "" → 0, false → 0</td></tr>
+        <tr><td class="expr">[] == []</td><td class="res-f">false</td><td class="note">Different references (object comparison)</td></tr>
+        <tr><td class="expr">"5" == 5</td><td class="res-t">true</td><td class="note">"5" coerced to number 5</td></tr>
+        <tr><td class="expr">undefined == false</td><td class="res-f">false</td><td class="note">undefined only == null or undefined</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Strict === examples table -->
+    <div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px;margin-top:1.25rem;">Strict === — always check type first</div>
+    <table class="cmp-table">
+      <thead>
+        <tr><th>Expression</th><th>Result</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="expr">0 === false</td><td class="res-f">false</td><td class="note">number !== boolean — different types</td></tr>
+        <tr><td class="expr">"5" === 5</td><td class="res-f">false</td><td class="note">string !== number</td></tr>
+        <tr><td class="expr">null === undefined</td><td class="res-f">false</td><td class="note">null !== undefined</td></tr>
+        <tr><td class="expr">null === null</td><td class="res-t">true</td><td class="note">same type and value</td></tr>
+        <tr><td class="expr">NaN === NaN</td><td class="res-f">false</td><td class="note warn">NaN is never equal to anything — use Number.isNaN()</td></tr>
+        <tr><td class="expr">5 === 5</td><td class="res-t">true</td><td class="note">same type, same value</td></tr>
+        <tr><td class="expr">"hi" === "hi"</td><td class="res-t">true</td><td class="note">same type, same value</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// The == Abstract Equality algorithm (simplified)</span></span>
+<span class="line"><span class="cm">// If types are same → compare values directly (like ===)</span></span>
+<span class="line"><span class="cm">// null == undefined → true (special rule)</span></span>
+<span class="line"><span class="cm">// number == string  → convert string to number, compare</span></span>
+<span class="line"><span class="cm">// boolean == anything → convert boolean to number first</span></span>
+<span class="line"><span class="cm">// object == primitive → call ToPrimitive on object first</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// NaN — the one that NEVER equals itself</span></span>
+<span class="line">console.log(<span class="cf">Number</span>.isNaN(<span class="cf">NaN</span>));      <span class="cm">// → true  ✓</span></span>
+<span class="line">console.log(<span class="cf">Number</span>.isNaN(<span class="cs">"hello"</span>));  <span class="cm">// → false ✓ (only checks actual NaN)</span></span>
+<span class="line">console.log(isNaN(<span class="cs">"hello"</span>));        <span class="cm">// → true  ✗ (coerces first — unreliable!)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Safe null check pattern</span></span>
+<span class="line"><span class="ck">if</span> (val == <span class="ck">null</span>) { <span class="cm">/* catches both null AND undefined */</span> }</span>
+<span class="line"><span class="ck">if</span> (val === <span class="ck">null</span> || val === <span class="ck">undefined</span>) { <span class="cm">/* same but explicit */</span> }</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 3 — Truthy / Falsy
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Truthy &amp; Falsy Values</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>In a boolean context (if, while, ternary, ||, &amp;&amp;), JS coerces values to true or false. There are exactly <strong>8 falsy values</strong> — everything else is truthy.</span>
+    </div>
+
+    <div class="two-col">
+      <div class="truth-box">
+        <div class="truth-box-title">
+          <div class="truth-dot dot-red"></div>
+          Falsy Values <span style="font-size:12px;color:var(--text3);font-weight:400">(only 8!)</span>
+        </div>
+        <div>
+          <span class="truth-pill pill-falsy">false</span>
+          <span class="truth-pill pill-falsy">0</span>
+          <span class="truth-pill pill-falsy">-0</span>
+          <span class="truth-pill pill-falsy">0n</span>
+          <span class="truth-pill pill-falsy">""</span>
+          <span class="truth-pill pill-falsy">''</span>
+          <span class="truth-pill pill-falsy">``</span>
+          <span class="truth-pill pill-falsy">null</span>
+          <span class="truth-pill pill-falsy">undefined</span>
+          <span class="truth-pill pill-falsy">NaN</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px;">Note: 0n is BigInt zero; "" '' `` are empty strings (all three quote styles)</div>
+      </div>
+      <div class="truth-box">
+        <div class="truth-box-title">
+          <div class="truth-dot dot-green"></div>
+          Truthy Values <span style="font-size:12px;color:var(--text3);font-weight:400">(everything else)</span>
+        </div>
+        <div>
+          <span class="truth-pill pill-truthy">"0"</span>
+          <span class="truth-pill pill-truthy">"false"</span>
+          <span class="truth-pill pill-truthy">[]</span>
+          <span class="truth-pill pill-truthy">{}</span>
+          <span class="truth-pill pill-truthy">1</span>
+          <span class="truth-pill pill-truthy">-1</span>
+          <span class="truth-pill pill-truthy">function(){}</span>
+          <span class="truth-pill pill-truthy">Infinity</span>
+          <span class="truth-pill pill-truthy">new Date()</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px;">⚠ "0", "false", [], {} are ALL truthy — common interview trap!</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Falsy in action</span></span>
+<span class="line"><span class="ck">if</span> (<span class="cn">0</span>)         console.log(<span class="cs">"runs"</span>); <span class="cm">// ✗ doesn't run</span></span>
+<span class="line"><span class="ck">if</span> (<span class="cs">""</span>)        console.log(<span class="cs">"runs"</span>); <span class="cm">// ✗ doesn't run</span></span>
+<span class="line"><span class="ck">if</span> (<span class="ck">null</span>)      console.log(<span class="cs">"runs"</span>); <span class="cm">// ✗ doesn't run</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Truthy surprises — the common interview traps</span></span>
+<span class="line"><span class="ck">if</span> (<span class="cs">"0"</span>)       console.log(<span class="cs">"runs"</span>); <span class="cm">// ✓ runs! "0" is truthy (non-empty string)</span></span>
+<span class="line"><span class="ck">if</span> ([])        console.log(<span class="cs">"runs"</span>); <span class="cm">// ✓ runs! empty array is truthy</span></span>
+<span class="line"><span class="ck">if</span> ({})        console.log(<span class="cs">"runs"</span>); <span class="cm">// ✓ runs! empty object is truthy</span></span>
+<span class="line"><span class="ck">if</span> (<span class="cs">"false"</span>)   console.log(<span class="cs">"runs"</span>); <span class="cm">// ✓ runs! non-empty string</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// || and && use truthy/falsy (short-circuit evaluation)</span></span>
+<span class="line"><span class="ck">const</span> name = <span class="ck">null</span> || <span class="cs">"Default"</span>;  <span class="cm">// → "Default"</span></span>
+<span class="line"><span class="ck">const</span> val  = <span class="cn">0</span>    || <span class="cn">42</span>;        <span class="cm">// → 42  (0 is falsy)</span></span>
+<span class="line"><span class="ck">const</span> user = { <span class="cp">name</span>: <span class="cs">"Alice"</span> };</span>
+<span class="line"><span class="ck">const</span> n    = user && user.name;  <span class="cm">// → "Alice" (safe property access)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ?? (Nullish Coalescing) — only catches null/undefined, NOT 0 or ""</span></span>
+<span class="line"><span class="ck">const</span> score = <span class="cn">0</span> ?? <span class="cn">100</span>;  <span class="cm">// → 0  (0 is not null/undefined)</span></span>
+<span class="line"><span class="ck">const</span> score2= <span class="cn">0</span> || <span class="cn">100</span>;  <span class="cm">// → 100 (0 is falsy — || treats 0 as missing!)</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Use <strong>??</strong> (nullish coalescing) instead of <strong>||</strong> when you want to allow legitimate falsy values like <ic>0</ic> or <ic>""</ic> as valid defaults. <ic>||</ic> treats them as missing!</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 4 — typeof operator
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>The <ic style="font-size:16px;color:var(--yellow)">typeof</ic> operator</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>typeof</strong> returns a string describing the type of its operand. It never throws — even on undeclared variables (returns "undefined"). Works at runtime without evaluating the value.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'typeof-all')">All results</button>
+      <button class="tab-btn" onclick="showTab(event,'typeof-gotchas')">Gotchas</button>
+      <button class="tab-btn" onclick="showTab(event,'typeof-patterns')">Useful patterns</button>
+    </div>
+
+    <div id="tab-typeof-all" class="tab-panel active">
+      <table class="op-table">
+        <thead><tr><th>Expression</th><th>typeof result</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>typeof "hello"</td><td>"string"</td><td></td></tr>
+          <tr><td>typeof 42</td><td>"number"</td><td></td></tr>
+          <tr><td>typeof 3.14</td><td>"number"</td><td>All numbers are the same type</td></tr>
+          <tr><td>typeof NaN</td><td class="warn-val">"number"</td><td>⚠ NaN is typeof "number"!</td></tr>
+          <tr><td>typeof Infinity</td><td>"number"</td><td></td></tr>
+          <tr><td>typeof true</td><td>"boolean"</td><td></td></tr>
+          <tr><td>typeof undefined</td><td>"undefined"</td><td></td></tr>
+          <tr><td>typeof undeclaredVar</td><td>"undefined"</td><td>Safe — no ReferenceError thrown</td></tr>
+          <tr><td>typeof null</td><td class="warn-val">"object"</td><td>⚠ Famous bug — null is NOT an object</td></tr>
+          <tr><td>typeof Symbol()</td><td>"symbol"</td><td></td></tr>
+          <tr><td>typeof 42n</td><td>"bigint"</td><td></td></tr>
+          <tr><td>typeof {}</td><td>"object"</td><td></td></tr>
+          <tr><td>typeof []</td><td class="warn-val">"object"</td><td>⚠ Arrays return "object" — use Array.isArray()</td></tr>
+          <tr><td>typeof new Date()</td><td>"object"</td><td></td></tr>
+          <tr><td>typeof null</td><td class="warn-val">"object"</td><td>⚠ Always check null with === null</td></tr>
+          <tr><td>typeof function(){}</td><td>"function"</td><td>Functions are special — get their own type string</td></tr>
+          <tr><td>typeof class Foo{}</td><td>"function"</td><td>Classes are functions under the hood</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab-typeof-gotchas" class="tab-panel">
+      <div class="callout callout-red">
+        <span class="callout-icon">✗</span>
+        <span>These are the typeof behaviours that appear in interviews — know them cold.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Gotcha 1 — typeof null</span></span>
+<span class="line"><span class="ck">typeof</span> <span class="ck">null</span>       <span class="cm">// → "object"  ← historic bug, never fixed</span></span>
+<span class="line"><span class="ck">null</span> === <span class="ck">null</span>    <span class="cm">// → true  ← correct way to check for null</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Gotcha 2 — typeof NaN</span></span>
+<span class="line"><span class="ck">typeof</span> NaN       <span class="cm">// → "number"  ← "Not a Number" is of type number!</span></span>
+<span class="line"><span class="cf">Number</span>.isNaN(NaN) <span class="cm">// → true  ← use this instead</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Gotcha 3 — typeof array</span></span>
+<span class="line"><span class="ck">typeof</span> []        <span class="cm">// → "object"  ← can't detect arrays with typeof</span></span>
+<span class="line"><span class="cf">Array</span>.isArray([]) <span class="cm">// → true  ← correct way</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Gotcha 4 — undeclared variable (typeof is SAFE here)</span></span>
+<span class="line"><span class="ck">typeof</span> notDeclared <span class="cm">// → "undefined"  (no ReferenceError!)</span></span>
+<span class="line">notDeclared        <span class="cm">// → ReferenceError: notDeclared is not defined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Gotcha 5 — class is a function</span></span>
+<span class="line"><span class="ck">typeof</span> <span class="ck">class</span> Foo {} <span class="cm">// → "function"</span></span>
+      </div>
+    </div>
+
+    <div id="tab-typeof-patterns" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Safe type-guard pattern</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">isString</span>(val) { <span class="ck">return</span> <span class="ck">typeof</span> val === <span class="cs">"string"</span>; }</span>
+<span class="line"><span class="ck">function</span> <span class="cf">isNumber</span>(val) { <span class="ck">return</span> <span class="ck">typeof</span> val === <span class="cs">"number"</span> &amp;&amp; !<span class="cf">Number</span>.isNaN(val); }</span>
+<span class="line"><span class="ck">function</span> <span class="cf">isFunction</span>(val) { <span class="ck">return</span> <span class="ck">typeof</span> val === <span class="cs">"function"</span>; }</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Check for optional feature (safe with typeof)</span></span>
+<span class="line"><span class="ck">if</span> (<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span>) {</span>
+<span class="line">  <span class="cm">// running in a browser</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Most reliable type detection — Object.prototype.toString</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">getType</span> = val => Object.prototype.toString.call(val).slice(<span class="cn">8</span>, -<span class="cn">1</span>).toLowerCase();</span>
+<span class="line"><span class="cf">getType</span>([]);          <span class="cm">// → "array"</span></span>
+<span class="line"><span class="cf">getType</span>(<span class="ck">null</span>);        <span class="cm">// → "null"</span></span>
+<span class="line"><span class="cf">getType</span>(<span class="ck">new</span> Date());  <span class="cm">// → "date"</span></span>
+<span class="line"><span class="cf">getType</span>(/regex/);     <span class="cm">// → "regexp"</span></span>
+<span class="line"><span class="cf">getType</span>({});          <span class="cm">// → "object"</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 5 — instanceof operator
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>The <ic style="font-size:16px;color:var(--yellow)">instanceof</ic> operator</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>instanceof</strong> checks whether an object was created from a particular constructor — by walking the object's <em>prototype chain</em>. Returns <ic>true</ic> or <ic>false</ic>. Only works with objects (reference types), not primitives.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// instanceof basics</span></span>
+<span class="line">[] <span class="ck">instanceof</span> Array      <span class="cm">// → true</span></span>
+<span class="line">[] <span class="ck">instanceof</span> Object     <span class="cm">// → true  (Array extends Object!)</span></span>
+<span class="line">{} <span class="ck">instanceof</span> Object     <span class="cm">// → true</span></span>
+<span class="line"><span class="ck">function</span>(){} <span class="ck">instanceof</span> Function <span class="cm">// → true</span></span>
+<span class="line"><span class="ck">new</span> Date() <span class="ck">instanceof</span> Date <span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// instanceof with classes</span></span>
+<span class="line"><span class="ck">class</span> Animal {}</span>
+<span class="line"><span class="ck">class</span> Dog <span class="ck">extends</span> Animal {}</span>
+<span class="line"><span class="ck">const</span> d = <span class="ck">new</span> Dog();</span>
+<span class="line">d <span class="ck">instanceof</span> Dog     <span class="cm">// → true</span></span>
+<span class="line">d <span class="ck">instanceof</span> Animal  <span class="cm">// → true  (walks prototype chain)</span></span>
+<span class="line">d <span class="ck">instanceof</span> Object  <span class="cm">// → true  (everything is an Object)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// instanceof FAILS on primitives</span></span>
+<span class="line"><span class="cs">"hello"</span> <span class="ck">instanceof</span> String <span class="cm">// → false (primitive, not a String object)</span></span>
+<span class="line"><span class="cn">42</span> <span class="ck">instanceof</span> Number       <span class="cm">// → false (primitive)</span></span>
+<span class="line"><span class="ck">new</span> String(<span class="cs">"hello"</span>) <span class="ck">instanceof</span> String <span class="cm">// → true (wrapped object ← but avoid this!)</span></span>
+    </div>
+
+    <!-- typeof vs instanceof -->
+    <div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px;">typeof vs instanceof — when to use each</div>
+    <table class="cmp-table">
+      <thead><tr><th>Feature</th><th>typeof</th><th>instanceof</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Works on primitives</td>
+          <td class="res-t">✓ Yes</td>
+          <td class="res-f">✗ No (always false)</td>
+        </tr>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Works on objects</td>
+          <td class="warn">Partial — returns "object" for all</td>
+          <td class="res-t">✓ Yes — identifies exact class</td>
+        </tr>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Detects arrays</td>
+          <td class="res-f">✗ Returns "object"</td>
+          <td class="res-t">✓ arr instanceof Array</td>
+        </tr>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Detects null</td>
+          <td class="warn">Returns "object" (bug)</td>
+          <td class="res-f">✗ throws TypeError</td>
+        </tr>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Cross-realm safe</td>
+          <td class="res-t">✓ Yes</td>
+          <td class="res-f">✗ Fails across iframes/realms</td>
+        </tr>
+        <tr>
+          <td class="note" style="font-family:var(--font-body)">Returns</td>
+          <td class="expr">string ("number", "object"...)</td>
+          <td class="expr">boolean (true / false)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Cross-realm gotcha:</strong> <ic>instanceof</ic> can fail when objects are created in a different iframe or VM context because they have a different prototype chain. In those cases, use <ic>Array.isArray()</ic> or <ic>Object.prototype.toString</ic>.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 6 — Coercion in arithmetic
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Coercion in arithmetic &amp; comparisons</h2>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'arith-ops')">Arithmetic</button>
+      <button class="tab-btn" onclick="showTab(event,'arith-rel')">Relational (&lt; &gt;)</button>
+      <button class="tab-btn" onclick="showTab(event,'arith-logical')">Logical (|| &amp;&amp; ??)</button>
+    </div>
+
+    <div id="tab-arith-ops" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// + is special — string wins if either operand is a string</span></span>
+<span class="line"><span class="cs">"3"</span> + <span class="cn">4</span>         <span class="cm">// → "34"   (number → string)</span></span>
+<span class="line"><span class="cn">4</span> + <span class="cs">"3"</span>         <span class="cm">// → "43"   (order doesn't matter for +)</span></span>
+<span class="line"><span class="cn">1</span> + <span class="cn">2</span> + <span class="cs">"3"</span>    <span class="cm">// → "33"   (1+2=3, then 3+"3"="33") — left to right!</span></span>
+<span class="line"><span class="cs">"1"</span> + <span class="cn">2</span> + <span class="cn">3</span>    <span class="cm">// → "123"  ("1"+2="12", "12"+3="123")</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// - * / % always force numeric conversion</span></span>
+<span class="line"><span class="cs">"6"</span> - <span class="cn">2</span>         <span class="cm">// → 4</span></span>
+<span class="line"><span class="cs">"6"</span> * <span class="cs">"2"</span>       <span class="cm">// → 12</span></span>
+<span class="line"><span class="cs">"abc"</span> - <span class="cn">1</span>       <span class="cm">// → NaN  ("abc" → NaN)</span></span>
+<span class="line"><span class="ck">true</span> * <span class="cn">3</span>        <span class="cm">// → 3    (true → 1)</span></span>
+<span class="line"><span class="ck">false</span> * <span class="cn">3</span>       <span class="cm">// → 0    (false → 0)</span></span>
+<span class="line"><span class="ck">null</span> * <span class="cn">3</span>        <span class="cm">// → 0    (null → 0)</span></span>
+<span class="line"><span class="ck">undefined</span> * <span class="cn">3</span>  <span class="cm">// → NaN  (undefined → NaN)</span></span>
+<span class="line"><span class="cs">"  3  "</span> - <span class="cn">0</span>    <span class="cm">// → 3    (whitespace is trimmed first)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Unary + coerces to number quickly</span></span>
+<span class="line">+<span class="ck">true</span>            <span class="cm">// → 1</span></span>
+<span class="line">+<span class="ck">false</span>           <span class="cm">// → 0</span></span>
+<span class="line">+<span class="ck">null</span>            <span class="cm">// → 0</span></span>
+<span class="line">+<span class="cs">""</span>              <span class="cm">// → 0</span></span>
+<span class="line">+<span class="cs">"3"</span>             <span class="cm">// → 3</span></span>
+<span class="line">+<span class="cs">"hello"</span>         <span class="cm">// → NaN</span></span>
+      </div>
+    </div>
+
+    <div id="tab-arith-rel" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// < > <= >= with numbers — numeric comparison</span></span>
+<span class="line"><span class="cn">5</span> > <span class="cn">3</span>              <span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// If both operands are strings — lexicographic (char code) comparison!</span></span>
+<span class="line"><span class="cs">"10"</span> > <span class="cs">"9"</span>          <span class="cm">// → false!  "1" char code (49) < "9" char code (57)</span></span>
+<span class="line"><span class="cs">"b"</span> > <span class="cs">"a"</span>           <span class="cm">// → true</span></span>
+<span class="line"><span class="cs">"apple"</span> < <span class="cs">"banana"</span>  <span class="cm">// → true  (a < b)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Mixed string + number — string coerced to number</span></span>
+<span class="line"><span class="cs">"10"</span> > <span class="cn">9</span>            <span class="cm">// → true   ("10" → 10, then 10 > 9)</span></span>
+<span class="line"><span class="cs">"abc"</span> > <span class="cn">1</span>           <span class="cm">// → false  ("abc" → NaN, NaN comparisons always false)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// null and undefined with relational operators</span></span>
+<span class="line"><span class="ck">null</span> > <span class="cn">0</span>            <span class="cm">// → false</span></span>
+<span class="line"><span class="ck">null</span> == <span class="cn">0</span>           <span class="cm">// → false</span></span>
+<span class="line"><span class="ck">null</span> >= <span class="cn">0</span>           <span class="cm">// → true   ← major gotcha! (null → 0 for relational ops)</span></span>
+<span class="line"><span class="ck">undefined</span> > <span class="cn">0</span>       <span class="cm">// → false  (NaN comparison)</span></span>
+<span class="line"><span class="ck">undefined</span> < <span class="cn">0</span>       <span class="cm">// → false  (NaN comparison)</span></span>
+<span class="line"><span class="ck">undefined</span> == <span class="cn">0</span>      <span class="cm">// → false</span></span>
+      </div>
+    </div>
+
+    <div id="tab-arith-logical" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// || returns the FIRST truthy value (or last value if all falsy)</span></span>
+<span class="line"><span class="ck">false</span> || <span class="cs">"hello"</span>  <span class="cm">// → "hello"</span></span>
+<span class="line"><span class="cn">0</span>     || <span class="cs">"hello"</span>  <span class="cm">// → "hello"</span></span>
+<span class="line"><span class="cn">1</span>     || <span class="cs">"hello"</span>  <span class="cm">// → 1       (1 is truthy, stops there)</span></span>
+<span class="line"><span class="ck">null</span>  || <span class="ck">undefined</span> <span class="cm">// → undefined (both falsy, returns last)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// && returns the FIRST falsy value (or last value if all truthy)</span></span>
+<span class="line"><span class="ck">true</span>  &amp;&amp; <span class="cs">"hello"</span>  <span class="cm">// → "hello"  (all truthy, returns last)</span></span>
+<span class="line"><span class="ck">false</span> &amp;&amp; <span class="cs">"hello"</span>  <span class="cm">// → false    (first falsy, stops there)</span></span>
+<span class="line"><span class="cn">0</span>     &amp;&amp; <span class="cs">"hello"</span>  <span class="cm">// → 0</span></span>
+<span class="line"><span class="cn">1</span>     &amp;&amp; <span class="cn">2</span> &amp;&amp; <span class="cn">3</span>   <span class="cm">// → 3       (all truthy, returns last)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ?? (nullish coalescing) — only null/undefined triggers fallback</span></span>
+<span class="line"><span class="ck">null</span>      ?? <span class="cs">"default"</span>  <span class="cm">// → "default"</span></span>
+<span class="line"><span class="ck">undefined</span> ?? <span class="cs">"default"</span>  <span class="cm">// → "default"</span></span>
+<span class="line"><span class="cn">0</span>         ?? <span class="cs">"default"</span>  <span class="cm">// → 0        (0 is NOT null/undefined)</span></span>
+<span class="line"><span class="cs">""</span>        ?? <span class="cs">"default"</span>  <span class="cm">// → ""       ("" is NOT null/undefined)</span></span>
+<span class="line"><span class="ck">false</span>     ?? <span class="cs">"default"</span>  <span class="cm">// → false    (false is NOT null/undefined)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ?. (optional chaining) + ?? together</span></span>
+<span class="line"><span class="ck">const</span> user = <span class="ck">null</span>;</span>
+<span class="line"><span class="ck">const</span> city = user?.address?.city ?? <span class="cs">"Unknown"</span>; <span class="cm">// → "Unknown"</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What is the difference between == and ===?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>==</strong> (loose equality) performs type coercion before comparing — it converts operands to a common type first. <strong>===</strong> (strict equality) requires both value AND type to be identical, with no conversion.<br><br>
+          Always prefer <code>===</code> in production code. The one common exception is <code>val == null</code> to check for both <code>null</code> and <code>undefined</code> at once.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: What are the falsy values in JavaScript?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          There are exactly <strong>8 falsy values</strong>: <code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code> (BigInt zero), <code>""</code> (empty string — all three quote styles), <code>null</code>, <code>undefined</code>, and <code>NaN</code>.<br><br>
+          Common traps: <code>"0"</code>, <code>[]</code>, and <code>{}</code> are <strong>all truthy</strong>, even though they may look empty.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: What does <code>"1" + 2 + 3</code> evaluate to? What about <code>1 + 2 + "3"</code>?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>"1" + 2 + 3</code> → <strong>"123"</strong>. Evaluation is left-to-right: <code>"1" + 2</code> → <code>"12"</code> (string concat), then <code>"12" + 3</code> → <code>"123"</code>.<br><br>
+          <code>1 + 2 + "3"</code> → <strong>"33"</strong>. <code>1 + 2</code> → <code>3</code> (numeric add), then <code>3 + "3"</code> → <code>"33"</code> (string concat because "3" is a string).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: Why does <code>0.1 + 0.2 !== 0.3</code> in JavaScript?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          JavaScript uses IEEE-754 double-precision floating-point, which can't represent 0.1 and 0.2 exactly in binary. The result of <code>0.1 + 0.2</code> is <code>0.30000000000000004</code>, not <code>0.3</code>.<br><br>
+          Fix: use <code>Math.abs(a - b) &lt; Number.EPSILON</code> for comparisons, or round using <code>+(result).toFixed(2)</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: What is the difference between || and ??</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>||</code> returns the right-hand side if the left side is <strong>any falsy value</strong> — including <code>0</code>, <code>""</code>, <code>false</code>.<br><br>
+          <code>??</code> (nullish coalescing) only triggers the fallback if the left side is <strong>null or undefined</strong>, not other falsy values.<br><br>
+          Use <code>??</code> when <code>0</code> or <code>""</code> are valid values you don't want to override with a default.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: What is the difference between typeof and instanceof?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>typeof</code> returns a string ("number", "string", "object"…) and works on any value including primitives. Best for checking primitive types.<br><br>
+          <code>instanceof</code> checks the prototype chain to see if an object was created from a specific constructor. Only works correctly on objects — returns <code>false</code> for all primitives.<br><br>
+          Neither is perfect: use <code>Array.isArray()</code> for arrays, <code>=== null</code> for null, and <code>Object.prototype.toString.call()</code> for the most reliable type detection.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: Why is <code>NaN === NaN</code> false? How do you properly check for NaN?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>NaN</code> (Not a Number) is the only value in JavaScript that is not equal to itself — this is intentional per the IEEE-754 standard, because NaN represents an invalid computation and two invalid computations are not necessarily the same.<br><br>
+          To check for NaN: use <code>Number.isNaN(value)</code> (preferred — does NOT coerce). Avoid the older <code>isNaN()</code> which first coerces to number (<code>isNaN("hello")</code> returns <code>true</code> even though "hello" is a string, not NaN).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: What does <code>null >= 0</code> return? (tricky!)</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>true</strong> — and this is a notorious JS gotcha. For relational operators (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>), <code>null</code> is coerced to <code>0</code>. So <code>null >= 0</code> becomes <code>0 >= 0</code> → <code>true</code>.<br><br>
+          But <code>null == 0</code> is <code>false</code>! The <code>==</code> operator has a special rule: <code>null</code> is only equal to <code>undefined</code> and nothing else. This inconsistency is one of the most-cited JS quirks.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Type Coercion, == vs ===, truthy/falsy, typeof &amp; instanceof · Offline guide
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const parent = event.target.closest('.section') || document.body;
+    const allPanels = parent.querySelectorAll('.tab-panel');
+    const allBtns = parent.querySelectorAll('.tab-btn');
+    allPanels.forEach(p => p.classList.remove('active'));
+    allBtns.forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
