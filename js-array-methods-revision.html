@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Array Methods — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #7c6aff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.75rem;
+  }
+
+  .header-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(106,176,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #bd93f9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover {
+    background: rgba(106,176,255,0.1);
+    border-color: rgba(106,176,255,0.3);
+    color: var(--accent);
+  }
+
+  /* ── Summary table at top ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px;
+    background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text2); vertical-align: middle;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+  .mut-yes { color: var(--red) !important; font-weight: 500; }
+  .mut-no { color: var(--teal) !important; font-weight: 500; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  .section:nth-child(n) { animation-delay: 0.03s; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .method-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1rem; flex-wrap: wrap;
+  }
+
+  .method-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+
+  .method-header h2 {
+    font-family: var(--font-mono);
+    font-size: 22px; font-weight: 500;
+    color: var(--text); letter-spacing: -0.01em;
+  }
+
+  .method-meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 9px; border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .pill-mutates    { background: rgba(255,107,107,0.12); color: #ff9a9a; border: 1px solid rgba(255,107,107,0.25); }
+  .pill-immutable  { background: rgba(92,255,176,0.1);   color: var(--teal); border: 1px solid rgba(92,255,176,0.25); }
+  .pill-returns    { background: rgba(189,147,249,0.1);  color: var(--purple); border: 1px solid rgba(189,147,249,0.25); }
+
+  .method-desc {
+    font-size: 14px; color: var(--text2); margin-bottom: 1rem;
+    max-width: 700px; line-height: 1.65;
+  }
+
+  .signature {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.7rem 1rem;
+    margin-bottom: 1rem;
+    color: var(--text2);
+  }
+  .signature .sig-name { color: var(--accent); }
+  .signature .sig-param { color: var(--yellow); }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px; line-height: 1.85;
+    overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    font-size: 13.5px; margin-bottom: 0.85rem;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Visual transform diagram ── */
+  .transform-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+  }
+  .transform-title {
+    font-size: 11px; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 10px;
+  }
+  .transform-row { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+  .transform-arr {
+    display: flex; gap: 5px; flex-wrap: wrap;
+  }
+  .cell {
+    font-family: var(--font-mono); font-size: 12px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 5px 10px; color: var(--text);
+    min-width: 30px; text-align: center;
+  }
+  .cell.dim { opacity: 0.35; text-decoration: line-through; }
+  .cell.hi { border-color: var(--teal); color: var(--teal); background: rgba(92,255,176,0.08); }
+  .big-arrow { font-size: 20px; color: var(--text3); flex-shrink: 0; }
+  .fn-tag {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--accent); background: rgba(106,176,255,0.1);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 2px 7px; margin-bottom: 4px; display: inline-block;
+  }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.75rem 0.95rem;
+    margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code {
+    font-family: var(--font-mono); font-size: 11.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Tabs (used in reduce/flatMap section) ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px;
+    padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active {
+    background: rgba(106,176,255,0.12); color: #a8d4ff;
+    border-color: rgba(106,176,255,0.35); font-weight: 500;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Comparison table (chaining section) ── */
+  .cmp-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1rem;
+  }
+  .cmp-table th {
+    font-family: var(--font-body); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); padding: 7px 14px;
+    border-bottom: 1px solid var(--border2); text-align: left; background: var(--bg3);
+  }
+  .cmp-table td {
+    padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table tr:hover td { background: rgba(255,255,255,0.015); }
+  .cmp-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--yellow); }
+  .cmp-table td.note { font-size: 12px; color: var(--text3); }
+
+  /* ── Q&A Section ── */
+  .qa-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    overflow: hidden; cursor: pointer;
+  }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text3); flex-shrink: 0;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle {
+    transform: rotate(45deg);
+    background: rgba(106,176,255,0.12);
+    border-color: rgba(106,176,255,0.3); color: var(--accent);
+  }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner {
+    padding: 0.85rem 1rem 1rem;
+    font-size: 13.5px; color: var(--text2); line-height: 1.75;
+    border-top: 1px solid var(--border);
+  }
+  .qa-answer-inner code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; font-size: 12px; color: var(--text3);
+    padding-top: 1rem; border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+  ic {
+    font-family: var(--font-mono); font-size: 12.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px;
+    color: var(--yellow); display: inline;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Array Methods</div>
+    <h1>Array Methods Cold</h1>
+    <p>map · filter · reduce · find · findIndex · every · some · flat · flatMap — with examples for each</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to method">
+    <a class="topic-pill" href="#m-map">map()</a>
+    <a class="topic-pill" href="#m-filter">filter()</a>
+    <a class="topic-pill" href="#m-reduce">reduce()</a>
+    <a class="topic-pill" href="#m-find">find()</a>
+    <a class="topic-pill" href="#m-findindex">findIndex()</a>
+    <a class="topic-pill" href="#m-every">every()</a>
+    <a class="topic-pill" href="#m-some">some()</a>
+    <a class="topic-pill" href="#m-flat">flat()</a>
+    <a class="topic-pill" href="#m-flatmap">flatMap()</a>
+    <a class="topic-pill" href="#m-chain">Chaining</a>
+    <a class="topic-pill" href="#m-gotchas">Gotchas</a>
+    <a class="topic-pill" href="#m-qa">Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Method</th><th>Returns</th><th>Mutates original?</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>map()</td><td>new array (same length)</td><td class="mut-no">No</td><td>Transform each element</td></tr>
+      <tr><td>filter()</td><td>new array (≤ length)</td><td class="mut-no">No</td><td>Keep elements matching a condition</td></tr>
+      <tr><td>reduce()</td><td>single value (any type)</td><td class="mut-no">No</td><td>Accumulate array into one result</td></tr>
+      <tr><td>find()</td><td>element or undefined</td><td class="mut-no">No</td><td>First matching element</td></tr>
+      <tr><td>findIndex()</td><td>index or -1</td><td class="mut-no">No</td><td>Index of first match</td></tr>
+      <tr><td>every()</td><td>boolean</td><td class="mut-no">No</td><td>Do ALL elements pass?</td></tr>
+      <tr><td>some()</td><td>boolean</td><td class="mut-no">No</td><td>Does AT LEAST ONE pass?</td></tr>
+      <tr><td>flat()</td><td>new flattened array</td><td class="mut-no">No</td><td>Flatten nested arrays</td></tr>
+      <tr><td>flatMap()</td><td>new array (map + flat by 1)</td><td class="mut-no">No</td><td>Map then flatten one level</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-green" style="margin-bottom:2.5rem;">
+    <span class="callout-icon">✓</span>
+    <span>All 9 of these methods are <strong>non-mutating</strong> — they return a new array/value and leave the original untouched. This is why they're preferred for functional, predictable code (contrast with <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">push</code>, <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">splice</code>, <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">sort</code>, <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">reverse</code> which DO mutate).</span>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       map()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-map">
+    <div class="method-header">
+      <div class="method-icon">M</div>
+      <h2>.map()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ new array</span>
+      </div>
+    </div>
+    <p class="method-desc">Transforms every element and returns a <strong>new array of the same length</strong>. Use when you want to change the shape/value of each item but keep a 1-to-1 count.</p>
+    <div class="signature"><span class="sig-name">array</span>.map((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => { ... })</div>
+
+    <div class="transform-diagram">
+      <div class="transform-title">Visual — 1 in, 1 out, same length</div>
+      <div class="transform-row">
+        <div class="transform-arr">
+          <div class="cell">1</div><div class="cell">2</div><div class="cell">3</div>
+        </div>
+        <div class="big-arrow">→</div>
+        <div><span class="fn-tag">x => x * 2</span></div>
+        <div class="big-arrow">→</div>
+        <div class="transform-arr">
+          <div class="cell hi">2</div><div class="cell hi">4</div><div class="cell hi">6</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Basic transform</span></span>
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>];</span>
+<span class="line"><span class="ck">const</span> doubled = nums.<span class="cf">map</span>(n => n * <span class="cn">2</span>);</span>
+<span class="line"><span class="cm">// → [2, 4, 6]   (nums itself is unchanged: [1, 2, 3])</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Extract a property from array of objects</span></span>
+<span class="line"><span class="ck">const</span> users = [{ name: <span class="cs">"Alice"</span> }, { name: <span class="cs">"Bob"</span> }];</span>
+<span class="line"><span class="ck">const</span> names = users.<span class="cf">map</span>(u => u.name);</span>
+<span class="line"><span class="cm">// → ["Alice", "Bob"]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Using index parameter</span></span>
+<span class="line">[<span class="cs">"a"</span>, <span class="cs">"b"</span>, <span class="cs">"c"</span>].<span class="cf">map</span>((val, i) => `${i}: ${val}`);</span>
+<span class="line"><span class="cm">// → ["0: a", "1: b", "2: c"]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Common React pattern — map to JSX</span></span>
+<span class="line">users.<span class="cf">map</span>(u => `&lt;li key=${u.id}&gt;${u.name}&lt;/li&gt;`);</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Common mistake:</strong> using <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">map</code> when you don't need the returned array (e.g. just to run side effects) — use <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">forEach</code> instead. Also, forgetting to <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">return</code> inside the callback silently produces an array of <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">undefined</code>.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       filter()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-filter">
+    <div class="method-header">
+      <div class="method-icon">F</div>
+      <h2>.filter()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ new array</span>
+      </div>
+    </div>
+    <p class="method-desc">Returns a <strong>new array containing only elements that pass a test</strong>. The result can be shorter than (or equal to) the original — never longer.</p>
+    <div class="signature"><span class="sig-name">array</span>.filter((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">boolean</span>)</div>
+
+    <div class="transform-diagram">
+      <div class="transform-title">Visual — keep only matches</div>
+      <div class="transform-row">
+        <div class="transform-arr">
+          <div class="cell hi">1</div><div class="cell dim">2</div><div class="cell hi">3</div><div class="cell dim">4</div><div class="cell hi">5</div>
+        </div>
+        <div class="big-arrow">→</div>
+        <div><span class="fn-tag">x => x % 2 !== 0</span></div>
+        <div class="big-arrow">→</div>
+        <div class="transform-arr">
+          <div class="cell hi">1</div><div class="cell hi">3</div><div class="cell hi">5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Basic filter</span></span>
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>, <span class="cn">5</span>, <span class="cn">6</span>];</span>
+<span class="line"><span class="ck">const</span> evens = nums.<span class="cf">filter</span>(n => n % <span class="cn">2</span> === <span class="cn">0</span>);</span>
+<span class="line"><span class="cm">// → [2, 4, 6]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Filter objects by property</span></span>
+<span class="line"><span class="ck">const</span> users = [</span>
+<span class="line">  { name: <span class="cs">"Alice"</span>, active: <span class="ck">true</span> },</span>
+<span class="line">  { name: <span class="cs">"Bob"</span>, active: <span class="ck">false</span> }</span>
+<span class="line">];</span>
+<span class="line"><span class="ck">const</span> activeUsers = users.<span class="cf">filter</span>(u => u.active);</span>
+<span class="line"><span class="cm">// → [{ name: "Alice", active: true }]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Remove falsy values / compact an array</span></span>
+<span class="line"><span class="ck">const</span> mixed = [<span class="cn">0</span>, <span class="cs">"hi"</span>, <span class="ck">null</span>, <span class="cn">42</span>, <span class="ck">undefined</span>, <span class="cs">""</span>, <span class="cs">"ok"</span>];</span>
+<span class="line"><span class="ck">const</span> clean = mixed.<span class="cf">filter</span>(Boolean);</span>
+<span class="line"><span class="cm">// → ["hi", 42, "ok"]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Remove an item by id (immutable delete pattern)</span></span>
+<span class="line"><span class="ck">const</span> removeById = (arr, id) => arr.<span class="cf">filter</span>(item => item.id !== id);</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>filter + map combo</strong> is one of the most common interview patterns — filter first to narrow the set, then map to transform: <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">arr.filter(x => x.active).map(x => x.name)</code></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       reduce()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-reduce">
+    <div class="method-header">
+      <div class="method-icon">R</div>
+      <h2>.reduce()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ single value</span>
+      </div>
+    </div>
+    <p class="method-desc">The most powerful/flexible array method — <strong>reduces the whole array down to a single value</strong> (number, string, object, array — anything) by running an accumulator function over each element.</p>
+    <div class="signature"><span class="sig-name">array</span>.reduce((<span class="sig-param">accumulator</span>, <span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">newAccumulator</span>, <span class="sig-param">initialValue</span>)</div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'reduce-basic')">Sum / Count</button>
+      <button class="tab-btn" onclick="showTab(event,'reduce-object')">Build object</button>
+      <button class="tab-btn" onclick="showTab(event,'reduce-group')">Group by</button>
+      <button class="tab-btn" onclick="showTab(event,'reduce-pipeline')">Reimplementing map/filter</button>
+    </div>
+
+    <div id="tab-reduce-basic" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// Sum all numbers</span></span>
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>];</span>
+<span class="line"><span class="ck">const</span> total = nums.<span class="cf">reduce</span>((acc, n) => acc + n, <span class="cn">0</span>);</span>
+<span class="line"><span class="cm">//        acc: 0 → 1 → 3 → 6 → 10</span></span>
+<span class="line"><span class="cm">// → 10</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Find the max value</span></span>
+<span class="line"><span class="ck">const</span> max = nums.<span class="cf">reduce</span>((acc, n) => n > acc ? n : acc, -Infinity);</span>
+<span class="line"><span class="cm">// → 4</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Count occurrences</span></span>
+<span class="line"><span class="ck">const</span> fruits = [<span class="cs">"apple"</span>, <span class="cs">"banana"</span>, <span class="cs">"apple"</span>, <span class="cs">"apple"</span>];</span>
+<span class="line"><span class="ck">const</span> count = fruits.<span class="cf">reduce</span>((acc, f) => {</span>
+<span class="line">  acc[f] = (acc[f] || <span class="cn">0</span>) + <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">return</span> acc;</span>
+<span class="line">}, {});</span>
+<span class="line"><span class="cm">// → { apple: 3, banana: 1 }</span></span>
+      </div>
+    </div>
+
+    <div id="tab-reduce-object" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Array of objects → lookup object (keyed by id)</span></span>
+<span class="line"><span class="ck">const</span> users = [</span>
+<span class="line">  { id: <span class="cn">1</span>, name: <span class="cs">"Alice"</span> },</span>
+<span class="line">  { id: <span class="cn">2</span>, name: <span class="cs">"Bob"</span> }</span>
+<span class="line">];</span>
+<span class="line"><span class="ck">const</span> byId = users.<span class="cf">reduce</span>((acc, user) => {</span>
+<span class="line">  acc[user.id] = user;</span>
+<span class="line">  <span class="ck">return</span> acc;</span>
+<span class="line">}, {});</span>
+<span class="line"><span class="cm">// → { 1: {id:1,name:"Alice"}, 2: {id:2,name:"Bob"} }</span></span>
+<span class="line"><span class="cm">// Now byId[1].name → "Alice"  (O(1) lookup vs O(n) with find)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Flatten a shopping cart into total price</span></span>
+<span class="line"><span class="ck">const</span> cart = [{ price: <span class="cn">10</span>, qty: <span class="cn">2</span> }, { price: <span class="cn">5</span>, qty: <span class="cn">3</span> }];</span>
+<span class="line"><span class="ck">const</span> totalPrice = cart.<span class="cf">reduce</span>((sum, item) => sum + item.price * item.qty, <span class="cn">0</span>);</span>
+<span class="line"><span class="cm">// → 35</span></span>
+      </div>
+    </div>
+
+    <div id="tab-reduce-group" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Classic "group by" pattern with reduce</span></span>
+<span class="line"><span class="ck">const</span> people = [</span>
+<span class="line">  { name: <span class="cs">"Alice"</span>, dept: <span class="cs">"Eng"</span> },</span>
+<span class="line">  { name: <span class="cs">"Bob"</span>, dept: <span class="cs">"Sales"</span> },</span>
+<span class="line">  { name: <span class="cs">"Carol"</span>, dept: <span class="cs">"Eng"</span> }</span>
+<span class="line">];</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> byDept = people.<span class="cf">reduce</span>((acc, p) => {</span>
+<span class="line">  (acc[p.dept] ??= []).push(p);   <span class="cm">// ??= creates array if missing</span></span>
+<span class="line">  <span class="ck">return</span> acc;</span>
+<span class="line">}, {});</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// →</span></span>
+<span class="line"><span class="cm">// {</span></span>
+<span class="line"><span class="cm">//   Eng: [{name:"Alice",...}, {name:"Carol",...}],</span></span>
+<span class="line"><span class="cm">//   Sales: [{name:"Bob",...}]</span></span>
+<span class="line"><span class="cm">// }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Modern alternative: Object.groupBy (ES2024, newer engines)</span></span>
+<span class="line"><span class="ck">const</span> grouped = Object.groupBy(people, p => p.dept);</span>
+      </div>
+    </div>
+
+    <div id="tab-reduce-pipeline" class="tab-panel">
+      <div class="callout callout-purple">
+        <span class="callout-icon">🎓</span>
+        <span>Interviewers love asking you to reimplement <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">map</code>/<code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">filter</code> using <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">reduce</code> — it proves you understand reduce is the "parent" of all array iteration.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Reimplement map using reduce</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">myMap</span> = (arr, fn) =></span>
+<span class="line">  arr.<span class="cf">reduce</span>((acc, el, i) => {</span>
+<span class="line">    acc.push(fn(el, i, arr));</span>
+<span class="line">    <span class="ck">return</span> acc;</span>
+<span class="line">  }, []);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Reimplement filter using reduce</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">myFilter</span> = (arr, fn) =></span>
+<span class="line">  arr.<span class="cf">reduce</span>((acc, el, i) => {</span>
+<span class="line">    <span class="ck">if</span> (fn(el, i, arr)) acc.push(el);</span>
+<span class="line">    <span class="ck">return</span> acc;</span>
+<span class="line">  }, []);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Chain multiple functions (pipe/compose) using reduce</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">pipe</span> = (...fns) => (x) => fns.<span class="cf">reduce</span>((acc, fn) => fn(acc), x);</span>
+<span class="line"><span class="ck">const</span> process = <span class="cf">pipe</span>(x => x + <span class="cn">1</span>, x => x * <span class="cn">2</span>, x => x - <span class="cn">3</span>);</span>
+<span class="line"><span class="cf">process</span>(<span class="cn">5</span>); <span class="cm">// → ((5+1)*2)-3 = 9</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Always provide an initial value</strong> (the second argument). Without it, <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">reduce</code> uses the first array element as the initial accumulator and starts from index 1 — this throws a TypeError on an empty array with no initial value.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       find()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-find">
+    <div class="method-header">
+      <div class="method-icon">F</div>
+      <h2>.find()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ element or undefined</span>
+      </div>
+    </div>
+    <p class="method-desc">Returns the <strong>first element</strong> that satisfies the test function, or <ic>undefined</ic> if none match. Stops iterating as soon as a match is found (short-circuits).</p>
+    <div class="signature"><span class="sig-name">array</span>.find((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">boolean</span>)</div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Find first matching object</span></span>
+<span class="line"><span class="ck">const</span> users = [</span>
+<span class="line">  { id: <span class="cn">1</span>, name: <span class="cs">"Alice"</span> },</span>
+<span class="line">  { id: <span class="cn">2</span>, name: <span class="cs">"Bob"</span> },</span>
+<span class="line">  { id: <span class="cn">3</span>, name: <span class="cs">"Carol"</span> }</span>
+<span class="line">];</span>
+<span class="line"><span class="ck">const</span> user = users.<span class="cf">find</span>(u => u.id === <span class="cn">2</span>);</span>
+<span class="line"><span class="cm">// → { id: 2, name: "Bob" }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// No match → undefined</span></span>
+<span class="line"><span class="ck">const</span> missing = users.<span class="cf">find</span>(u => u.id === <span class="cn">99</span>);</span>
+<span class="line"><span class="cm">// → undefined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Find first number greater than 10</span></span>
+<span class="line">[<span class="cn">3</span>, <span class="cn">7</span>, <span class="cn">15</span>, <span class="cn">22</span>].<span class="cf">find</span>(n => n > <span class="cn">10</span>);  <span class="cm">// → 15  (stops here, doesn't check 22)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Guard against undefined with optional chaining</span></span>
+<span class="line"><span class="ck">const</span> foundName = users.<span class="cf">find</span>(u => u.id === <span class="cn">99</span>)?.name ?? <span class="cs">"Not found"</span>;</span>
+<span class="line"><span class="cm">// → "Not found"</span></span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>find vs filter:</strong> <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">find</code> returns ONE element (or undefined) and stops early. <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">filter</code> always scans the whole array and returns an array (possibly empty). Use <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">find</code> when you expect/want a single result — it's more efficient and semantically clearer.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       findIndex()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-findindex">
+    <div class="method-header">
+      <div class="method-icon">Fi</div>
+      <h2>.findIndex()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ index or -1</span>
+      </div>
+    </div>
+    <p class="method-desc">Same idea as <ic>find</ic>, but returns the <strong>index</strong> of the first match instead of the element itself. Returns <ic>-1</ic> if nothing matches (never undefined).</p>
+    <div class="signature"><span class="sig-name">array</span>.findIndex((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">boolean</span>)</div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">const</span> users = [{ id: <span class="cn">1</span> }, { id: <span class="cn">2</span> }, { id: <span class="cn">3</span> }];</span>
+<span class="line"><span class="ck">const</span> idx = users.<span class="cf">findIndex</span>(u => u.id === <span class="cn">2</span>);</span>
+<span class="line"><span class="cm">// → 1</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// No match → -1 (NOT undefined!)</span></span>
+<span class="line">users.<span class="cf">findIndex</span>(u => u.id === <span class="cn">99</span>); <span class="cm">// → -1</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Common use: update an item immutably by index</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">updateUser</span>(users, id, changes) {</span>
+<span class="line">  <span class="ck">const</span> idx = users.<span class="cf">findIndex</span>(u => u.id === id);</span>
+<span class="line">  <span class="ck">if</span> (idx === -<span class="cn">1</span>) <span class="ck">return</span> users; <span class="cm">// not found, return unchanged</span></span>
+<span class="line">  <span class="ck">const</span> copy = [...users];</span>
+<span class="line">  copy[idx] = { ...copy[idx], ...changes };</span>
+<span class="line">  <span class="ck">return</span> copy;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Remove item at found index (immutable)</span></span>
+<span class="line"><span class="ck">const</span> idx2 = users.<span class="cf">findIndex</span>(u => u.id === <span class="cn">2</span>);</span>
+<span class="line"><span class="ck">const</span> withoutIt = [...users.slice(<span class="cn">0</span>, idx2), ...users.slice(idx2 + <span class="cn">1</span>)];</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>findIndex returns -1, not undefined</strong>, when nothing is found — a common source of bugs if you check <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">if (!idx)</code> since <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">-1</code> is truthy but index <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">0</code> is falsy! Always check <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">idx === -1</code> explicitly.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       every() / some()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-every">
+    <div class="method-header">
+      <div class="method-icon">E</div>
+      <h2>.every()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ boolean</span>
+      </div>
+    </div>
+    <p class="method-desc">Returns <ic>true</ic> only if <strong>ALL</strong> elements pass the test. Short-circuits and returns <ic>false</ic> as soon as one element fails.</p>
+    <div class="signature"><span class="sig-name">array</span>.every((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">boolean</span>)</div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">const</span> ages = [<span class="cn">18</span>, <span class="cn">21</span>, <span class="cn">25</span>, <span class="cn">30</span>];</span>
+<span class="line">ages.<span class="cf">every</span>(age => age >= <span class="cn">18</span>); <span class="cm">// → true  (all adults)</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> ages2 = [<span class="cn">15</span>, <span class="cn">21</span>, <span class="cn">25</span>];</span>
+<span class="line">ages2.<span class="cf">every</span>(age => age >= <span class="cn">18</span>); <span class="cm">// → false (15 fails, stops there)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Form validation — all fields filled?</span></span>
+<span class="line"><span class="ck">const</span> fields = { name: <span class="cs">"Alice"</span>, email: <span class="cs">"a@b.com"</span>, age: <span class="cn">30</span> };</span>
+<span class="line"><span class="ck">const</span> isValid = Object.values(fields).<span class="cf">every</span>(v => v !== <span class="cs">""</span> &amp;&amp; v != <span class="ck">null</span>);</span>
+<span class="line"><span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ⚠️ every() on an EMPTY array → always true! ("vacuous truth")</span></span>
+<span class="line">[].<span class="cf">every</span>(x => x > <span class="cn">100</span>); <span class="cm">// → true  (no elements to violate the condition)</span></span>
+    </div>
+  </section>
+
+  <section class="section" id="m-some" style="margin-top: -1.5rem;">
+    <div class="method-header">
+      <div class="method-icon">S</div>
+      <h2>.some()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ boolean</span>
+      </div>
+    </div>
+    <p class="method-desc">Returns <ic>true</ic> if <strong>AT LEAST ONE</strong> element passes the test. Short-circuits and returns <ic>true</ic> as soon as one match is found.</p>
+    <div class="signature"><span class="sig-name">array</span>.some((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">boolean</span>)</div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">1</span>, <span class="cn">3</span>, <span class="cn">5</span>, <span class="cn">8</span>];</span>
+<span class="line">nums.<span class="cf">some</span>(n => n % <span class="cn">2</span> === <span class="cn">0</span>); <span class="cm">// → true  (8 is even)</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> odds = [<span class="cn">1</span>, <span class="cn">3</span>, <span class="cn">5</span>];</span>
+<span class="line">odds.<span class="cf">some</span>(n => n % <span class="cn">2</span> === <span class="cn">0</span>); <span class="cm">// → false (none are even)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Check if an item exists (like "includes" but with a condition)</span></span>
+<span class="line"><span class="ck">const</span> cart = [{ id: <span class="cn">1</span> }, { id: <span class="cn">2</span> }];</span>
+<span class="line"><span class="ck">const</span> hasItem = cart.<span class="cf">some</span>(item => item.id === <span class="cn">2</span>);</span>
+<span class="line"><span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ⚠️ some() on an EMPTY array → always false</span></span>
+<span class="line">[].<span class="cf">some</span>(x => <span class="ck">true</span>); <span class="cm">// → false  (nothing to satisfy the condition)</span></span>
+    </div>
+
+    <table class="cmp-table">
+      <thead><tr><th>Method</th><th>Empty array []</th><th>All pass</th><th>All fail</th><th>Mixed</th></tr></thead>
+      <tbody>
+        <tr><td>every()</td><td class="note" style="color:var(--teal)">true</td><td class="note" style="color:var(--teal)">true</td><td class="note" style="color:var(--red)">false</td><td class="note" style="color:var(--red)">false</td></tr>
+        <tr><td>some()</td><td class="note" style="color:var(--red)">false</td><td class="note" style="color:var(--teal)">true</td><td class="note" style="color:var(--red)">false</td><td class="note" style="color:var(--teal)">true</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       flat()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-flat">
+    <div class="method-header">
+      <div class="method-icon">Fl</div>
+      <h2>.flat()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ new flattened array</span>
+      </div>
+    </div>
+    <p class="method-desc"><strong>Flattens nested arrays</strong> into a single-level array, up to a specified depth (default: 1 level). ES2019 addition.</p>
+    <div class="signature"><span class="sig-name">array</span>.flat(<span class="sig-param">depth</span> = 1)</div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Default depth = 1</span></span>
+<span class="line">[<span class="cn">1</span>, [<span class="cn">2</span>, <span class="cn">3</span>], [<span class="cn">4</span>, <span class="cn">5</span>]].<span class="cf">flat</span>();</span>
+<span class="line"><span class="cm">// → [1, 2, 3, 4, 5]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Nested deeper — needs explicit depth</span></span>
+<span class="line">[<span class="cn">1</span>, [<span class="cn">2</span>, [<span class="cn">3</span>, [<span class="cn">4</span>]]]].<span class="cf">flat</span>();     <span class="cm">// → [1, 2, [3, [4]]]   (only 1 level!)</span></span>
+<span class="line">[<span class="cn">1</span>, [<span class="cn">2</span>, [<span class="cn">3</span>, [<span class="cn">4</span>]]]].<span class="cf">flat</span>(<span class="cn">2</span>);  <span class="cm">// → [1, 2, 3, [4]]     (2 levels)</span></span>
+<span class="line">[<span class="cn">1</span>, [<span class="cn">2</span>, [<span class="cn">3</span>, [<span class="cn">4</span>]]]].<span class="cf">flat</span>(Infinity); <span class="cm">// → [1, 2, 3, 4]  (fully flat, any depth)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// flat() also removes empty slots (sparse arrays)</span></span>
+<span class="line">[<span class="cn">1</span>, , <span class="cn">3</span>].<span class="cf">flat</span>(); <span class="cm">// → [1, 3]  (hole removed)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical: flatten paginated / grouped API results</span></span>
+<span class="line"><span class="ck">const</span> pages = [[<span class="cs">"a"</span>, <span class="cs">"b"</span>], [<span class="cs">"c"</span>, <span class="cs">"d"</span>], [<span class="cs">"e"</span>]];</span>
+<span class="line">pages.<span class="cf">flat</span>(); <span class="cm">// → ["a", "b", "c", "d", "e"]</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       flatMap()
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-flatmap">
+    <div class="method-header">
+      <div class="method-icon">FM</div>
+      <h2>.flatMap()</h2>
+      <div class="method-meta">
+        <span class="meta-pill pill-immutable">non-mutating</span>
+        <span class="meta-pill pill-returns">→ new array</span>
+      </div>
+    </div>
+    <p class="method-desc">Equivalent to <ic>map()</ic> followed by <ic>flat(1)</ic> — but done in a single, more efficient pass. Perfect when your mapping function returns an array per element and you want a flat result.</p>
+    <div class="signature"><span class="sig-name">array</span>.flatMap((<span class="sig-param">element</span>, <span class="sig-param">index</span>, <span class="sig-param">array</span>) => <span class="sig-param">newValueOrArray</span>)</div>
+
+    <div class="transform-diagram">
+      <div class="transform-title">Visual — map() + flat() in one step</div>
+      <div class="transform-row">
+        <div class="transform-arr">
+          <div class="cell">1</div><div class="cell">2</div><div class="cell">3</div>
+        </div>
+        <div class="big-arrow">→</div>
+        <div><span class="fn-tag">x => [x, x*2]</span></div>
+        <div class="big-arrow">→</div>
+        <div class="transform-arr">
+          <div class="cell hi">1</div><div class="cell hi">2</div><div class="cell hi">2</div><div class="cell hi">4</div><div class="cell hi">3</div><div class="cell hi">6</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Basic flatMap — map returns pairs, flattened automatically</span></span>
+<span class="line">[<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>].<span class="cf">flatMap</span>(x => [x, x * <span class="cn">2</span>]);</span>
+<span class="line"><span class="cm">// → [1, 2, 2, 4, 3, 6]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Compare: map() alone would nest the arrays</span></span>
+<span class="line">[<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>].<span class="cf">map</span>(x => [x, x * <span class="cn">2</span>]);</span>
+<span class="line"><span class="cm">// → [[1,2], [2,4], [3,6]]   ← still nested!</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Split sentences into words (very common real use)</span></span>
+<span class="line"><span class="ck">const</span> sentences = [<span class="cs">"hello world"</span>, <span class="cs">"foo bar baz"</span>];</span>
+<span class="line">sentences.<span class="cf">flatMap</span>(s => s.split(<span class="cs">" "</span>));</span>
+<span class="line"><span class="cm">// → ["hello", "world", "foo", "bar", "baz"]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Filter + map in one pass (return [] to "remove" an item)</span></span>
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>, <span class="cn">5</span>];</span>
+<span class="line">nums.<span class="cf">flatMap</span>(n => n % <span class="cn">2</span> === <span class="cn">0</span> ? [n * <span class="cn">10</span>] : []);</span>
+<span class="line"><span class="cm">// → [20, 40]   (odd numbers "filtered out" via empty array)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Extract nested children arrays from objects</span></span>
+<span class="line"><span class="ck">const</span> categories = [</span>
+<span class="line">  { name: <span class="cs">"Fruits"</span>, items: [<span class="cs">"apple"</span>, <span class="cs">"banana"</span>] },</span>
+<span class="line">  { name: <span class="cs">"Veggies"</span>, items: [<span class="cs">"carrot"</span>] }</span>
+<span class="line">];</span>
+<span class="line">categories.<span class="cf">flatMap</span>(c => c.items);</span>
+<span class="line"><span class="cm">// → ["apple", "banana", "carrot"]</span></span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>flatMap</ic> only flattens <strong>1 level deep</strong> — it's equivalent to <ic>map().flat(1)</ic>, not <ic>flat(Infinity)</ic>. For deeper flattening you still need <ic>.flat(depth)</ic> separately after mapping.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       Chaining
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-chain">
+    <div class="section-header" style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;">
+      <div class="method-icon" style="border-radius:50%;">→</div>
+      <h2 style="font-family:var(--font-head);font-size:20px;font-weight:700;">Chaining these methods together</h2>
+    </div>
+
+    <p class="method-desc">Because every method here returns a new array (except reduce, find, findIndex, every, some), you can chain them fluently to build data pipelines.</p>
+
+    <div class="code-block">
+<span class="line"><span class="ck">const</span> orders = [</span>
+<span class="line">  { id: <span class="cn">1</span>, item: <span class="cs">"Book"</span>, price: <span class="cn">15</span>, qty: <span class="cn">2</span>, shipped: <span class="ck">true</span> },</span>
+<span class="line">  { id: <span class="cn">2</span>, item: <span class="cs">"Pen"</span>, price: <span class="cn">2</span>, qty: <span class="cn">10</span>, shipped: <span class="ck">false</span> },</span>
+<span class="line">  { id: <span class="cn">3</span>, item: <span class="cs">"Laptop"</span>, price: <span class="cn">900</span>, qty: <span class="cn">1</span>, shipped: <span class="ck">true</span> }</span>
+<span class="line">];</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// filter → map → reduce pipeline: total revenue from shipped orders</span></span>
+<span class="line"><span class="ck">const</span> shippedRevenue = orders</span>
+<span class="line">  .<span class="cf">filter</span>(o => o.shipped)                    <span class="cm">// keep shipped only</span></span>
+<span class="line">  .<span class="cf">map</span>(o => o.price * o.qty)               <span class="cm">// compute line totals</span></span>
+<span class="line">  .<span class="cf">reduce</span>((sum, total) => sum + total, <span class="cn">0</span>); <span class="cm">// sum them up</span></span>
+<span class="line"><span class="cm">// → (15*2) + (900*1) = 930</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// find + map style access</span></span>
+<span class="line"><span class="ck">const</span> laptopPrice = orders.<span class="cf">find</span>(o => o.item === <span class="cs">"Laptop"</span>)?.price ?? <span class="cn">0</span>;</span>
+<span class="line"><span class="cm">// → 900</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// every / some for validation before processing</span></span>
+<span class="line"><span class="ck">const</span> allInStock = orders.<span class="cf">every</span>(o => o.qty > <span class="cn">0</span>);   <span class="cm">// → true</span></span>
+<span class="line"><span class="ck">const</span> anyUnshipped = orders.<span class="cf">some</span>(o => !o.shipped); <span class="cm">// → true</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Performance note:</strong> chaining <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">.filter().map()</code> iterates the array twice. For huge arrays where performance matters, a single <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">.reduce()</code> pass can do both in one iteration. For typical interview/app code, readability of chaining usually wins.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       Gotchas
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-gotchas">
+    <div class="section-header">
+      <div class="section-num" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--amber),#cc7a2e);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:14px;font-weight:700;color:#0d0f14;">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>forEach vs map:</strong> <code>forEach</code> always returns <code>undefined</code> — it's for side effects only. Using its return value, or chaining after it, is a bug. Use <code>map</code> when you need a new array back.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>reduce without initial value</strong> on an empty array throws: <code>[].reduce((a,b) => a+b)</code> → TypeError. Always pass an initial value as the second argument.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>findIndex/indexOf return -1, not undefined/null</strong> — check with <code>=== -1</code> explicitly, since <code>-1</code> is truthy but <code>0</code> (a valid index) is falsy.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>every() on empty array → true; some() on empty array → false</strong> — "vacuous truth" rule. This trips people up in validation logic on unfilled arrays.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>map without a return</strong> inside the callback silently returns an array of <code>undefined</code>: <code>arr.map(x => { x * 2 })</code> — missing curly-brace return is a classic bug (use implicit return: <code>x => x * 2</code>).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>These methods skip empty/sparse slots</strong> — <code>[1, , 3].map(x => x * 2)</code> → <code>[2, &lt;empty&gt;, 6]</code>, the hole is preserved, callback not invoked for it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>flat() default depth is only 1</strong>, not full flatten. Use <code>flat(Infinity)</code> for arbitrarily nested arrays.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Methods that DO mutate (contrast!):</strong> <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>, <code>copyWithin</code>. Note <code>sort()</code> and <code>reverse()</code> mutate the ORIGINAL array even though people often expect otherwise — use <code>[...arr].sort()</code> for a safe copy.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Array-like objects</strong> (arguments, NodeList, string) don't have these methods directly — convert first: <code>Array.from(arrayLike)</code> or <code>[...arrayLike]</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Callback receives 3 arguments</strong> (element, index, array) — passing a function with extra expected params like <code>arr.map(parseInt)</code> is a famous bug because <code>parseInt(val, index)</code> uses the index as a radix!</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       Q&A
+  ══════════════════════════════════════ -->
+  <section class="section" id="m-qa">
+    <div class="section-header">
+      <div class="section-num" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#4d84cc);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:14px;font-weight:700;color:#0d0f14;">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What's the difference between map() and forEach()?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>map()</code> returns a <strong>new array</strong> built from the callback's return values — use it when you need the transformed data. <code>forEach()</code> always returns <code>undefined</code> and is meant purely for <strong>side effects</strong> (like logging or pushing to an external array). Chaining after <code>forEach()</code> or using its return value is a common mistake.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: How would you reimplement filter() using reduce()?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> <span class="cf">myFilter</span> = (arr, predicate) =></span>
+<span class="line">  arr.<span class="cf">reduce</span>((acc, el) => {</span>
+<span class="line">    <span class="ck">if</span> (predicate(el)) acc.push(el);</span>
+<span class="line">    <span class="ck">return</span> acc;</span>
+<span class="line">  }, []);</span>
+          </div>
+          This demonstrates that <code>reduce</code> is the most general iteration method — <code>map</code>, <code>filter</code>, and even <code>find</code> can all be expressed in terms of it.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: What does array.every() return on an empty array? Why?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>true</strong> — this is called "vacuous truth" in logic: if there are no elements to violate the condition, the condition is considered satisfied for all (zero) of them. Conversely, <code>some()</code> on an empty array returns <strong>false</strong>, since there's nothing to satisfy the condition.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What's the difference between find() and filter()?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>find()</code> returns the <strong>first matching element</strong> (or <code>undefined</code>) and stops iterating as soon as it finds a match — more efficient when you only need one result.<br><br>
+          <code>filter()</code> always scans the entire array and returns an <strong>array of all matches</strong> (possibly empty). Use <code>find</code> for "get me the one item", use <code>filter</code> for "get me all matching items".
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: What's the difference between flat() and flatMap()?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>flat(depth)</code> only flattens an already-nested array — it takes no transformation function, just a depth (default 1).<br><br>
+          <code>flatMap(fn)</code> is <code>map(fn)</code> immediately followed by <code>flat(1)</code> — it transforms each element AND flattens the result by exactly one level, done in a single efficient pass. Use <code>flatMap</code> when your mapping function itself produces arrays that you want merged into the parent array.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: Why is arr.map(parseInt) a bug? What does it actually produce for ["1","2","3"]?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>map</code> calls the callback with <strong>3 arguments</strong>: <code>(element, index, array)</code>. <code>parseInt</code> also accepts a second argument — the <strong>radix</strong> (base). So <code>map</code> unintentionally passes the index as the radix.
+          <div class="code-block" style="margin-top:8px">
+<span class="line">["1","2","3"].<span class="cf">map</span>(parseInt);</span>
+<span class="line"><span class="cm">// parseInt("1", 0) → 1   (0 index, radix 0 → treated as base 10)</span></span>
+<span class="line"><span class="cm">// parseInt("2", 1) → NaN (radix 1 is invalid)</span></span>
+<span class="line"><span class="cm">// parseInt("3", 2) → NaN ("3" is not a valid base-2 digit)</span></span>
+<span class="line"><span class="cm">// → [1, NaN, NaN]</span></span>
+          </div>
+          Fix: <code>["1","2","3"].map(n => parseInt(n, 10))</code> or <code>.map(Number)</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: How do you remove duplicates from an array using these methods?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Simplest: <code>[...new Set(arr)]</code> (not one of these 9, but the standard trick).<br><br>
+          Using <code>filter</code> (for arrays of primitives):
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> unique = arr.<span class="cf">filter</span>((val, idx) => arr.indexOf(val) === idx);</span>
+<span class="line"><span class="cm">// keeps only the FIRST occurrence of each value</span></span>
+          </div>
+          Using <code>reduce</code> (works for objects too, with a key function):
+          <div class="code-block" style="margin-top:0">
+<span class="line"><span class="ck">const</span> uniqueBy = (arr, key) => arr.<span class="cf">reduce</span>((acc, item) => {</span>
+<span class="line">  <span class="ck">if</span> (!acc.some(x => x[key] === item[key])) acc.push(item);</span>
+<span class="line">  <span class="ck">return</span> acc;</span>
+<span class="line">}, []);</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Do these methods mutate the original array?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>No</strong> — all 9 methods covered here (map, filter, reduce, find, findIndex, every, some, flat, flatMap) are non-mutating; they return new values and leave the original array untouched.<br><br>
+          Contrast with mutating methods: <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>. Notably <code>sort()</code> and <code>reverse()</code> surprise people because they mutate in place — use <code>[...arr].sort()</code> to avoid mutating the original.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q9: How would you find the max value in an array of objects by a property, using reduce?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> products = [</span>
+<span class="line">  { name: <span class="cs">"A"</span>, price: <span class="cn">10</span> },</span>
+<span class="line">  { name: <span class="cs">"B"</span>, price: <span class="cn">45</span> },</span>
+<span class="line">  { name: <span class="cs">"C"</span>, price: <span class="cn">22</span> }</span>
+<span class="line">];</span>
+<span class="line"><span class="ck">const</span> mostExpensive = products.<span class="cf">reduce</span>((max, p) =></span>
+<span class="line">  p.price > max.price ? p : max</span>
+<span class="line">);</span>
+<span class="line"><span class="cm">// → { name: "B", price: 45 }</span></span>
+          </div>
+          Note: no initial value needed here since the array is non-empty — the first element becomes the starting accumulator.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Array Methods · map · filter · reduce · find · findIndex · every · some · flat · flatMap
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ES6+ Syntax — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #7c6aff;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.75rem;
+  }
+
+  .header-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(92,255,176,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #7c6aff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 2.5rem;
+  }
+
+  .topic-pill {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .topic-pill:hover {
+    background: rgba(92,255,176,0.1);
+    border-color: rgba(92,255,176,0.3);
+    color: var(--accent);
+  }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.5rem; animation: fadeUp 0.4s ease both; }
+  .section:nth-child(1) { animation-delay: 0.04s; }
+  .section:nth-child(2) { animation-delay: 0.08s; }
+  .section:nth-child(3) { animation-delay: 0.12s; }
+  .section:nth-child(4) { animation-delay: 0.16s; }
+  .section:nth-child(5) { animation-delay: 0.20s; }
+  .section:nth-child(6) { animation-delay: 0.24s; }
+  .section:nth-child(7) { animation-delay: 0.28s; }
+  .section:nth-child(8) { animation-delay: 0.32s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-head);
+    font-size: 20px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.01em;
+  }
+
+  .section-header h2 .tag {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px;
+    vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px; line-height: 1.85;
+    overflow-x: auto; margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .code-label {
+    position: absolute; top: 8px; right: 12px;
+    font-size: 10px; color: var(--text3);
+    letter-spacing: 0.07em; text-transform: uppercase;
+  }
+
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }  /* operator / special */
+  .cx  { color: #ff6b6b; }  /* error / bad */
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    font-size: 13.5px; margin-bottom: 0.85rem;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px;
+    padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active {
+    background: rgba(92,255,176,0.12); color: #7affc4;
+    border-color: rgba(92,255,176,0.35); font-weight: 500;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two / Three col grids ── */
+  .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 620px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Syntax Cards ── */
+  .syn-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+  }
+
+  .syn-card-title {
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .syn-card .code-block { margin-bottom: 0; }
+
+  /* ── Before / After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+
+  .ba-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.8rem 1rem;
+  }
+
+  .ba-label {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 8px;
+  }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--accent); }
+
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; margin-bottom: 1rem;
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); padding: 7px 14px;
+    border-bottom: 1px solid var(--border2);
+    text-align: left; background: var(--bg3);
+  }
+  .feat-table td {
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.015); }
+  .feat-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--yellow); }
+  .feat-table td:nth-child(2) { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+  .feat-table td:last-child  { font-size: 12px; color: var(--text3); }
+
+  /* ── Cheatsheet grid ── */
+  .cheat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px; margin-bottom: 1rem;
+  }
+
+  .cheat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    border-left: 3px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .cheat-card:hover { transform: translateY(-2px); border-left-color: var(--accent); }
+  .cheat-title { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: 6px; font-weight: 500; }
+  .cheat-desc  { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+  .cheat-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.8rem 1rem;
+    margin-bottom: 8px; font-size: 13.5px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start;
+    line-height: 1.65;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    overflow: hidden; cursor: pointer;
+  }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text3); flex-shrink: 0;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle {
+    transform: rotate(45deg);
+    background: rgba(92,255,176,0.12);
+    border-color: rgba(92,255,176,0.3); color: var(--accent);
+  }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner {
+    padding: 0.85rem 1rem 1rem;
+    font-size: 13.5px; color: var(--text2); line-height: 1.75;
+    border-top: 1px solid var(--border);
+  }
+  .qa-answer-inner code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; font-size: 12px; color: var(--text3);
+    padding-top: 1rem; border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+  /* inline code shorthand */
+  ic {
+    font-family: var(--font-mono); font-size: 12.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px;
+    color: var(--yellow); display: inline;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · ES6+</div>
+    <h1>ES6+ Modern Syntax</h1>
+    <p>Destructuring · Spread/Rest · Optional Chaining · Nullish Coalescing · Template Literals · Shorthand Properties</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Destructuring</a>
+    <a class="topic-pill" href="#s2">2. Spread / Rest</a>
+    <a class="topic-pill" href="#s3">3. Optional Chaining</a>
+    <a class="topic-pill" href="#s4">4. Nullish Coalescing</a>
+    <a class="topic-pill" href="#s5">5. Template Literals</a>
+    <a class="topic-pill" href="#s6">6. Shorthand Properties</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Destructuring
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Destructuring <span class="tag">ES6</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Destructuring</strong> lets you unpack values from arrays or properties from objects into distinct variables using a concise syntax that mirrors the structure of the data.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'dest-obj')">Object</button>
+      <button class="tab-btn" onclick="showTab(event,'dest-arr')">Array</button>
+      <button class="tab-btn" onclick="showTab(event,'dest-adv')">Advanced</button>
+      <button class="tab-btn" onclick="showTab(event,'dest-param')">Function params</button>
+    </div>
+
+    <!-- Object destructuring -->
+    <div id="tab-dest-obj" class="tab-panel active">
+      <div class="before-after">
+        <div class="ba-card">
+          <div class="ba-label label-before">✗ Before ES6</div>
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> user = { <span class="cp">name</span>: <span class="cs">"Alice"</span>, <span class="cp">age</span>: <span class="cn">30</span>, <span class="cp">city</span>: <span class="cs">"Delhi"</span> };</span>
+<span class="line"><span class="ck">const</span> name = user.name;</span>
+<span class="line"><span class="ck">const</span> age  = user.age;</span>
+<span class="line"><span class="ck">const</span> city = user.city;</span>
+          </div>
+        </div>
+        <div class="ba-card">
+          <div class="ba-label label-after">✓ ES6 Destructuring</div>
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> user = { <span class="cp">name</span>: <span class="cs">"Alice"</span>, <span class="cp">age</span>: <span class="cn">30</span>, <span class="cp">city</span>: <span class="cs">"Delhi"</span> };</span>
+<span class="line"><span class="ck">const</span> { name, age, city } = user;</span>
+<span class="line"><span class="cm">// name → "Alice", age → 30, city → "Delhi"</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="line"><span class="cm">// Renaming while destructuring (aliasing)</span></span>
+<span class="line"><span class="ck">const</span> { name: <span class="cp">userName</span>, age: <span class="cp">userAge</span> } = user;</span>
+<span class="line"><span class="cm">// userName → "Alice",  userAge → 30</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Default values — used when property is undefined</span></span>
+<span class="line"><span class="ck">const</span> { name, role = <span class="cs">"guest"</span>, score = <span class="cn">0</span> } = user;</span>
+<span class="line"><span class="cm">// role → "guest" (missing from object), score → 0</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Rename + default together</span></span>
+<span class="line"><span class="ck">const</span> { name: <span class="cp">n</span> = <span class="cs">"Anonymous"</span> } = {};</span>
+<span class="line"><span class="cm">// n → "Anonymous"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Nested object destructuring</span></span>
+<span class="line"><span class="ck">const</span> profile = { user: { name: <span class="cs">"Bob"</span>, address: { city: <span class="cs">"Mumbai"</span> } } };</span>
+<span class="line"><span class="ck">const</span> { user: { name: <span class="cp">pName</span>, address: { city: <span class="cp">pCity</span> } } } = profile;</span>
+<span class="line"><span class="cm">// pName → "Bob",  pCity → "Mumbai"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Rest in object destructuring — collect remaining props</span></span>
+<span class="line"><span class="ck">const</span> { name: <span class="cp">first</span>, ...rest } = { name: <span class="cs">"Alice"</span>, age: <span class="cn">30</span>, city: <span class="cs">"Delhi"</span> };</span>
+<span class="line"><span class="cm">// first → "Alice",  rest → { age: 30, city: "Delhi" }</span></span>
+      </div>
+    </div>
+
+    <!-- Array destructuring -->
+    <div id="tab-dest-arr" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Basic array destructuring — position-based</span></span>
+<span class="line"><span class="ck">const</span> [a, b, c] = [<span class="cn">10</span>, <span class="cn">20</span>, <span class="cn">30</span>];</span>
+<span class="line"><span class="cm">// a → 10,  b → 20,  c → 30</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Skipping elements with holes</span></span>
+<span class="line"><span class="ck">const</span> [first, , third] = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>];</span>
+<span class="line"><span class="cm">// first → 1,  third → 3  (2 is skipped)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Default values</span></span>
+<span class="line"><span class="ck">const</span> [x = <span class="cn">0</span>, y = <span class="cn">0</span>] = [<span class="cn">5</span>];</span>
+<span class="line"><span class="cm">// x → 5,  y → 0  (default used)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Rest element — collect remaining items</span></span>
+<span class="line"><span class="ck">const</span> [head, ...tail] = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>, <span class="cn">5</span>];</span>
+<span class="line"><span class="cm">// head → 1,  tail → [2, 3, 4, 5]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Swapping variables — classic ES6 trick!</span></span>
+<span class="line"><span class="ck">let</span> p = <span class="cn">1</span>, q = <span class="cn">2</span>;</span>
+<span class="line">[p, q] = [q, p];</span>
+<span class="line"><span class="cm">// p → 2,  q → 1  (no temp variable needed!)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Destructure function return value</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">getRange</span>() { <span class="ck">return</span> [<span class="cn">0</span>, <span class="cn">100</span>]; }</span>
+<span class="line"><span class="ck">const</span> [min, max] = <span class="cf">getRange</span>();</span>
+<span class="line"><span class="cm">// min → 0,  max → 100</span></span>
+      </div>
+    </div>
+
+    <!-- Advanced destructuring -->
+    <div id="tab-dest-adv" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Destructuring arrays of objects</span></span>
+<span class="line"><span class="ck">const</span> users = [</span>
+<span class="line">  { <span class="cp">id</span>: <span class="cn">1</span>, <span class="cp">name</span>: <span class="cs">"Alice"</span> },</span>
+<span class="line">  { <span class="cp">id</span>: <span class="cn">2</span>, <span class="cp">name</span>: <span class="cs">"Bob"</span> }</span>
+<span class="line">];</span>
+<span class="line"><span class="ck">const</span> [{ name: <span class="cp">first</span> }, { name: <span class="cp">second</span> }] = users;</span>
+<span class="line"><span class="cm">// first → "Alice",  second → "Bob"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Mixed: object containing array</span></span>
+<span class="line"><span class="ck">const</span> { scores: [top] } = { scores: [<span class="cn">98</span>, <span class="cn">85</span>, <span class="cn">70</span>] };</span>
+<span class="line"><span class="cm">// top → 98</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Destructuring in for...of loops</span></span>
+<span class="line"><span class="ck">const</span> entries = [["a", <span class="cn">1</span>], ["b", <span class="cn">2</span>]];</span>
+<span class="line"><span class="ck">for</span> (<span class="ck">const</span> [key, value] <span class="ck">of</span> entries) {</span>
+<span class="line">  console.log(key, value); <span class="cm">// "a" 1 → "b" 2</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Object.entries() pattern — very common!</span></span>
+<span class="line"><span class="ck">const</span> obj = { a: <span class="cn">1</span>, b: <span class="cn">2</span>, c: <span class="cn">3</span> };</span>
+<span class="line"><span class="ck">for</span> (<span class="ck">const</span> [key, value] <span class="ck">of</span> Object.entries(obj)) {</span>
+<span class="line">  console.log(`${key}: ${value}`);</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// "a: 1", "b: 2", "c: 3"</span></span>
+      </div>
+    </div>
+
+    <!-- Function param destructuring -->
+    <div id="tab-dest-param" class="tab-panel">
+      <div class="before-after">
+        <div class="ba-card">
+          <div class="ba-label label-before">✗ Old style</div>
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>(user) {</span>
+<span class="line">  <span class="ck">const</span> name = user.name;</span>
+<span class="line">  <span class="ck">const</span> age  = user.age;</span>
+<span class="line">  console.log(name, age);</span>
+<span class="line">}</span>
+          </div>
+        </div>
+        <div class="ba-card">
+          <div class="ba-label label-after">✓ Destructured params</div>
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>({ name, age }) {</span>
+<span class="line">  console.log(name, age);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">greet</span>({ name: <span class="cs">"Alice"</span>, age: <span class="cn">30</span> });</span>
+          </div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// With defaults in parameters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">createUser</span>({ name = <span class="cs">"Anonymous"</span>, role = <span class="cs">"user"</span>, active = <span class="ck">true</span> } = {}) {</span>
+<span class="line">  <span class="ck">return</span> { name, role, active };</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// The = {} at the end lets you call createUser() with no arguments at all</span></span>
+<span class="line"><span class="cf">createUser</span>();                         <span class="cm">// → { name: "Anonymous", role: "user", active: true }</span></span>
+<span class="line"><span class="cf">createUser</span>({ name: <span class="cs">"Alice"</span> });       <span class="cm">// → { name: "Alice", role: "user", active: true }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Array param destructuring</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">sum</span> = ([a, b, c = <span class="cn">0</span>]) => a + b + c;</span>
+<span class="line"><span class="cf">sum</span>([<span class="cn">1</span>, <span class="cn">2</span>]);      <span class="cm">// → 3   (c defaults to 0)</span></span>
+<span class="line"><span class="cf">sum</span>([<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>]);   <span class="cm">// → 6</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Spread / Rest
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Spread &amp; Rest <ic style="font-size:14px">...</ic> <span class="tag">ES6 / ES2018</span></h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">💡</span>
+      <span>Same <ic>...</ic> syntax, opposite purpose: <strong>Spread</strong> expands an iterable into individual elements. <strong>Rest</strong> collects multiple elements into a single array/object. Context tells them apart.</span>
+    </div>
+
+    <div class="two-col">
+      <div class="syn-card">
+        <div class="syn-card-title" style="color:var(--accent)">📤 Spread — expand out</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">Used on the RIGHT side of an assignment or as an argument</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="cm">// Arrays</span></span>
+<span class="line"><span class="ck">const</span> a = [<span class="cn">1</span>, <span class="cn">2</span>];</span>
+<span class="line"><span class="ck">const</span> b = [<span class="cn">3</span>, <span class="cn">4</span>];</span>
+<span class="line"><span class="ck">const</span> c = [...a, ...b]; <span class="cm">// [1,2,3,4]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Objects (ES2018+)</span></span>
+<span class="line"><span class="ck">const</span> base = { x: <span class="cn">1</span>, y: <span class="cn">2</span> };</span>
+<span class="line"><span class="ck">const</span> ext  = { ...base, z: <span class="cn">3</span> };</span>
+<span class="line"><span class="cm">// { x:1, y:2, z:3 }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Function call</span></span>
+<span class="line"><span class="ck">const</span> nums = [<span class="cn">5</span>, <span class="cn">2</span>, <span class="cn">8</span>];</span>
+<span class="line">Math.max(...nums); <span class="cm">// → 8</span></span>
+        </div>
+      </div>
+      <div class="syn-card">
+        <div class="syn-card-title" style="color:var(--purple)">📥 Rest — collect in</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">Used on the LEFT side — must be the LAST element</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="cm">// Function parameters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">sum</span>(...nums) {</span>
+<span class="line">  <span class="ck">return</span> nums.reduce((a,b) => a+b, <span class="cn">0</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">sum</span>(<span class="cn">1</span>,<span class="cn">2</span>,<span class="cn">3</span>,<span class="cn">4</span>); <span class="cm">// → 10</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Array destructuring rest</span></span>
+<span class="line"><span class="ck">const</span> [first, ...rest] = [<span class="cn">10</span>,<span class="cn">20</span>,<span class="cn">30</span>];</span>
+<span class="line"><span class="cm">// rest → [20, 30]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Object destructuring rest</span></span>
+<span class="line"><span class="ck">const</span> { a, ...others } = { a:<span class="cn">1</span>, b:<span class="cn">2</span>, c:<span class="cn">3</span> };</span>
+<span class="line"><span class="cm">// others → { b:2, c:3 }</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// ── Practical spread patterns ──</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Shallow copy array (avoids mutating original)</span></span>
+<span class="line"><span class="ck">const</span> original = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>];</span>
+<span class="line"><span class="ck">const</span> copy = [...original];        <span class="cm">// [1, 2, 3] — new array</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Shallow copy object</span></span>
+<span class="line"><span class="ck">const</span> user = { name: <span class="cs">"Alice"</span>, age: <span class="cn">30</span> };</span>
+<span class="line"><span class="ck">const</span> updated = { ...user, age: <span class="cn">31</span> }; <span class="cm">// { name:"Alice", age:31 } — age overwritten</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Merge objects — LAST value wins for duplicate keys</span></span>
+<span class="line"><span class="ck">const</span> defaults = { theme: <span class="cs">"dark"</span>, lang: <span class="cs">"en"</span>, size: <span class="cs">"md"</span> };</span>
+<span class="line"><span class="ck">const</span> overrides = { lang: <span class="cs">"fr"</span>, size: <span class="cs">"lg"</span> };</span>
+<span class="line"><span class="ck">const</span> settings = { ...defaults, ...overrides };</span>
+<span class="line"><span class="cm">// { theme:"dark", lang:"fr", size:"lg" }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Convert string / Set / NodeList to array</span></span>
+<span class="line">[...<span class="cs">"hello"</span>]              <span class="cm">// → ["h","e","l","l","o"]</span></span>
+<span class="line">[...<span class="ck">new</span> Set([<span class="cn">1</span>,<span class="cn">1</span>,<span class="cn">2</span>])]    <span class="cm">// → [1, 2]  (dedup!)</span></span>
+<span class="line">[...document.querySelectorAll(<span class="cs">"p"</span>)]  <span class="cm">// → real Array with all .map etc.</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ⚠️ Spread is SHALLOW — nested objects still share reference</span></span>
+<span class="line"><span class="ck">const</span> obj = { a: { val: <span class="cn">1</span> } };</span>
+<span class="line"><span class="ck">const</span> obj2 = { ...obj };</span>
+<span class="line">obj2.a.val = <span class="cn">99</span>;           <span class="cm">// mutates obj.a.val too!</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Rest must be last:</strong> <ic>const [a, ...rest, b] = arr</ic> → SyntaxError. Rest/spread in object literals requires ES2018+. Spread is always a <em>shallow</em> copy.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Optional Chaining
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Optional Chaining <ic style="font-size:14px;color:var(--yellow)">?.</ic> <span class="tag">ES2020</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Optional chaining</strong> short-circuits and returns <ic>undefined</ic> (instead of throwing a TypeError) when accessing a property on <ic>null</ic> or <ic>undefined</ic>. Safe deep-access without verbose null checks.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Before — verbose null guards</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> city = user</span>
+<span class="line">  &amp;&amp; user.address</span>
+<span class="line">  &amp;&amp; user.address.city;</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> len = arr &amp;&amp; arr.length;</span>
+<span class="line"></span>
+<span class="line"><span class="ck">if</span> (obj &amp;&amp; obj.fn) obj.fn();</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ With optional chaining</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> city = user?.address?.city;</span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> len = arr?.length;</span>
+<span class="line"></span>
+<span class="line">obj?.fn?.();</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// 4 forms of optional chaining</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 1. Property access</span></span>
+<span class="line"><span class="ck">const</span> city = user?.address?.city;   <span class="cm">// → "Delhi" or undefined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 2. Method call — won't throw if method doesn't exist</span></span>
+<span class="line"><span class="ck">const</span> upper = str?.toUpperCase();   <span class="cm">// → "HELLO" or undefined</span></span>
+<span class="line">obj?.fn?.();                         <span class="cm">// call only if obj AND fn both exist</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 3. Bracket notation (dynamic keys)</span></span>
+<span class="line"><span class="ck">const</span> key = <span class="cs">"name"</span>;</span>
+<span class="line"><span class="ck">const</span> val = user?.[key];            <span class="cm">// → "Alice" or undefined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 4. Optional function call</span></span>
+<span class="line"><span class="ck">const</span> callback = <span class="ck">null</span>;</span>
+<span class="line">callback?.(<span class="cs">"data"</span>);                  <span class="cm">// does nothing — no error</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Combine with ?? for a safe fallback</span></span>
+<span class="line"><span class="ck">const</span> city2 = user?.address?.city ?? <span class="cs">"Unknown"</span>;</span>
+<span class="line"><span class="cm">// → city value, or "Unknown" if any part is null/undefined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Real-world: API response drilling</span></span>
+<span class="line"><span class="ck">const</span> price = response?.data?.products?.[<span class="cn">0</span>]?.price ?? <span class="cn">0</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ⚠️ Short-circuit — stops at first null/undefined, returns undefined</span></span>
+<span class="line"><span class="ck">const</span> u = <span class="ck">null</span>;</span>
+<span class="line">u?.doSomethingWithSideEffect();  <span class="cm">// side effect is NEVER called</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Not for assignment:</strong> <ic>user?.address = "x"</ic> → SyntaxError. Optional chaining is read-only. Also: don't overuse it — if something <em>should</em> always exist, a TypeError is a useful bug signal.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Nullish Coalescing
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Nullish Coalescing <ic style="font-size:14px;color:var(--yellow)">??</ic> <span class="tag">ES2020</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>??</strong> returns the right-hand side only when the left side is <strong>null or undefined</strong> — NOT for other falsy values like <ic>0</ic>, <ic>""</ic>, or <ic>false</ic>. This is the key difference from <ic>||</ic>.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead>
+        <tr><th>Left-hand value</th><th>?? result</th><th>|| result</th><th>Why they differ</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>null</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="font-size:12px;color:var(--text3)">Both treat null as missing</td>
+        </tr>
+        <tr>
+          <td>undefined</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="font-size:12px;color:var(--text3)">Both treat undefined as missing</td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td style="color:var(--yellow)">→ LHS (keeps 0)</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="font-size:12px;color:var(--red)">⚠ || treats 0 as missing!</td>
+        </tr>
+        <tr>
+          <td>""</td>
+          <td style="color:var(--yellow)">→ LHS (keeps "")</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="font-size:12px;color:var(--red)">⚠ || treats "" as missing!</td>
+        </tr>
+        <tr>
+          <td>false</td>
+          <td style="color:var(--yellow)">→ LHS (keeps false)</td>
+          <td style="color:var(--accent)">→ RHS (fallback)</td>
+          <td style="font-size:12px;color:var(--red)">⚠ || treats false as missing!</td>
+        </tr>
+        <tr>
+          <td>"hello"</td>
+          <td style="color:var(--yellow)">→ LHS (keeps "hello")</td>
+          <td style="color:var(--yellow)">→ LHS (keeps "hello")</td>
+          <td style="font-size:12px;color:var(--text3)">Both keep truthy values</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// || vs ?? — the key difference</span></span>
+<span class="line"><span class="ck">const</span> score = <span class="cn">0</span>;</span>
+<span class="line">score || <span class="cn">100</span>   <span class="cm">// → 100  ← WRONG! 0 is a valid score, but || treats it as falsy</span></span>
+<span class="line">score ?? <span class="cn">100</span>   <span class="cm">// → 0    ← CORRECT! ?? only checks null/undefined</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Real-world: form inputs often send "" which is valid</span></span>
+<span class="line"><span class="ck">const</span> input = <span class="cs">""</span>;</span>
+<span class="line">input || <span class="cs">"default"</span>   <span class="cm">// → "default"  (may not be what you want)</span></span>
+<span class="line">input ?? <span class="cs">"default"</span>   <span class="cm">// → ""         (preserves empty string)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Chaining ?? for multiple fallbacks</span></span>
+<span class="line"><span class="ck">const</span> val = a ?? b ?? c ?? <span class="cs">"final fallback"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ??= Assignment operator (ES2021)</span></span>
+<span class="line"><span class="ck">let</span> config = <span class="ck">null</span>;</span>
+<span class="line">config ??= { theme: <span class="cs">"dark"</span> };  <span class="cm">// assigns only if null/undefined</span></span>
+<span class="line"><span class="cm">// config → { theme: "dark" }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Power combo: optional chaining + nullish coalescing</span></span>
+<span class="line"><span class="ck">const</span> displayName = user?.profile?.displayName ?? user?.name ?? <span class="cs">"Guest"</span>;</span>
+<span class="line"><span class="ck">const</span> port = config?.server?.port ?? <span class="cn">3000</span>;</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Cannot mix ?? with || or && without parentheses</strong> — <ic>a || b ?? c</ic> → SyntaxError. Use explicit parentheses: <ic>(a || b) ?? c</ic>.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Template Literals
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Template Literals <ic style="font-size:14px;color:var(--yellow)">` `</ic> <span class="tag">ES6</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Template literals use backticks (<ic>`</ic>) instead of quotes. They support <strong>embedded expressions</strong> via <ic>${...}</ic>, true <strong>multi-line strings</strong>, and the powerful <strong>tagged template</strong> pattern.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'tmpl-basic')">Basics</button>
+      <button class="tab-btn" onclick="showTab(event,'tmpl-multi')">Multi-line</button>
+      <button class="tab-btn" onclick="showTab(event,'tmpl-tagged')">Tagged templates</button>
+      <button class="tab-btn" onclick="showTab(event,'tmpl-patterns')">Patterns</button>
+    </div>
+
+    <div id="tab-tmpl-basic" class="tab-panel active">
+      <div class="before-after">
+        <div class="ba-card">
+          <div class="ba-label label-before">✗ Old string concat</div>
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> msg = <span class="cs">"Hello, "</span> + name +</span>
+<span class="line">  <span class="cs">"! You are "</span> + age +</span>
+<span class="line">  <span class="cs">" years old."</span>;</span>
+          </div>
+        </div>
+        <div class="ba-card">
+          <div class="ba-label label-after">✓ Template literal</div>
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> msg = <span class="cs">`Hello, ${name}!</span></span>
+<span class="line"><span class="cs">You are ${age} years old.`</span>;</span>
+          </div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Expressions inside ${} — any valid JS expression</span></span>
+<span class="line"><span class="ck">const</span> a = <span class="cn">5</span>, b = <span class="cn">10</span>;</span>
+<span class="line">console.log(<span class="cs">`Sum: ${a + b}`</span>);         <span class="cm">// → "Sum: 15"</span></span>
+<span class="line">console.log(<span class="cs">`Result: ${a > b ? a : b}`</span>); <span class="cm">// → "Result: 10" (ternary)</span></span>
+<span class="line">console.log(<span class="cs">`Upper: ${"hello".toUpperCase()}`</span>); <span class="cm">// → "Upper: HELLO"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Nested template literals</span></span>
+<span class="line"><span class="ck">const</span> items = [<span class="cs">"a"</span>, <span class="cs">"b"</span>, <span class="cs">"c"</span>];</span>
+<span class="line"><span class="ck">const</span> html = <span class="cs">`&lt;ul&gt;${items.map(i => `&lt;li&gt;${i}&lt;/li&gt;`).join(<span class="cs">""</span>)}&lt;/ul&gt;`</span>;</span>
+<span class="line"><span class="cm">// → "&lt;ul&gt;&lt;li&gt;a&lt;/li&gt;&lt;li&gt;b&lt;/li&gt;&lt;li&gt;c&lt;/li&gt;&lt;/ul&gt;"</span></span>
+      </div>
+    </div>
+
+    <div id="tab-tmpl-multi" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// True multi-line — no \n needed</span></span>
+<span class="line"><span class="ck">const</span> poem = <span class="cs">`Roses are red,</span></span>
+<span class="line"><span class="cs">Violets are blue,</span></span>
+<span class="line"><span class="cs">JavaScript is great,</span></span>
+<span class="line"><span class="cs">And so are you.`</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Building HTML templates</span></span>
+<span class="line"><span class="ck">const</span> card = ({ name, role, avatar }) => <span class="cs">`</span></span>
+<span class="line"><span class="cs">  &lt;div class="card"&gt;</span></span>
+<span class="line"><span class="cs">    &lt;img src="${avatar}" alt="${name}"&gt;</span></span>
+<span class="line"><span class="cs">    &lt;h2&gt;${name}&lt;/h2&gt;</span></span>
+<span class="line"><span class="cs">    &lt;p&gt;${role}&lt;/p&gt;</span></span>
+<span class="line"><span class="cs">  &lt;/div&gt;</span></span>
+<span class="line"><span class="cs">`</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// SQL / multiline queries</span></span>
+<span class="line"><span class="ck">const</span> query = <span class="cs">`</span></span>
+<span class="line"><span class="cs">  SELECT id, name, email</span></span>
+<span class="line"><span class="cs">  FROM users</span></span>
+<span class="line"><span class="cs">  WHERE active = true</span></span>
+<span class="line"><span class="cs">  ORDER BY name ASC</span></span>
+<span class="line"><span class="cs">`</span>;</span>
+      </div>
+    </div>
+
+    <div id="tab-tmpl-tagged" class="tab-panel">
+      <div class="callout callout-purple">
+        <span class="callout-icon">🏷️</span>
+        <span><strong>Tagged templates</strong> let a function process a template literal — receiving the string parts and interpolated values separately. Used in styled-components, GraphQL (gql`...`), SQL sanitization, i18n, and more.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Tag function signature: (strings, ...values)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">tag</span>(strings, ...values) {</span>
+<span class="line">  console.log(strings); <span class="cm">// array of string parts</span></span>
+<span class="line">  console.log(values);  <span class="cm">// array of interpolated values</span></span>
+<span class="line">  <span class="ck">return</span> strings.raw[<span class="cn">0</span>]; <span class="cm">// .raw gives unprocessed escape sequences</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cf">tag</span><span class="cs">`Hello ${<span class="cs">"Alice"</span>}, you are ${<span class="cn">30</span>} years old`</span>;</span>
+<span class="line"><span class="cm">// strings → ["Hello ", ", you are ", " years old"]</span></span>
+<span class="line"><span class="cm">// values  → ["Alice", 30]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical: HTML escaping (sanitize user input)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">safeHtml</span>(strings, ...vals) {</span>
+<span class="line">  <span class="ck">return</span> strings.reduce((acc, str, i) => {</span>
+<span class="line">    <span class="ck">const</span> val = (vals[i] ?? <span class="cs">""</span>).toString()</span>
+<span class="line">      .replace(/&amp;/g, <span class="cs">"&amp;amp;"</span>)</span>
+<span class="line">      .replace(/&lt;/g, <span class="cs">"&amp;lt;"</span>)</span>
+<span class="line">      .replace(/&gt;/g, <span class="cs">"&amp;gt;"</span>);</span>
+<span class="line">    <span class="ck">return</span> acc + str + val;</span>
+<span class="line">  }, <span class="cs">""</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> userInput = <span class="cs">"&lt;script&gt;alert('xss')&lt;/script&gt;"</span>;</span>
+<span class="line"><span class="cf">safeHtml</span><span class="cs">`&lt;p&gt;${userInput}&lt;/p&gt;`</span>; <span class="cm">// → "&lt;p&gt;&amp;lt;script&amp;gt;...&amp;lt;/script&amp;gt;&lt;/p&gt;"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// You've used tagged templates if you've used:</span></span>
+<span class="line"><span class="cm">// styled-components: css`color: red;`</span></span>
+<span class="line"><span class="cm">// GraphQL:           gql`query { user { id } }`</span></span>
+      </div>
+    </div>
+
+    <div id="tab-tmpl-patterns" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Conditional rendering pattern</span></span>
+<span class="line"><span class="ck">const</span> badge = <span class="cs">`${isAdmin ? <span class="cs">"[ADMIN]"</span> : <span class="cs">""</span>} ${name}`</span>.trim();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// String padding / formatting</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">pad</span> = (n) => <span class="cs">`${n}`.padStart(<span class="cn">2</span>, <span class="cs">"0"</span>)</span>;</span>
+<span class="line">console.log(<span class="cs">`${<span class="cf">pad</span>(<span class="cn">9</span>)}:${<span class="cf">pad</span>(<span class="cn">5</span>)}`</span>);  <span class="cm">// → "09:05"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// URL builder</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">apiUrl</span> = (endpoint, id) => <span class="cs">`https://api.example.com/v1/${endpoint}/${id}`</span>;</span>
+<span class="line"><span class="cf">apiUrl</span>(<span class="cs">"users"</span>, <span class="cn">42</span>); <span class="cm">// → "https://api.example.com/v1/users/42"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Dynamic class names (React pattern)</span></span>
+<span class="line"><span class="ck">const</span> className = <span class="cs">`btn ${isActive ? <span class="cs">"btn-active"</span> : <span class="cs">"btn-inactive"</span>} ${size}`</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// String.raw — raw template tag, no escape processing</span></span>
+<span class="line">String.raw<span class="cs">`C:\Users\Alice\node`</span>; <span class="cm">// → "C:\Users\Alice\node" (backslashes literal)</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Shorthand Properties
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Shorthand Properties &amp; Methods <span class="tag">ES6</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>ES6 added several object literal enhancements: <strong>property shorthand</strong> when key equals variable name, <strong>method shorthand</strong> (no <ic>function</ic> keyword), and <strong>computed property names</strong> with <ic>[expr]</ic>.</span>
+    </div>
+
+    <div class="cheat-grid">
+
+      <div class="cheat-card">
+        <div class="cheat-title">Property Shorthand</div>
+        <div class="cheat-desc">When variable name matches key name — omit the value.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> name = <span class="cs">"Alice"</span>;</span>
+<span class="line"><span class="ck">const</span> age  = <span class="cn">30</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Old</span></span>
+<span class="line"><span class="ck">const</span> user = { name: name, age: age };</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ES6 shorthand ✓</span></span>
+<span class="line"><span class="ck">const</span> user = { name, age };</span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Method Shorthand</div>
+        <div class="cheat-desc">No <ic>function</ic> keyword needed for object methods.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// Old</span></span>
+<span class="line"><span class="ck">const</span> obj = {</span>
+<span class="line">  greet: <span class="ck">function</span>() { <span class="ck">return</span> <span class="cs">"hi"</span>; }</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ES6 shorthand ✓</span></span>
+<span class="line"><span class="ck">const</span> obj = {</span>
+<span class="line">  <span class="cf">greet</span>() { <span class="ck">return</span> <span class="cs">"hi"</span>; }</span>
+<span class="line">};</span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Computed Property Names</div>
+        <div class="cheat-desc">Dynamic keys using expressions inside <ic>[...]</ic>.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> key = <span class="cs">"name"</span>;</span>
+<span class="line"><span class="ck">const</span> prefix = <span class="cs">"get"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> obj = {</span>
+<span class="line">  [key]: <span class="cs">"Alice"</span>,          <span class="cm">// → name: "Alice"</span></span>
+<span class="line">  [`${prefix}Name`]() {    <span class="cm">// → getName()</span></span>
+<span class="line">    <span class="ck">return</span> <span class="ck">this</span>.name;</span>
+<span class="line">  }</span>
+<span class="line">};</span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Getter &amp; Setter Shorthand</div>
+        <div class="cheat-desc">Define computed/validated properties elegantly.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> person = {</span>
+<span class="line">  _name: <span class="cs">"Alice"</span>,</span>
+<span class="line">  <span class="ck">get</span> <span class="cf">name</span>()  { <span class="ck">return</span> <span class="ck">this</span>._name; },</span>
+<span class="line">  <span class="ck">set</span> <span class="cf">name</span>(v) {</span>
+<span class="line">    <span class="ck">if</span> (<span class="ck">typeof</span> v === <span class="cs">"string"</span>)</span>
+<span class="line">      <span class="ck">this</span>._name = v;</span>
+<span class="line">  }</span>
+<span class="line">};</span>
+<span class="line">person.name = <span class="cs">"Bob"</span>;  <span class="cm">// uses setter</span></span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Shorthand in Practice</div>
+        <div class="cheat-desc">All three combined — extremely common in React &amp; Node.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">createUser</span>(name, age, role) {</span>
+<span class="line">  <span class="ck">const</span> id = Math.random();</span>
+<span class="line">  <span class="ck">const</span> createdAt = Date.now();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    id,         <span class="cm">// shorthand</span></span>
+<span class="line">    name,       <span class="cm">// shorthand</span></span>
+<span class="line">    age,        <span class="cm">// shorthand</span></span>
+<span class="line">    role,       <span class="cm">// shorthand</span></span>
+<span class="line">    createdAt,  <span class="cm">// shorthand</span></span>
+<span class="line">    <span class="cf">greet</span>() {  <span class="cm">// method shorthand</span></span>
+<span class="line">      <span class="ck">return</span> <span class="cs">`Hi, I'm ${<span class="ck">this</span>.name}`</span>;</span>
+<span class="line">    }</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Dynamic Keys Pattern</div>
+        <div class="cheat-desc">Build objects with computed keys — useful for form state &amp; Redux.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// Form field update pattern</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">updateField</span>(state, field, val) {</span>
+<span class="line">  <span class="ck">return</span> { ...state, [field]: val };</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">updateField</span>(form, <span class="cs">"email"</span>, <span class="cs">"a@b.com"</span>);</span>
+<span class="line"><span class="cm">// → { ...form, email: "a@b.com" }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Build object from array of keys</span></span>
+<span class="line"><span class="ck">const</span> keys = [<span class="cs">"a"</span>, <span class="cs">"b"</span>, <span class="cs">"c"</span>];</span>
+<span class="line"><span class="ck">const</span> obj = Object.fromEntries(</span>
+<span class="line">  keys.map(k => [k, <span class="cn">0</span>])</span>
+<span class="line">); <span class="cm">// → { a:0, b:0, c:0 }</span></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Destructuring undefined throws:</strong> <code>const { a } = null</code> → TypeError. Always provide a fallback: <code>const { a } = obj ?? {}</code> or check before destructuring.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Default values only trigger on undefined, not null:</strong> <code>const { x = 5 } = { x: null }</code> → <code>x</code> is <code>null</code>, not <code>5</code>. Defaults activate only when the value is <code>undefined</code>.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Spread is shallow:</strong> <code>const c = { ...obj }</code> — nested objects inside <code>obj</code> are still shared references. Mutating <code>c.nested.val</code> also changes <code>obj.nested.val</code>.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Rest must be last:</strong> <code>const [a, ...rest, b] = arr</code> and <code>function f(...args, last)</code> are both SyntaxErrors. The rest element must always be the final one.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Spread merging — last key wins:</strong> <code>{ a: 1, ...{ a: 2 } }</code> → <code>{ a: 2 }</code>. When merging objects with spread, order matters — later spreads overwrite earlier values.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Optional chaining on the left side:</strong> <code>user?.name = "Bob"</code> → SyntaxError. <code>?.</code> is read-only — you cannot assign through optional chaining.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>?? cannot be chained with || or && directly:</strong> <code>a || b ?? c</code> → SyntaxError. Always add parentheses: <code>(a || b) ?? c</code>.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Template literal whitespace is literal:</strong> Indentation inside a template literal becomes part of the string. Use <code>.trim()</code> or <code>String.raw</code> when exact whitespace matters.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Computed property names evaluate once:</strong> <code>const key = "x"; const obj = { [key++]: 1, [key++]: 2 }</code> — each <code>[key++]</code> is evaluated at object-literal creation time, left to right.</span>
+      </li>
+      <li>
+        <span class="gi">⚠️</span>
+        <span><strong>Method shorthand vs arrow function in objects differ in <code>this</code>:</strong> <code>greet() {}</code> has its own <code>this</code> (the object). <code>greet: () => {}</code> captures <code>this</code> from the enclosing scope — never use arrow functions as object methods that need <code>this</code>.</span>
+      </li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What is the difference between spread and rest? They use the same syntax.</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Same <code>...</code> syntax, opposite operations. <strong>Spread</strong> expands an iterable into individual elements — used on the right-hand side of assignments or as function arguments: <code>[...arr]</code>, <code>{...obj}</code>, <code>fn(...args)</code>.<br><br>
+          <strong>Rest</strong> collects multiple elements into a single array or object — used on the left-hand side of destructuring or as the last function parameter: <code>const [first, ...rest] = arr</code>, <code>function f(...args)</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: How would you swap two variables without a temporary variable in ES6?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Using array destructuring: <code>[a, b] = [b, a]</code>. The right side creates a new array <code>[b, a]</code>, then destructuring assigns the first element back to <code>a</code> and the second to <code>b</code>. No temp variable needed.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">let</span> x = <span class="cn">1</span>, y = <span class="cn">2</span>;</span>
+<span class="line">[x, y] = [y, x];</span>
+<span class="line">console.log(x, y); <span class="cm">// → 2, 1</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: What is the difference between ?? and ||?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>||</code> returns the right-hand side if the left side is any <strong>falsy</strong> value — including <code>0</code>, <code>""</code>, <code>false</code>.<br><br>
+          <code>??</code> (nullish coalescing) returns the right-hand side only if the left is <strong>null or undefined</strong>. This is important when <code>0</code>, empty string, or <code>false</code> are valid values you don't want to override.<br><br>
+          <strong>Rule of thumb:</strong> use <code>??</code> for "value not provided" and <code>||</code> for "falsy value — use default".
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What does optional chaining (?.) return when the chain hits null or undefined?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It short-circuits and returns <code>undefined</code> — no TypeError is thrown. The rest of the chain is not evaluated. This is useful for safely drilling into deeply nested objects from API responses without wrapping everything in null checks.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> user = <span class="ck">null</span>;</span>
+<span class="line">user?.profile?.avatar  <span class="cm">// → undefined (no error)</span></span>
+<span class="line">user.profile           <span class="cm">// → TypeError: Cannot read properties of null</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: When do destructuring default values apply?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Only when the value is <strong>undefined</strong> — <em>not</em> when it's null, 0, false, or any other falsy value.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> { a = <span class="cn">5</span> } = { a: <span class="ck">undefined</span> }; <span class="cm">// → a = 5  (undefined triggers default)</span></span>
+<span class="line"><span class="ck">const</span> { b = <span class="cn">5</span> } = { b: <span class="ck">null</span> };      <span class="cm">// → b = null (null does NOT trigger default!)</span></span>
+<span class="line"><span class="ck">const</span> { c = <span class="cn">5</span> } = { c: <span class="cn">0</span> };         <span class="cm">// → c = 0   (0 does NOT trigger default)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: How do you remove a key from an object immutably using ES6?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use object destructuring with rest — destructure out the key you want to remove, collect everything else into a new object:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> user = { name: <span class="cs">"Alice"</span>, password: <span class="cs">"secret"</span>, age: <span class="cn">30</span> };</span>
+<span class="line"><span class="ck">const</span> { password, ...safeUser } = user;</span>
+<span class="line"><span class="cm">// safeUser → { name: "Alice", age: 30 }  (password omitted)</span></span>
+<span class="line"><span class="cm">// user is unchanged (immutable pattern)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What are tagged template literals and where are they used?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Tagged templates let a function process a template literal — the function receives the string parts as an array and the interpolated values as separate arguments. This enables transformations like HTML escaping, SQL sanitization, i18n, and custom DSLs.<br><br>
+          Real-world examples: <code>styled-components</code> uses <code>css`color:red`</code>, Apollo uses <code>gql`query {...}`</code>, and <code>String.raw`C:\path`</code> is a built-in tag that preserves raw backslashes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: What's the difference between method shorthand and an arrow function as a method?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>greet() { return this.name }</code> — method shorthand has its own <code>this</code>, bound to the object when called.<br><br>
+          <code>greet: () => this.name</code> — arrow function captures <code>this</code> from the surrounding lexical scope (usually the module/global), so <code>this</code> inside the arrow will NOT be the object. This is a common bug.<br><br>
+          <strong>Rule:</strong> always use method shorthand (or regular <code>function</code>) for object methods that need <code>this</code>. Reserve arrow functions for callbacks inside those methods.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q9: How do you rename a variable while destructuring and give it a default?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Combine the rename (<code>:</code>) and default (<code>=</code>) syntax in one expression:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> { name: <span class="cp">userName</span> = <span class="cs">"Anonymous"</span> } = {};</span>
+<span class="line"><span class="cm">// userName → "Anonymous"  (renamed AND defaulted)</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> { role: <span class="cp">userRole</span> = <span class="cs">"guest"</span> } = { role: <span class="cs">"admin"</span> };</span>
+<span class="line"><span class="cm">// userRole → "admin"  (value exists, default not used)</span></span>
+          </div>
+          The pattern reads: extract the <code>name</code> property, call it <code>userName</code> locally, and if <code>name</code> is undefined use <code>"Anonymous"</code>.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · ES6+ Syntax · Destructuring · Spread/Rest · Optional Chaining · Nullish Coalescing · Template Literals · Shorthand Properties
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  // Smooth scroll for nav pills
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Functions — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff79c6;
+    --accent2: #7c6aff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --blue: #6ab0ff;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,121,198,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,121,198,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.75rem;
+  }
+
+  .header-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(255,121,198,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: var(--font-head);
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff79c6 50%, #bd93f9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover {
+    background: rgba(255,121,198,0.1);
+    border-color: rgba(255,121,198,0.3);
+    color: var(--accent);
+  }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4d9e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-head);
+    font-size: 20px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.01em;
+  }
+
+  .section-header h2 .tag {
+    display: inline-block;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px;
+    vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(255,121,198,0.1); color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px; line-height: 1.85;
+    overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: var(--radius); padding: 0.75rem 1rem;
+    font-size: 13.5px; margin-bottom: 0.85rem;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+  .callout-pink   { background: rgba(255,121,198,0.07); border: 1px solid rgba(255,121,198,0.2); color: #ffb3e0; }
+
+  ic {
+    font-family: var(--font-mono); font-size: 12.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px;
+    color: var(--yellow); display: inline;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px;
+    padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active {
+    background: rgba(255,121,198,0.12); color: #ffb3e0;
+    border-color: rgba(255,121,198,0.35); font-weight: 500;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two / Three col ── */
+  .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 640px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Before / After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Feature comparison table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px;
+    background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td {
+    padding: 9px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text2); vertical-align: middle;
+  }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .partial { color: var(--amber); font-weight: 500; }
+
+  /* ── Syntax cards for 3 function types ── */
+  .fn-type-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .fn-type-title {
+    font-family: var(--font-head); font-size: 16px; font-weight: 700;
+    margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+  }
+  .fn-type-sub { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
+  .fn-type-card .code-block { margin-bottom: 0; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.75rem 0.95rem;
+    margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code {
+    font-family: var(--font-mono); font-size: 11.5px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
+    overflow: hidden; cursor: pointer;
+  }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text3); flex-shrink: 0;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle {
+    transform: rotate(45deg);
+    background: rgba(255,121,198,0.12);
+    border-color: rgba(255,121,198,0.3); color: var(--accent);
+  }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner {
+    padding: 0.85rem 1rem 1rem;
+    font-size: 13.5px; color: var(--text2); line-height: 1.75;
+    border-top: 1px solid var(--border);
+  }
+  .qa-answer-inner code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; font-size: 12px; color: var(--text3);
+    padding-top: 1rem; border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Functions</div>
+    <h1>How Functions Work</h1>
+    <p>Declarations vs Expressions vs Arrow Functions · Hoisting · arguments object · Default Parameters</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Declarations</a>
+    <a class="topic-pill" href="#s2">2. Expressions</a>
+    <a class="topic-pill" href="#s3">3. Arrow Functions</a>
+    <a class="topic-pill" href="#s4">4. Comparison Table</a>
+    <a class="topic-pill" href="#s5">5. arguments object</a>
+    <a class="topic-pill" href="#s6">6. Default Params</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Function Declarations
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Function Declarations <span class="tag">hoisted</span></h2>
+    </div>
+
+    <div class="fn-type-card">
+      <div class="fn-type-title" style="color:var(--accent)">📜 function name() {}</div>
+      <div class="fn-type-sub">Named, starts with the "function" keyword, statement (not an expression)</div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>(name) {</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">`Hello, ${name}!`</span>;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">greet</span>(<span class="cs">"Alice"</span>); <span class="cm">// → "Hello, Alice!"</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Fully hoisted</strong> — both the name AND the function body are hoisted to the top of their scope. This means you can call a function declaration <strong>before</strong> it appears in the code.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Works! Function declarations are hoisted with their full body</span></span>
+<span class="line">console.log(<span class="cf">sayHi</span>()); <span class="cm">// → "Hi!"  (no error, even though called before definition)</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">sayHi</span>() {</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">"Hi!"</span>;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Has its own `this`, `arguments` object, and can be used as a constructor</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Person</span>(name) { <span class="ck">this</span>.name = name; }</span>
+<span class="line"><span class="ck">const</span> p = <span class="ck">new</span> <span class="cf">Person</span>(<span class="cs">"Bob"</span>); <span class="cm">// works — regular functions can be constructors</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Named — shows up properly in stack traces</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">calculateTotal</span>() { <span class="ck">throw new</span> Error(<span class="cs">"oops"</span>); }</span>
+<span class="line"><span class="cm">// Stack trace shows "calculateTotal" — easier debugging</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Function Expressions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Function Expressions <span class="tag">not hoisted</span></h2>
+    </div>
+
+    <div class="fn-type-card">
+      <div class="fn-type-title" style="color:var(--accent)">📦 const fn = function() {}</div>
+      <div class="fn-type-sub">Function assigned to a variable — an expression, evaluated at runtime</div>
+      <div class="code-block">
+<span class="line"><span class="ck">const</span> greet = <span class="ck">function</span>(name) {</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">`Hello, ${name}!`</span>;</span>
+<span class="line">};</span>
+<span class="line">greet(<span class="cs">"Alice"</span>); <span class="cm">// → "Hello, Alice!"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Named function expression — name only visible INSIDE the function (for recursion)</span></span>
+<span class="line"><span class="ck">const</span> factorial = <span class="ck">function</span> <span class="cf">fact</span>(n) {</span>
+<span class="line">  <span class="ck">return</span> n &lt;= <span class="cn">1</span> ? <span class="cn">1</span> : n * fact(n - <span class="cn">1</span>); <span class="cm">// "fact" usable here</span></span>
+<span class="line">};</span>
+<span class="line">factorial(<span class="cn">5</span>); <span class="cm">// → 120</span></span>
+<span class="line"><span class="cm">// fact(5); ← ReferenceError outside — "fact" is not defined in outer scope</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Only the variable is hoisted, not the function.</strong> With <ic>var</ic> the variable is hoisted as <ic>undefined</ic> — calling it before assignment throws "TypeError: greet is not a function". With <ic>let</ic>/<ic>const</ic> you get a ReferenceError (Temporal Dead Zone).</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Calling before definition — FAILS (unlike function declarations)</span></span>
+<span class="line">console.log(greet2(<span class="cs">"Bob"</span>)); <span class="cm">// ✗ ReferenceError: Cannot access 'greet2' before initialization</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> greet2 = <span class="ck">function</span>(name) { <span class="ck">return</span> name; };</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// IIFE — Immediately Invoked Function Expression</span></span>
+<span class="line">(<span class="ck">function</span>() {</span>
+<span class="line">  console.log(<span class="cs">"Runs immediately!"</span>);</span>
+<span class="line">})();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Function expressions as arguments (very common)</span></span>
+<span class="line">setTimeout(<span class="ck">function</span>() { console.log(<span class="cs">"delayed"</span>); }, <span class="cn">1000</span>);</span>
+<span class="line">[<span class="cn">1</span>,<span class="cn">2</span>,<span class="cn">3</span>].map(<span class="ck">function</span>(x) { <span class="ck">return</span> x * <span class="cn">2</span>; });</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Arrow Functions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Arrow Functions <span class="tag">ES6 · lexical this</span></h2>
+    </div>
+
+    <div class="fn-type-card">
+      <div class="fn-type-title" style="color:var(--accent)">🏹 const fn = (params) => { }</div>
+      <div class="fn-type-sub">Concise syntax, no own <code style="font-family:var(--font-mono);color:var(--yellow)">this</code>/<code style="font-family:var(--font-mono);color:var(--yellow)">arguments</code>, cannot be used as a constructor</div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Full syntax</span></span>
+<span class="line"><span class="ck">const</span> greet = (name) => {</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">`Hello, ${name}!`</span>;</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Implicit return — single expression, no braces, no "return" keyword</span></span>
+<span class="line"><span class="ck">const</span> square = x => x * x;</span>
+<span class="line">square(<span class="cn">5</span>); <span class="cm">// → 25</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Multiple params need parentheses</span></span>
+<span class="line"><span class="ck">const</span> add = (a, b) => a + b;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// No params — empty parens required</span></span>
+<span class="line"><span class="ck">const</span> sayHi = () => <span class="cs">"Hi!"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Returning an object literal — wrap in parens! (else {} = function body)</span></span>
+<span class="line"><span class="ck">const</span> makeUser = (name) => ({ name, active: <span class="ck">true</span> });</span>
+<span class="line">makeUser(<span class="cs">"Alice"</span>); <span class="cm">// → { name: "Alice", active: true }</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🔑</span>
+      <span><strong>Lexical this</strong> — arrow functions don't have their own <ic>this</ic>. They capture <ic>this</ic> from the enclosing (surrounding) scope at the time they're defined. This is their #1 defining feature and most common interview topic.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Regular function — "this" bug</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> timer = {</span>
+<span class="line">  seconds: <span class="cn">0</span>,</span>
+<span class="line">  start() {</span>
+<span class="line">    setInterval(<span class="ck">function</span>() {</span>
+<span class="line">      <span class="ck">this</span>.seconds++; <span class="cm">// ✗ 'this' is</span></span>
+<span class="line">    }, <span class="cn">1000</span>);         <span class="cm">// window/undefined</span></span>
+<span class="line">  }</span>
+<span class="line">};</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Arrow function — inherits "this"</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> timer = {</span>
+<span class="line">  seconds: <span class="cn">0</span>,</span>
+<span class="line">  start() {</span>
+<span class="line">    setInterval(() => {</span>
+<span class="line">      <span class="ck">this</span>.seconds++; <span class="cm">// ✓ 'this' is</span></span>
+<span class="line">    }, <span class="cn">1000</span>);         <span class="cm">// the timer object</span></span>
+<span class="line">  }</span>
+<span class="line">};</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Arrow functions have NO arguments object of their own</span></span>
+<span class="line"><span class="ck">const</span> fn = () => {</span>
+<span class="line">  console.log(arguments); <span class="cm">// ✗ ReferenceError, or inherits outer scope's `arguments`</span></span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Use rest params instead</span></span>
+<span class="line"><span class="ck">const</span> sum = (...nums) => nums.reduce((a, b) => a + b, <span class="cn">0</span>);</span>
+<span class="line">sum(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>); <span class="cm">// → 6</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Arrow functions CANNOT be used as constructors</span></span>
+<span class="line"><span class="ck">const</span> Person = (name) => { <span class="ck">this</span>.name = name; };</span>
+<span class="line"><span class="ck">new</span> Person(<span class="cs">"Bob"</span>); <span class="cm">// ✗ TypeError: Person is not a constructor</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Arrow functions have no "prototype" property</span></span>
+<span class="line"><span class="ck">const</span> fn2 = () => {};</span>
+<span class="line">console.log(fn2.prototype); <span class="cm">// → undefined</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Comparison Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Full Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Declaration</th>
+          <th>Expression</th>
+          <th>Arrow Function</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Hoisted with body</td><td class="yes">✓ Yes</td><td class="no">✗ No</td><td class="no">✗ No</td></tr>
+        <tr><td>Can call before definition</td><td class="yes">✓ Yes</td><td class="no">✗ No</td><td class="no">✗ No</td></tr>
+        <tr><td>Own <code style="font-family:var(--font-mono)">this</code></td><td class="yes">✓ Yes (dynamic)</td><td class="yes">✓ Yes (dynamic)</td><td class="no">✗ No (lexical)</td></tr>
+        <tr><td>Own <code style="font-family:var(--font-mono)">arguments</code></td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Usable as constructor (<code style="font-family:var(--font-mono)">new</code>)</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Has <code style="font-family:var(--font-mono)">prototype</code> property</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Implicit return (no braces)</td><td class="no">✗ No</td><td class="no">✗ No</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>Can be anonymous</td><td class="no">✗ No (needs name)</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>Good for object methods needing <code style="font-family:var(--font-mono)">this</code></td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Good for callbacks (preserve outer <code style="font-family:var(--font-mono)">this</code>)</td><td class="no">✗ No (needs .bind)</td><td class="no">✗ No (needs .bind)</td><td class="yes">✓ Yes (natural fit)</td></tr>
+        <tr><td>Can be generator (<code style="font-family:var(--font-mono)">function*</code>)</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Rule of thumb:</strong> Use <strong>declarations</strong> for top-level named functions and hoisting benefits. Use <strong>arrow functions</strong> for callbacks, array methods, and anywhere you want <ic>this</ic> to stay the same as the surrounding code. Use <strong>expressions</strong> when assigning conditionally or need a function value in a variable without hoisting.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — arguments object
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>The <ic style="font-size:16px">arguments</ic> object</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>arguments</ic> is an <strong>array-like object</strong> (has indices and <ic>.length</ic>, but NOT array methods like <ic>.map</ic>) automatically available inside every regular <ic>function</ic> — it holds all arguments passed to the call, regardless of the declared parameters.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'args-basic')">Basics</button>
+      <button class="tab-btn" onclick="showTab(event,'args-convert')">Convert to array</button>
+      <button class="tab-btn" onclick="showTab(event,'args-vs-rest')">vs Rest params</button>
+    </div>
+
+    <div id="tab-args-basic" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">showArgs</span>() {</span>
+<span class="line">  console.log(arguments);        <span class="cm">// Arguments(3) [1, 2, 3]</span></span>
+<span class="line">  console.log(arguments.length); <span class="cm">// → 3</span></span>
+<span class="line">  console.log(arguments[0]);     <span class="cm">// → 1  (index access works)</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cf">showArgs</span>(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// arguments captures ALL passed args, even beyond named parameters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">add</span>(a, b) {</span>
+<span class="line">  console.log(arguments.length); <span class="cm">// → 4 (not 2!)</span></span>
+<span class="line">  <span class="ck">return</span> a + b;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">add</span>(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>); <span class="cm">// → 3  (only a=1, b=2 are used, but arguments has all 4)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Old-school variadic function (before rest params existed)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">sumAll</span>() {</span>
+<span class="line">  <span class="ck">let</span> total = <span class="cn">0</span>;</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; arguments.length; i++) {</span>
+<span class="line">    total += arguments[i];</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> total;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">sumAll</span>(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>, <span class="cn">4</span>); <span class="cm">// → 10</span></span>
+      </div>
+    </div>
+
+    <div id="tab-args-convert" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// arguments is array-LIKE, not a real array — .map/.filter don't exist on it directly</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">broken</span>() {</span>
+<span class="line">  <span class="ck">return</span> arguments.map(x => x * <span class="cn">2</span>); <span class="cm">// ✗ TypeError: arguments.map is not a function</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix 1 — Array.from()</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">double</span>() {</span>
+<span class="line">  <span class="ck">return</span> Array.from(arguments).map(x => x * <span class="cn">2</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">double</span>(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>); <span class="cm">// → [2, 4, 6]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix 2 — spread operator</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">double2</span>() {</span>
+<span class="line">  <span class="ck">return</span> [...arguments].map(x => x * <span class="cn">2</span>);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix 3 — Array.prototype.slice.call() (old-school, pre-ES6)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">double3</span>() {</span>
+<span class="line">  <span class="ck">return</span> Array.prototype.slice.call(arguments).map(x => x * <span class="cn">2</span>);</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-args-vs-rest" class="tab-panel">
+      <table class="feat-table">
+        <thead><tr><th>Feature</th><th>arguments</th><th>...rest</th></tr></thead>
+        <tbody>
+          <tr><td>Real array</td><td class="no">✗ No (array-like)</td><td class="yes">✓ Yes</td></tr>
+          <tr><td>Has array methods (map/filter/...)</td><td class="no">✗ No</td><td class="yes">✓ Yes</td></tr>
+          <tr><td>Available in arrow functions</td><td class="no">✗ No</td><td class="yes">✓ Yes</td></tr>
+          <tr><td>Can exclude named params</td><td class="no">✗ No (includes all)</td><td class="yes">✓ Yes (only "the rest")</td></tr>
+          <tr><td>Modern / recommended</td><td class="no">✗ Legacy</td><td class="yes">✓ Preferred</td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+<span class="line"><span class="cm">// Rest params — modern replacement, always a real array</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">sum</span>(...nums) {</span>
+<span class="line">  <span class="ck">return</span> nums.reduce((a, b) => a + b, <span class="cn">0</span>); <span class="cm">// .reduce works directly!</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cf">sum</span>(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>); <span class="cm">// → 6</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Rest captures only the "extra" args, unlike arguments</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">describe</span>(name, ...hobbies) {</span>
+<span class="line">  console.log(name, hobbies);</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">describe</span>(<span class="cs">"Alice"</span>, <span class="cs">"reading"</span>, <span class="cs">"coding"</span>);</span>
+<span class="line"><span class="cm">// name → "Alice", hobbies → ["reading", "coding"]</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Arrow functions have NO arguments object of their own</strong> — referencing <ic>arguments</ic> inside an arrow function looks it up in the nearest enclosing regular function's scope (or throws ReferenceError at the top level). Use rest parameters (<ic>...args</ic>) in arrow functions instead.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Default Parameters
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Default Parameters <span class="tag">ES6</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Default parameter values are used <strong>only when the argument is <ic>undefined</ic></strong> — not when it's missing vs explicitly passed as anything else (including <ic>null</ic>, <ic>0</ic>, or <ic>""</ic>).</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Before ES6</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>(name) {</span>
+<span class="line">  name = name || <span class="cs">"Guest"</span>;</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">`Hi, ${name}`</span>;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Bug: greet("") → "Hi, Guest" ✗</span></span>
+<span class="line"><span class="cm">// (empty string treated as missing)</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ ES6 default parameters</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>(name = <span class="cs">"Guest"</span>) {</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">`Hi, ${name}`</span>;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">greet</span>();     <span class="cm">// → "Hi, Guest"</span></span>
+<span class="line"><span class="cf">greet</span>(<span class="cs">""</span>);   <span class="cm">// → "Hi, "  ✓ (correct — "" is valid)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Defaults trigger ONLY on undefined</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">test</span>(a = <span class="cn">10</span>) { <span class="ck">return</span> a; }</span>
+<span class="line"><span class="cf">test</span>();          <span class="cm">// → 10  (missing → undefined → default used)</span></span>
+<span class="line"><span class="cf">test</span>(<span class="ck">undefined</span>); <span class="cm">// → 10  (explicit undefined → default used)</span></span>
+<span class="line"><span class="cf">test</span>(<span class="ck">null</span>);      <span class="cm">// → null (null does NOT trigger default!)</span></span>
+<span class="line"><span class="cf">test</span>(<span class="cn">0</span>);         <span class="cm">// → 0    (0 does NOT trigger default)</span></span>
+<span class="line"><span class="cf">test</span>(<span class="cs">""</span>);        <span class="cm">// → ""   (empty string does NOT trigger default)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Default can reference EARLIER parameters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">createRect</span>(width, height = width) {</span>
+<span class="line">  <span class="ck">return</span> width * height;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">createRect</span>(<span class="cn">5</span>);     <span class="cm">// → 25  (height defaults to width → square)</span></span>
+<span class="line"><span class="cf">createRect</span>(<span class="cn">5</span>, <span class="cn">3</span>);  <span class="cm">// → 15</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Default can be a function call — evaluated fresh on EVERY call</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">logEvent</span>(msg, time = Date.now()) {</span>
+<span class="line">  console.log(msg, time); <span class="cm">// time is different each call if omitted</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Default with destructured object params — very common pattern</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">createUser</span>({ name = <span class="cs">"Anonymous"</span>, role = <span class="cs">"user"</span> } = {}) {</span>
+<span class="line">  <span class="ck">return</span> { name, role };</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">createUser</span>();               <span class="cm">// → { name: "Anonymous", role: "user" }</span></span>
+<span class="line"><span class="cf">createUser</span>({ name: <span class="cs">"Bob"</span> }); <span class="cm">// → { name: "Bob", role: "user" }</span></span>
+<span class="line"><span class="cm">// The trailing "= {}" is essential — lets createUser() be called with NO args at all</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Skipping a default with undefined (not with a gap)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">f</span>(a = <span class="cn">1</span>, b = <span class="cn">2</span>, c = <span class="cn">3</span>) { <span class="ck">return</span> [a, b, c]; }</span>
+<span class="line"><span class="cf">f</span>(<span class="cn">10</span>, <span class="ck">undefined</span>, <span class="cn">30</span>); <span class="cm">// → [10, 2, 30]  (undefined "skips" to default)</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Parameters with defaults are excluded from <ic>arguments.length</ic></strong> counting behavior in some ways, and default parameters disable "simple parameter list" optimizations — but more importantly: default values are evaluated <strong>left to right, at call time</strong>, not once when the function is defined.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Function declarations inside blocks (if/for) behave inconsistently</strong> across environments in non-strict mode. In strict mode / ES6 modules, they're scoped to the block. Avoid declaring functions inside <code>if</code> blocks — use function expressions instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Arrow functions as object methods lose <code>this</code>:</strong> <code>const obj = { name: "A", greet: () => this.name }</code> — <code>this</code> here refers to the outer scope, NOT <code>obj</code>. Use method shorthand (<code>greet() {}</code>) instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Named function expressions can't be called by name outside themselves:</strong> <code>const f = function inner(){}; inner();</code> → ReferenceError outside <code>f</code>'s body — the name <code>inner</code> is only visible inside its own scope (useful for recursion).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Default parameter defaults only apply for <code>undefined</code>, not <code>null</code></strong> — a null value passed explicitly stays null, does not fall back to the default. This is the same rule as destructuring defaults.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Rest params must be last</strong>, and a function can't have both <code>arguments</code>-mutation tricks and default/rest parameters behaving in "simple" mode — this affects strict-mode parsing subtleties but rarely matters in practice.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>arguments object doesn't exist in arrow functions.</strong> If you need "all args" flexibility in an arrow function, you must use rest parameters — there's no fallback.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Object literal returned by an arrow function needs parens:</strong> <code>x => { name: x }</code> is parsed as a function BODY with a label, not an object — returns <code>undefined</code>. Correct: <code>x => ({ name: x })</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Function declarations are hoisted, but if reassigned with <code>var</code> of the same name, the assignment happens in place</strong> — e.g. <code>var foo = 1; function foo(){}</code> — the function hoists first, then <code>var foo = 1</code> overwrites it at that line (functions hoist "higher" than var in terms of initial value).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>this in a regular function depends on HOW it's called</strong>, not where it's defined (dynamic binding) — <code>obj.method()</code> vs <code>const m = obj.method; m()</code> give different <code>this</code>. Arrow functions avoid this entirely by using lexical <code>this</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Arrow functions cannot be generators</strong> — there is no <code>=>*</code> syntax. Only <code>function*</code> declarations/expressions support the <code>yield</code> keyword.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4d9e);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What's the difference between a function declaration and a function expression?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A <strong>function declaration</strong> (<code>function name() {}</code>) is a statement that is fully hoisted — you can call it before it appears in the code. A <strong>function expression</strong> (<code>const name = function() {}</code>) assigns a function to a variable — only the variable declaration is hoisted (as <code>undefined</code> for <code>var</code>, or left in the Temporal Dead Zone for <code>let</code>/<code>const</code>), so calling it before the assignment throws an error.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: Why don't arrow functions have their own "this"? What does that mean in practice?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Arrow functions use <strong>lexical this</strong> — they don't create their own <code>this</code> binding, but instead inherit it from the enclosing scope at the point where they are defined (not where they're called). This makes them ideal for callbacks inside methods (like <code>setTimeout</code> or array method callbacks) where you want to preserve the outer object's <code>this</code>, avoiding the classic <code>var self = this</code> or <code>.bind(this)</code> workarounds needed with regular functions.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: Can arrow functions be used as constructors? Why or why not?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>No</strong> — calling <code>new ArrowFn()</code> throws <code>TypeError: ArrowFn is not a constructor</code>. This is because arrow functions have no <code>[[Construct]]</code> internal method, no <code>prototype</code> property, and no own <code>this</code> to bind to a newly created object. Constructors require function declarations, function expressions, or classes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What is the arguments object, and why would you use rest parameters instead?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>arguments</code> is an array-like object (not a real array) automatically available in regular functions, containing every argument passed to the call. It lacks array methods like <code>.map</code>/<code>.filter</code> and doesn't exist in arrow functions.<br><br>
+          <strong>Rest parameters</strong> (<code>...args</code>) are the modern replacement — they produce a real array with all methods available, work in arrow functions, and can be combined with named parameters to capture only the "extra" arguments (whereas <code>arguments</code> always contains everything, even values already captured by named params).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: When do default parameter values actually get used?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Only when the argument is <strong>undefined</strong> — either because it wasn't passed at all, or because <code>undefined</code> was explicitly passed. Passing <code>null</code>, <code>0</code>, <code>false</code>, or <code>""</code> does <strong>not</strong> trigger the default — those are all valid, intentional values that get used as-is.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">function</span> <span class="cf">f</span>(x = <span class="cn">5</span>) { <span class="ck">return</span> x; }</span>
+<span class="line"><span class="cf">f</span>();          <span class="cm">// → 5</span></span>
+<span class="line"><span class="cf">f</span>(<span class="ck">undefined</span>); <span class="cm">// → 5</span></span>
+<span class="line"><span class="cf">f</span>(<span class="ck">null</span>);      <span class="cm">// → null (not 5!)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: What's wrong with this code? const getUser = x => { name: x }</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The curly braces after <code>=&gt;</code> are interpreted as a <strong>function body block</strong>, not an object literal. Inside that block, <code>name: x</code> is parsed as a labeled statement (a rarely-used JS feature), and the function implicitly returns <code>undefined</code>.<br><br>
+          Fix: wrap the object in parentheses so it's parsed as an expression: <code>const getUser = x => ({ name: x })</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What is an IIFE and why is it used?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          An <strong>Immediately Invoked Function Expression</strong> — a function that runs as soon as it's defined:
+          <div class="code-block" style="margin-top:8px">
+<span class="line">(<span class="ck">function</span>() {</span>
+<span class="line">  console.log(<span class="cs">"runs immediately"</span>);</span>
+<span class="line">})();</span>
+          </div>
+          Historically used to create a private scope, avoiding polluting the global namespace with variables (before <code>let</code>/<code>const</code> block scoping and ES modules existed). Still occasionally used for one-off initialization logic or to create closures around async setup code.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Why can a named function expression call itself by name, but code outside it cannot?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you write <code>const factorial = function fact(n) {...}</code>, the name <code>fact</code> is bound in a special scope that is only accessible <strong>from within the function's own body</strong> — it's not added to the enclosing scope. This is useful for recursion when you don't want to depend on the outer variable name (which could be reassigned), since <code>fact</code> will always correctly refer to this specific function regardless of what <code>factorial</code> gets reassigned to later.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q9: Give an example where using an arrow function instead of a regular function would break your code.</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Object methods that rely on <code>this</code>:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> counter = {</span>
+<span class="line">  count: <span class="cn">0</span>,</span>
+<span class="line">  increment: () => { <span class="ck">this</span>.count++; } <span class="cm">// ✗ 'this' is NOT counter</span></span>
+<span class="line">};</span>
+<span class="line">counter.increment();</span>
+<span class="line">console.log(counter.count); <span class="cm">// → 0  (didn't work as expected!)</span></span>
+          </div>
+          Should be <code>increment() { this.count++; }</code> (method shorthand) instead. Also breaks: functions meant to be used with <code>new</code> as constructors, and any code relying on the <code>arguments</code> object.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Functions · Declarations vs Expressions vs Arrow Functions · arguments object · Default Parameters
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
