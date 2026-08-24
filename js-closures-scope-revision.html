@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Closures & Scope — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(189,147,249,0.1); color: var(--accent); border: 1px solid rgba(189,147,249,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(189,147,249,0.12); color: #d9c0ff; border-color: rgba(189,147,249,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two/Three col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 640px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Scope chain diagram ── */
+  .scope-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .scope-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+  .scope-box {
+    border: 1.5px dashed var(--border2); border-radius: var(--radius);
+    padding: 1rem; margin-bottom: 0;
+  }
+  .scope-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text3);
+    margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .scope-global { background: rgba(106,176,255,0.03); border-color: rgba(106,176,255,0.25); }
+  .scope-global .scope-label { color: var(--accent2); }
+  .scope-outer { background: rgba(189,147,249,0.04); border-color: rgba(189,147,249,0.3); margin: 12px 0 0; }
+  .scope-outer .scope-label { color: var(--accent); }
+  .scope-inner { background: rgba(92,255,176,0.04); border-color: rgba(92,255,176,0.3); margin: 12px 0 0; }
+  .scope-inner .scope-label { color: var(--teal); }
+  .scope-var {
+    font-family: var(--font-mono); font-size: 12px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 4px 10px; display: inline-block;
+    margin: 2px 4px 2px 0; color: var(--text);
+  }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .partial { color: var(--amber); font-weight: 500; }
+
+  /* ── Loop trap visual ── */
+  .loop-visual {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem; margin-bottom: 1rem;
+  }
+  .loop-visual-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .loop-iter-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .loop-tag {
+    font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 5px;
+    background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
+  }
+  .loop-tag.result { color: var(--teal); border-color: rgba(92,255,176,0.3); background: rgba(92,255,176,0.06); }
+  .loop-tag.result.bad { color: var(--red); border-color: rgba(255,107,107,0.3); background: rgba(255,107,107,0.06); }
+  .loop-arrow { color: var(--text3); }
+
+  /* ── Hoisting timeline ── */
+  .hoist-timeline {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem; margin-bottom: 1rem;
+  }
+  .hoist-phase { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+  .hoist-phase-num {
+    font-family: var(--font-mono); font-size: 11px; color: var(--accent);
+    background: rgba(189,147,249,0.1); border: 1px solid rgba(189,147,249,0.25);
+    border-radius: 5px; padding: 2px 8px; flex-shrink: 0; margin-top: 2px;
+  }
+  .hoist-phase-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .hoist-phase-text strong { color: var(--text); }
+
+  /* ── TDZ visual ── */
+  .tdz-bar {
+    display: flex; height: 32px; border-radius: 6px; overflow: hidden;
+    margin: 12px 0; font-family: var(--font-mono); font-size: 10.5px;
+  }
+  .tdz-seg { display: flex; align-items: center; justify-content: center; color: #0d0f14; font-weight: 500; }
+  .tdz-red { background: #ff6b6b; flex: 2; }
+  .tdz-green { background: #5cffb0; flex: 1; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle {
+    transform: rotate(45deg); background: rgba(189,147,249,0.12);
+    border-color: rgba(189,147,249,0.3); color: var(--accent);
+  }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner {
+    padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75;
+    border-top: 1px solid var(--border);
+  }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Closures &amp; Scope</div>
+    <h1>Closures &amp; Scope</h1>
+    <p>Lexical Scoping · Closure Traps in Loops (var vs let) · Hoisting Rules</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Lexical Scoping</a>
+    <a class="topic-pill" href="#s2">2. Closures</a>
+    <a class="topic-pill" href="#s3">3. Loop Trap: var vs let</a>
+    <a class="topic-pill" href="#s4">4. Hoisting</a>
+    <a class="topic-pill" href="#s5">5. TDZ</a>
+    <a class="topic-pill" href="#s6">6. Practical Uses</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Lexical Scoping
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Lexical Scoping</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Lexical scoping</strong> means a variable's scope is determined by <strong>where it is written in the source code</strong> (its physical position), not by where or how the function is called. Every function can access variables from its own scope, plus all enclosing (outer) scopes — this is the <strong>scope chain</strong>.</span>
+    </div>
+
+    <div class="scope-diagram">
+      <div class="scope-title">Scope chain — inner scopes see outer variables, never the reverse</div>
+      <div class="scope-box scope-global">
+        <div class="scope-label">Global Scope</div>
+        <div class="scope-var">appName = "MyApp"</div>
+
+        <div class="scope-box scope-outer">
+          <div class="scope-label">Function outer() — can see appName</div>
+          <div class="scope-var">city = "Delhi"</div>
+
+          <div class="scope-box scope-inner">
+            <div class="scope-label">Function inner() — can see appName AND city</div>
+            <div class="scope-var">street = "MG Road"</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:8px;">✓ Can read: appName, city, street</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;">✗ Global CANNOT read city or street — outer scopes never see inner variables</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">const</span> appName = <span class="cs">"MyApp"</span>;    <span class="cm">// global scope</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">outer</span>() {</span>
+<span class="line">  <span class="ck">const</span> city = <span class="cs">"Delhi"</span>;    <span class="cm">// outer() scope</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">function</span> <span class="cf">inner</span>() {</span>
+<span class="line">    <span class="ck">const</span> street = <span class="cs">"MG Road"</span>; <span class="cm">// inner() scope</span></span>
+<span class="line">    console.log(appName, city, street); <span class="cm">// ✓ all 3 visible</span></span>
+<span class="line">  }</span>
+<span class="line">  <span class="cf">inner</span>();</span>
+<span class="line">  <span class="cm">// console.log(street); ← ✗ ReferenceError, street not visible here</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cf">outer</span>();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// "Lexical" = based on WHERE code is written, not how it's called</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">a</span>() {</span>
+<span class="line">  <span class="ck">const</span> x = <span class="cn">10</span>;</span>
+<span class="line">  <span class="cf">b</span>(); <span class="cm">// b() is called from inside a(), but that does NOT give b() access to x</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">b</span>() {</span>
+<span class="line">  console.log(<span class="ck">typeof</span> x); <span class="cm">// → "undefined" — b's lexical position is the global scope, not inside a()</span></span>
+<span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Concept</th><th>function scope (var)</th><th>block scope (let/const)</th></tr></thead>
+      <tbody>
+        <tr><td>Scope boundary</td><td>Nearest enclosing function</td><td>Nearest enclosing {} block</td></tr>
+        <tr><td>Visible inside if/for blocks?</td><td class="yes">✓ Leaks out of the block</td><td class="no">✗ Contained to the block</td></tr>
+        <tr><td>Redeclaration allowed?</td><td class="yes">✓ Yes, silently</td><td class="no">✗ SyntaxError</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// var is function-scoped — leaks out of blocks!</span></span>
+<span class="line"><span class="ck">if</span> (<span class="ck">true</span>) {</span>
+<span class="line">  <span class="ck">var</span> x = <span class="cn">1</span>;</span>
+<span class="line">}</span>
+<span class="line">console.log(x); <span class="cm">// → 1  (leaked out of the if-block!)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// let/const are block-scoped — contained to {}</span></span>
+<span class="line"><span class="ck">if</span> (<span class="ck">true</span>) {</span>
+<span class="line">  <span class="ck">let</span> y = <span class="cn">1</span>;</span>
+<span class="line">}</span>
+<span class="line">console.log(y); <span class="cm">// → ReferenceError: y is not defined</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Closures
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Closures</h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🔒</span>
+      <span>A <strong>closure</strong> is formed when a function "remembers" and continues to access variables from its lexical scope, even after the outer function has finished executing. Every function in JS forms a closure over its surrounding scope — this happens automatically, always.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Classic closure example — counter factory</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">createCounter</span>() {</span>
+<span class="line">  <span class="ck">let</span> count = <span class="cn">0</span>;              <span class="cm">// private variable</span></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span>() {</span>
+<span class="line">    count++;                    <span class="cm">// inner function "closes over" count</span></span>
+<span class="line">    <span class="ck">return</span> count;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> counter1 = <span class="cf">createCounter</span>();</span>
+<span class="line">counter1(); <span class="cm">// → 1</span></span>
+<span class="line">counter1(); <span class="cm">// → 2</span></span>
+<span class="line">counter1(); <span class="cm">// → 3   (count persists between calls — closure keeps it alive!)</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> counter2 = <span class="cf">createCounter</span>(); <span class="cm">// a totally separate closure</span></span>
+<span class="line">counter2(); <span class="cm">// → 1   (independent count — its own closure)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// createCounter() has already RETURNED — its execution context is gone —</span></span>
+<span class="line"><span class="cm">// but `count` lives on because the inner function still references it.</span></span>
+<span class="line"><span class="cm">// This is the essence of a closure: the variable is not garbage collected</span></span>
+<span class="line"><span class="cm">// because a live reference to it still exists.</span></span>
+    </div>
+
+    <div class="two-col">
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Private state (module pattern)</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">function</span> <span class="cf">createBankAccount</span>(balance) {</span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    deposit(amt) { balance += amt; },</span>
+<span class="line">    withdraw(amt) { balance -= amt; },</span>
+<span class="line">    getBalance() { <span class="ck">return</span> balance; }</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> acc = <span class="cf">createBankAccount</span>(<span class="cn">100</span>);</span>
+<span class="line">acc.deposit(<span class="cn">50</span>);</span>
+<span class="line">acc.getBalance(); <span class="cm">// → 150</span></span>
+<span class="line"><span class="cm">// balance is NOT accessible directly — true privacy!</span></span>
+<span class="line">acc.balance; <span class="cm">// → undefined</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Function factory / configuration</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">function</span> <span class="cf">multiplyBy</span>(factor) {</span>
+<span class="line">  <span class="ck">return</span> (num) => num * factor;</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> double = <span class="cf">multiplyBy</span>(<span class="cn">2</span>);</span>
+<span class="line"><span class="ck">const</span> triple = <span class="cf">multiplyBy</span>(<span class="cn">3</span>);</span>
+<span class="line">double(<span class="cn">5</span>);  <span class="cm">// → 10</span></span>
+<span class="line">triple(<span class="cn">5</span>);  <span class="cm">// → 15</span></span>
+<span class="line"><span class="cm">// each closure remembers its own "factor"</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — The var vs let Loop Trap
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>The Closure-in-Loop Trap <span class="tag">var vs let</span></h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🎯</span>
+      <span>This is <strong>the single most common closures interview question</strong>. Know it cold — including WHY it happens, not just the fix.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ var — the classic bug</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout(() => {</span>
+<span class="line">    console.log(i);</span>
+<span class="line">  }, <span class="cn">100</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 3</span></span>
+<span class="line"><span class="cm">// → 3</span></span>
+<span class="line"><span class="cm">// → 3</span></span>
+<span class="line"><span class="cm">// All three log 3, not 0, 1, 2!</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ let — works as expected</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout(() => {</span>
+<span class="line">    console.log(i);</span>
+<span class="line">  }, <span class="cn">100</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 0</span></span>
+<span class="line"><span class="cm">// → 1</span></span>
+<span class="line"><span class="cm">// → 2</span></span>
+<span class="line"><span class="cm">// Each callback sees its own i!</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="loop-visual">
+      <div class="loop-visual-title">Why: var creates ONE shared binding — let creates a NEW binding per iteration</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">With <code style="font-family:var(--font-mono);color:var(--yellow)">var</code> — one box, shared by all 3 closures:</div>
+      <div class="loop-iter-row">
+        <span class="loop-tag">iteration 1</span><span class="loop-arrow">→</span>
+        <span class="loop-tag">iteration 2</span><span class="loop-arrow">→</span>
+        <span class="loop-tag">iteration 3</span><span class="loop-arrow">→</span>
+        <span class="loop-tag result bad">shared box: i = 3 (final value)</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin:6px 0 14px;">All 3 callbacks point to the SAME "i" — by the time they run, the loop has finished and i is 3</div>
+
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">With <code style="font-family:var(--font-mono);color:var(--yellow)">let</code> — a fresh box created each iteration:</div>
+      <div class="loop-iter-row">
+        <span class="loop-tag">iteration 1</span><span class="loop-arrow">→</span><span class="loop-tag result">own box: i = 0</span>
+      </div>
+      <div class="loop-iter-row">
+        <span class="loop-tag">iteration 2</span><span class="loop-arrow">→</span><span class="loop-tag result">own box: i = 1</span>
+      </div>
+      <div class="loop-iter-row">
+        <span class="loop-tag">iteration 3</span><span class="loop-arrow">→</span><span class="loop-tag result">own box: i = 2</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">Each callback closes over its OWN copy of "i" from that specific iteration</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'fix-iife')">Fix 1: IIFE</button>
+      <button class="tab-btn" onclick="showTab(event,'fix-param')">Fix 2: Extra param</button>
+      <button class="tab-btn" onclick="showTab(event,'fix-let')">Fix 3: use let (best)</button>
+    </div>
+
+    <div id="tab-fix-iife" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>Pre-ES6 fix: wrap the loop body in an <strong>IIFE</strong> to create a new function scope per iteration, capturing the current value of <ic>i</ic> as an argument.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  (<span class="ck">function</span>(j) {           <span class="cm">// j is a new variable per IIFE call</span></span>
+<span class="line">    setTimeout(() => {</span>
+<span class="line">      console.log(j);       <span class="cm">// closes over the IIFE's own "j"</span></span>
+<span class="line">    }, <span class="cn">100</span>);</span>
+<span class="line">  })(i);                    <span class="cm">// pass current i's VALUE immediately</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 0, 1, 2  ✓ fixed</span></span>
+      </div>
+    </div>
+
+    <div id="tab-fix-param" class="tab-panel">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>Pass the loop variable directly into <ic>setTimeout</ic>'s extra arguments — this also copies the current value at call time.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout((j) => {</span>
+<span class="line">    console.log(j);</span>
+<span class="line">  }, <span class="cn">100</span>, i);  <span class="cm">// 3rd+ args to setTimeout are passed to the callback</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 0, 1, 2  ✓ fixed</span></span>
+      </div>
+    </div>
+
+    <div id="tab-fix-let" class="tab-panel">
+      <div class="callout callout-green">
+        <span class="callout-icon">✓</span>
+        <span><strong>Best modern fix:</strong> simply use <ic>let</ic> instead of <ic>var</ic>. The JS engine creates a fresh binding of the loop variable for each iteration automatically — no workaround needed.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout(() => console.log(i), <span class="cn">100</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 0, 1, 2  ✓ fixed, and cleanest</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// This is specified behavior — the for-loop with `let` creates a NEW</span></span>
+<span class="line"><span class="cm">// lexical binding of the loop variable for EACH iteration, initialized</span></span>
+<span class="line"><span class="cm">// by copying the value from the end of the previous iteration.</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Hoisting
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Hoisting Rules</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Hoisting</strong> is JS's behavior of processing variable and function <strong>declarations</strong> during the compile phase, before any code executes — making the names known to the scope in advance. It does NOT physically "move" code; it's a mental model for how the JS engine sets up memory.</span>
+    </div>
+
+    <div class="hoist-timeline">
+      <div class="loop-visual-title" style="margin-bottom:14px;">JS engine's two-phase process</div>
+      <div class="hoist-phase">
+        <div class="hoist-phase-num">Phase 1</div>
+        <div class="hoist-phase-text"><strong>Creation / Compile Phase</strong> — scan the code, register all <code style="font-family:var(--font-mono);color:var(--yellow)">var</code> declarations (initialized to <code style="font-family:var(--font-mono);color:var(--yellow)">undefined</code>) and function declarations (fully initialized with their body). <code style="font-family:var(--font-mono);color:var(--yellow)">let</code>/<code style="font-family:var(--font-mono);color:var(--yellow)">const</code> are also registered but left uninitialized (in the "Temporal Dead Zone").</div>
+      </div>
+      <div class="hoist-phase">
+        <div class="hoist-phase-num">Phase 2</div>
+        <div class="hoist-phase-text"><strong>Execution Phase</strong> — code runs top to bottom. <code style="font-family:var(--font-mono);color:var(--yellow)">var</code> variables get their real value assigned when that line executes. <code style="font-family:var(--font-mono);color:var(--yellow)">let</code>/<code style="font-family:var(--font-mono);color:var(--yellow)">const</code> become usable once their declaration line runs.</div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Declaration</th><th>Hoisted?</th><th>Initial value</th><th>Access before declaration</th></tr></thead>
+      <tbody>
+        <tr><td>var x</td><td class="yes">✓ Yes</td><td>undefined</td><td class="partial">undefined (no error)</td></tr>
+        <tr><td>let x</td><td class="yes">✓ Yes (name only)</td><td>uninitialized (TDZ)</td><td class="no">ReferenceError</td></tr>
+        <tr><td>const x</td><td class="yes">✓ Yes (name only)</td><td>uninitialized (TDZ)</td><td class="no">ReferenceError</td></tr>
+        <tr><td>function foo(){}</td><td class="yes">✓ Yes (full body)</td><td>the function itself</td><td class="yes">✓ Works fine</td></tr>
+        <tr><td>const foo = () => {}</td><td class="partial">Only variable name</td><td>uninitialized (TDZ)</td><td class="no">ReferenceError</td></tr>
+        <tr><td>class Foo {}</td><td class="yes">✓ Yes (name only)</td><td>uninitialized (TDZ)</td><td class="no">ReferenceError</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// var hoisting — declaration moves up, assignment stays in place</span></span>
+<span class="line">console.log(a); <span class="cm">// → undefined (NOT an error — "a" is known, just not assigned yet)</span></span>
+<span class="line"><span class="ck">var</span> a = <span class="cn">5</span>;</span>
+<span class="line"><span class="cm">// The engine effectively treats this as:</span></span>
+<span class="line"><span class="cm">//   var a;          ← hoisted to top</span></span>
+<span class="line"><span class="cm">//   console.log(a);  → undefined</span></span>
+<span class="line"><span class="cm">//   a = 5;           ← stays here</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// let/const hoisting — name is known, but unusable (Temporal Dead Zone)</span></span>
+<span class="line">console.log(b); <span class="cm">// → ReferenceError: Cannot access 'b' before initialization</span></span>
+<span class="line"><span class="ck">let</span> b = <span class="cn">5</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Function declarations — fully hoisted, callable before definition</span></span>
+<span class="line">greet(); <span class="cm">// → "hi"  ✓ works!</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">greet</span>() { <span class="ck">return</span> <span class="cs">"hi"</span>; }</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Function EXPRESSIONS are not — only the var/let/const container is hoisted</span></span>
+<span class="line">sayHi(); <span class="cm">// → TypeError: sayHi is not a function (var) or ReferenceError (let/const)</span></span>
+<span class="line"><span class="ck">var</span> sayHi = <span class="ck">function</span>() { <span class="ck">return</span> <span class="cs">"hi"</span>; };</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>var inside loops/if-blocks does NOT create a new scope</strong> — it's hoisted to the nearest enclosing function (or global scope). This is the root cause of the closure-in-loop bug covered in Section 3.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Temporal Dead Zone
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Temporal Dead Zone (TDZ)</h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">⏳</span>
+      <span>The <strong>TDZ</strong> is the period between entering a scope (where <ic>let</ic>/<ic>const</ic> is hoisted as "known but uninitialized") and the actual declaration line executing. Accessing the variable during this window throws a ReferenceError.</span>
+    </div>
+
+    <div class="scope-diagram">
+      <div class="scope-title">Timeline of a let/const variable within its scope</div>
+      <div class="tdz-bar">
+        <div class="tdz-seg tdz-red">TEMPORAL DEAD ZONE</div>
+        <div class="tdz-seg tdz-green">USABLE</div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text3);">
+        ← scope starts (variable hoisted but uninitialized) &nbsp;&nbsp;|&nbsp;&nbsp; <code style="font-family:var(--font-mono);color:var(--yellow)">let x = 5</code> line executes → x becomes usable →
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// TDZ in action</span></span>
+<span class="line">{</span>
+<span class="line">  <span class="cm">// TDZ starts here for "value" — scope entered, let hoisted but uninitialized</span></span>
+<span class="line">  console.log(value); <span class="cm">// ✗ ReferenceError: Cannot access 'value' before initialization</span></span>
+<span class="line">  <span class="ck">let</span> value = <span class="cn">10</span>;   <span class="cm">// TDZ ends — value now usable</span></span>
+<span class="line">  console.log(value); <span class="cm">// → 10  ✓</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// typeof does NOT protect you from TDZ (unlike with undeclared vars)</span></span>
+<span class="line">console.log(<span class="ck">typeof</span> undeclaredVar); <span class="cm">// → "undefined" (safe, no error)</span></span>
+<span class="line">console.log(<span class="ck">typeof</span> tdzVar);        <span class="cm">// ✗ ReferenceError! (TDZ applies even to typeof)</span></span>
+<span class="line"><span class="ck">let</span> tdzVar = <span class="cn">1</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// TDZ + default parameters — order matters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">example</span>(a = b, b = <span class="cn">2</span>) { <span class="ck">return</span> [a, b]; }</span>
+<span class="line"><span class="cf">example</span>(); <span class="cm">// ✗ ReferenceError — "b" is in its TDZ when "a" tries to use it as default</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// const specific — must be initialized immediately, and cannot be reassigned</span></span>
+<span class="line"><span class="ck">const</span> pi; <span class="cm">// ✗ SyntaxError: Missing initializer in const declaration</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why TDZ exists:</strong> it helps catch bugs early by preventing you from using a variable before it's properly declared and initialized, rather than silently giving you <ic>undefined</ic> like <ic>var</ic> does. It's a safety feature, not a limitation.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Practical Closure Uses
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Practical Uses of Closures</h2>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'use-memo')">Memoization</button>
+      <button class="tab-btn" onclick="showTab(event,'use-debounce')">Debounce</button>
+      <button class="tab-btn" onclick="showTab(event,'use-curry')">Currying</button>
+      <button class="tab-btn" onclick="showTab(event,'use-once')">Once / Event handlers</button>
+    </div>
+
+    <div id="tab-use-memo" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// Memoization — cache results using a closure over a Map</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">memoize</span>(fn) {</span>
+<span class="line">  <span class="ck">const</span> cache = <span class="ck">new</span> Map(); <span class="cm">// private, persists across calls via closure</span></span>
+<span class="line">  <span class="ck">return</span> (...args) => {</span>
+<span class="line">    <span class="ck">const</span> key = JSON.stringify(args);</span>
+<span class="line">    <span class="ck">if</span> (cache.has(key)) <span class="ck">return</span> cache.get(key);</span>
+<span class="line">    <span class="ck">const</span> result = fn(...args);</span>
+<span class="line">    cache.set(key, result);</span>
+<span class="line">    <span class="ck">return</span> result;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> slowSquare = n => { <span class="cm">/* expensive computation */</span> <span class="ck">return</span> n * n; };</span>
+<span class="line"><span class="ck">const</span> fastSquare = <span class="cf">memoize</span>(slowSquare);</span>
+<span class="line">fastSquare(<span class="cn">5</span>); <span class="cm">// computed, cached</span></span>
+<span class="line">fastSquare(<span class="cn">5</span>); <span class="cm">// instant — read from cache</span></span>
+      </div>
+    </div>
+
+    <div id="tab-use-debounce" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Debounce — closure remembers the timer ID between calls</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay) {</span>
+<span class="line">  <span class="ck">let</span> timerId; <span class="cm">// persists via closure across every returned-function call</span></span>
+<span class="line">  <span class="ck">return</span> (...args) => {</span>
+<span class="line">    clearTimeout(timerId);</span>
+<span class="line">    timerId = setTimeout(() => fn(...args), delay);</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> handleSearch = <span class="cf">debounce</span>((query) => {</span>
+<span class="line">  console.log(<span class="cs">"Searching:"</span>, query);</span>
+<span class="line">}, <span class="cn">300</span>);</span>
+<span class="line"></span>
+<span class="line">searchInput.addEventListener(<span class="cs">"input"</span>, (e) => handleSearch(e.target.value));</span>
+<span class="line"><span class="cm">// only fires 300ms after the user STOPS typing</span></span>
+      </div>
+    </div>
+
+    <div id="tab-use-curry" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Currying — each returned function closes over previously supplied args</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">curry</span>(a) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span>(b) {</span>
+<span class="line">    <span class="ck">return</span> <span class="ck">function</span>(c) {</span>
+<span class="line">      <span class="ck">return</span> a + b + c; <span class="cm">// closes over a, b, AND c</span></span>
+<span class="line">    };</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">curry</span>(<span class="cn">1</span>)(<span class="cn">2</span>)(<span class="cn">3</span>); <span class="cm">// → 6</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Arrow function version — more concise</span></span>
+<span class="line"><span class="ck">const</span> curryAdd = a => b => c => a + b + c;</span>
+<span class="line">curryAdd(<span class="cn">1</span>)(<span class="cn">2</span>)(<span class="cn">3</span>); <span class="cm">// → 6</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical: partial application</span></span>
+<span class="line"><span class="ck">const</span> addTax = rate => amount => amount + amount * rate;</span>
+<span class="line"><span class="ck">const</span> addGST = <span class="cf">addTax</span>(<span class="cn">0.18</span>); <span class="cm">// rate "locked in" via closure</span></span>
+<span class="line"><span class="cf">addGST</span>(<span class="cn">100</span>); <span class="cm">// → 118</span></span>
+      </div>
+    </div>
+
+    <div id="tab-use-once" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// "Run once" pattern — closure tracks whether it already ran</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">once</span>(fn) {</span>
+<span class="line">  <span class="ck">let</span> called = <span class="ck">false</span>;</span>
+<span class="line">  <span class="ck">let</span> result;</span>
+<span class="line">  <span class="ck">return</span> (...args) => {</span>
+<span class="line">    <span class="ck">if</span> (!called) {</span>
+<span class="line">      result = fn(...args);</span>
+<span class="line">      called = <span class="ck">true</span>;</span>
+<span class="line">    }</span>
+<span class="line">    <span class="ck">return</span> result;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> initialize = <span class="cf">once</span>(() => { console.log(<span class="cs">"init!"</span>); <span class="ck">return</span> <span class="cs">"done"</span>; });</span>
+<span class="line"><span class="cf">initialize</span>(); <span class="cm">// logs "init!", → "done"</span></span>
+<span class="line"><span class="cf">initialize</span>(); <span class="cm">// doesn't log again, → "done" (cached)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Event handler factories — each button gets its own closure over its id</span></span>
+<span class="line">buttons.forEach((btn, index) => {</span>
+<span class="line">  btn.addEventListener(<span class="cs">"click"</span>, () => {</span>
+<span class="line">    console.log(<span class="cs">`Button ${index} clicked`</span>); <span class="cm">// closes over correct index</span></span>
+<span class="line">  });</span>
+<span class="line">});</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>var in a for-loop shares ONE binding</strong> across all iterations — this is the #1 closure trap. Switching to <code>let</code> is the cleanest fix since ES6.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Closures capture variables by reference, not by value</strong> — if the closed-over variable changes after the closure is created (but before it's called), the closure sees the LATEST value, not a snapshot from creation time.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Closures can cause memory leaks</strong> if they hold references to large objects or DOM nodes that are no longer needed — the closure keeps them alive as long as the closure itself is reachable.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>typeof does not protect against TDZ</strong> — normally <code>typeof undeclaredVar</code> safely returns <code>"undefined"</code>, but <code>typeof</code> on a <code>let</code>/<code>const</code> variable still in its TDZ throws a ReferenceError.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Function declarations inside blocks hoist differently in strict vs non-strict mode</strong> — behavior can vary across engines for edge cases; safest to avoid declaring functions directly inside if/for blocks.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>const does not make objects immutable</strong> — it only prevents reassignment of the variable binding. <code>const obj = {}; obj.x = 1;</code> works fine; only <code>obj = {}</code> (a full reassignment) would throw.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Nested closures each get their own copy</strong> when created inside a loop with <code>let</code>, but if you deliberately want them to SHARE state, you need to hoist the shared variable outside the loop (use <code>var</code>, or declare it before the loop).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Hoisting affects `this` differently than variables</strong> — hoisting only applies to declarations (var/let/const/function/class); it does not "hoist" the value of `this`, which is determined by the call-site as usual.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Redeclaring a let/const in the same scope throws immediately</strong> at parse time (SyntaxError: Identifier 'x' has already been declared) — even if the redeclaration line is never reached at runtime.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Closures in forEach/map callbacks close over the loop's iteration variables correctly</strong> because these use function scope per call, unlike a raw for-loop with <code>var</code> — array iteration methods don't have the classic loop trap.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What is a closure? Give a simple definition.</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A closure is a function combined with references to its <strong>surrounding lexical scope</strong> — it "remembers" the variables from the scope where it was created, and can continue to access and modify them even after the outer function has returned. Every function in JavaScript forms a closure automatically; it's not something you opt into.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: What will this log, and why? for (var i = 0; i &lt; 3; i++) { setTimeout(() => console.log(i), 100); }</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It logs <strong>3, 3, 3</strong>. Because <code>var</code> is function-scoped (not block-scoped), all three arrow functions close over the <strong>same single</strong> <code>i</code> variable. By the time the <code>setTimeout</code> callbacks actually run (after the synchronous loop has already finished), <code>i</code> has already reached <code>3</code> — so all three callbacks see the final value.<br><br>
+          Fix: use <code>let i</code> instead — ES6 spec creates a fresh binding of <code>i</code> for each loop iteration automatically, so each closure captures its own value (0, 1, 2).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: What is the Temporal Dead Zone?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The TDZ is the span of code between entering a scope (where a <code>let</code>/<code>const</code> variable is hoisted but left uninitialized) and the line where it's actually declared. Accessing the variable anywhere in that window — even with <code>typeof</code> — throws a <code>ReferenceError</code>. It exists to catch bugs early, unlike <code>var</code> which silently gives <code>undefined</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What's the difference between function scope and block scope?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Function scope</strong> (used by <code>var</code>) means a variable is visible anywhere within the nearest enclosing function, regardless of nested blocks like <code>if</code> or <code>for</code> — it "leaks" out of those blocks.<br><br>
+          <strong>Block scope</strong> (used by <code>let</code>/<code>const</code>) means the variable is only visible within the nearest enclosing <code>{ }</code> pair — it does NOT leak out of an if-block, for-loop, or any other block.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: Explain hoisting in your own words. Does let get hoisted?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Hoisting is the JS engine's behavior of scanning a scope during the compile phase and registering all declarations (var, let, const, function, class) before any code runs. <code>var</code> is hoisted and initialized to <code>undefined</code>. Function declarations are hoisted with their entire body, making them callable before their definition line.<br><br>
+          <strong>Yes, let is hoisted</strong> — but only the name is registered, not a usable value. It remains in the Temporal Dead Zone until its declaration line executes, so accessing it early throws a ReferenceError rather than returning undefined.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: How would you implement a private counter using closures (without classes)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">createCounter</span>(start = <span class="cn">0</span>) {</span>
+<span class="line">  <span class="ck">let</span> count = start; <span class="cm">// private — not accessible from outside</span></span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    increment: () => ++count,</span>
+<span class="line">    decrement: () => --count,</span>
+<span class="line">    reset: () => { count = start; },</span>
+<span class="line">    value: () => count</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> c = <span class="cf">createCounter</span>();</span>
+<span class="line">c.increment(); c.increment();</span>
+<span class="line">c.value(); <span class="cm">// → 2</span></span>
+<span class="line">c.count;   <span class="cm">// → undefined (truly private, no direct access)</span></span>
+          </div>
+          Each returned method closes over the same <code>count</code> variable — this is the classic "module pattern" for data privacy before ES2022 introduced native private class fields (<code>#field</code>).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: Can closures cause memory leaks? How?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Yes. Since a closure keeps a live reference to its outer scope's variables, if that scope contains a large object, array, or DOM node, the JS garbage collector <strong>cannot free that memory</strong> as long as the closure itself is reachable (e.g. still attached as an event listener, or stored in a global variable). This is more of an edge-case concern than a common issue, but it's worth knowing — e.g. removing event listeners you no longer need helps closures (and what they capture) get garbage collected.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Why does typeof not protect you from a ReferenceError with let, when it normally does with undeclared variables?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>typeof someUndeclaredVar</code> is safe because the variable was never registered in any scope at all — <code>typeof</code> has special handling to return <code>"undefined"</code> instead of throwing for genuinely unknown identifiers.<br><br>
+          But a <code>let</code>/<code>const</code> variable IS registered in the scope (hoisted), just left uninitialized in the TDZ. Since the engine knows the identifier exists but hasn't reached its initialization yet, accessing it via <code>typeof</code> still triggers the TDZ check and throws a ReferenceError.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q9: Does closures capture variable values or references?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>References</strong> — not a snapshot of the value at the time the closure was created. If the variable is reassigned after the closure is defined but before it's invoked, the closure will see the updated value.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">let</span> message = <span class="cs">"hello"</span>;</span>
+<span class="line"><span class="ck">function</span> <span class="cf">logMessage</span>() { console.log(message); }</span>
+<span class="line">message = <span class="cs">"goodbye"</span>; <span class="cm">// changed AFTER closure created</span></span>
+<span class="line"><span class="cf">logMessage</span>(); <span class="cm">// → "goodbye"  (sees the latest value, not "hello")</span></span>
+          </div>
+          This is exactly why the classic var-loop bug happens — all closures reference the SAME variable, and by execution time it holds the final value.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Closures &amp; Scope · Lexical Scoping · var vs let Loop Trap · Hoisting · Temporal Dead Zone
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
