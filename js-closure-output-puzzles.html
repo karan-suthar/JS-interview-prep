@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Closure Output Puzzles — Interview Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Progress / nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  .intro-callout {
+    border-radius: var(--radius-lg); padding: 1rem 1.15rem;
+    font-size: 13.5px; margin-bottom: 2.5rem;
+    background: rgba(106,176,255,0.06); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff;
+    display: flex; gap: 12px; align-items: flex-start; line-height: 1.65;
+  }
+  .intro-callout .callout-icon { font-size: 17px; flex-shrink: 0; }
+
+  /* ── Problem card ── */
+  .problem {
+    margin-bottom: 2rem;
+    animation: fadeUp 0.4s ease both;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .problem-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 1.1rem 1.25rem 0.5rem;
+  }
+  .problem-num {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .problem-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--text); }
+  .difficulty {
+    margin-left: auto; font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 9px; border-radius: 4px; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .diff-easy   { background: rgba(92,255,176,0.1);  color: var(--teal);  border: 1px solid rgba(92,255,176,0.25); }
+  .diff-medium { background: rgba(255,184,108,0.1); color: var(--amber); border: 1px solid rgba(255,184,108,0.25); }
+  .diff-hard   { background: rgba(255,107,107,0.1); color: var(--red);   border: 1px solid rgba(255,107,107,0.25); }
+
+  .problem-body { padding: 0.75rem 1.25rem 1.25rem; }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.05rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 12.5px; line-height: 1.85;
+    overflow-x: auto; margin-bottom: 0.9rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Reveal button + answer ── */
+  .reveal-btn {
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    padding: 8px 18px; border-radius: var(--radius);
+    border: 1px solid rgba(92,255,176,0.3);
+    background: rgba(92,255,176,0.08); color: var(--accent);
+    cursor: pointer; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .reveal-btn:hover { background: rgba(92,255,176,0.15); }
+  .problem.open .reveal-btn { display: none; }
+
+  .answer-section { display: none; margin-top: 1rem; }
+  .problem.open .answer-section { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .output-box {
+    background: #0a0d05;
+    border: 1px solid rgba(241,250,140,0.25);
+    border-left: 3px solid var(--yellow);
+    border-radius: var(--radius);
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .output-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--yellow); margin-bottom: 6px; font-weight: 500;
+  }
+  .output-value { color: var(--text); white-space: pre-line; }
+
+  .explanation {
+    font-size: 13.5px; color: var(--text2); line-height: 1.75;
+  }
+  .explanation strong { color: var(--text); }
+  .explanation code {
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow);
+  }
+  .explanation ul { margin: 8px 0 0 20px; }
+  .explanation li { margin-bottom: 4px; }
+
+  .hide-btn {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text3);
+    background: none; border: none; cursor: pointer; margin-top: 10px;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .hide-btn:hover { color: var(--text2); }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Pattern summary section ── */
+  .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .pattern-grid { grid-template-columns: 1fr; } }
+  .pattern-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; border-left: 3px solid var(--accent2);
+  }
+  .pattern-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .pattern-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+  .pattern-desc code {
+    font-family: var(--font-mono); font-size: 11.5px;
+    background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; color: var(--yellow);
+  }
+
+  /* ── Section headers for non-problem sections ── */
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section { margin-bottom: 3rem; }
+
+  /* ── Score tracker ── */
+  .score-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.7rem 1rem; margin-bottom: 2rem; font-size: 12.5px; color: var(--text2);
+  }
+  .score-dots { display: flex; gap: 5px; }
+  .score-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bg4); border: 1px solid var(--border2); transition: background 0.2s, border-color 0.2s; }
+  .score-dot.done { background: var(--accent); border-color: var(--accent); }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Practice Problems</div>
+    <h1>Closure Output Puzzles</h1>
+    <p>10 "what does this log?" problems — setTimeout, async/await, loops, and closures</p>
+  </header>
+
+  <div class="intro-callout">
+    <span class="callout-icon">🎯</span>
+    <span>Try to predict the output <strong>before</strong> clicking "Reveal answer" on each problem. These are the exact style of questions asked in real JS interviews — they test whether you understand the event loop, closures, and scoping together, not just in isolation.</span>
+  </div>
+
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#p1">P1</a>
+    <a class="topic-pill" href="#p2">P2</a>
+    <a class="topic-pill" href="#p3">P3</a>
+    <a class="topic-pill" href="#p4">P4</a>
+    <a class="topic-pill" href="#p5">P5</a>
+    <a class="topic-pill" href="#p6">P6</a>
+    <a class="topic-pill" href="#p7">P7</a>
+    <a class="topic-pill" href="#p8">P8</a>
+    <a class="topic-pill" href="#p9">P9</a>
+    <a class="topic-pill" href="#p10">P10</a>
+    <a class="topic-pill" href="#patterns">Patterns</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 1
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p1">
+    <div class="problem-head">
+      <div class="problem-num">1</div>
+      <div class="problem-title">Classic var loop + setTimeout</div>
+      <div class="difficulty diff-easy">Easy</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout(() => console.log(i), <span class="cn">0</span>);</span>
+<span class="line">}</span>
+<span class="line">console.log(<span class="cs">"done"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p1')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"done"
+3
+3
+3</div>
+        </div>
+        <div class="explanation">
+          <strong>Two things happening at once:</strong>
+          <ul>
+            <li><strong>Sync-first:</strong> the loop registers 3 timeouts but doesn't execute their callbacks yet — <code>console.log("done")</code> runs synchronously right after the loop, before any timeout fires (even with a 0ms delay, timeouts go through the task queue).</li>
+            <li><strong>var trap:</strong> all three arrow functions close over the SAME <code>i</code>. By the time the callbacks run (after the current synchronous code finishes), the loop has already completed and <code>i</code> is <code>3</code>.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p1')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 2
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p2">
+    <div class="problem-head">
+      <div class="problem-num">2</div>
+      <div class="problem-title">The let fix</div>
+      <div class="difficulty diff-easy">Easy</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  setTimeout(() => console.log(i), <span class="cn">0</span>);</span>
+<span class="line">}</span>
+<span class="line">console.log(<span class="cs">"done"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p2')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"done"
+0
+1
+2</div>
+        </div>
+        <div class="explanation">
+          <code>let</code> creates a <strong>brand new binding of <code>i</code> for each loop iteration</strong> — this is spec'd behavior, not a workaround. Each arrow function closes over its own separate copy of <code>i</code> with the value it had during that specific iteration. "done" still logs first because <code>setTimeout</code> callbacks are always deferred to the task queue, even with 0ms delay.
+        </div>
+        <button class="hide-btn" onclick="hide('p2')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 3
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p3">
+    <div class="problem-head">
+      <div class="problem-num">3</div>
+      <div class="problem-title">IIFE capture</div>
+      <div class="difficulty diff-medium">Medium</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  (<span class="ck">function</span>(i) {</span>
+<span class="line">    setTimeout(() => console.log(i), i * <span class="cn">100</span>);</span>
+<span class="line">  })(i);</span>
+<span class="line">}</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p3')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">0
+1
+2</div>
+        </div>
+        <div class="explanation">
+          The IIFE <code>(function(i) {...})(i)</code> creates a <strong>new function scope on every iteration</strong>, and the outer <code>i</code>'s current value is passed in as an argument — creating a new local <code>i</code> parameter that shadows the outer one. Each <code>setTimeout</code> callback closes over its own IIFE's local <code>i</code>, not the shared loop variable. This was the standard pre-ES6 fix for the closure-in-loop trap. The staggered delays (<code>i * 100</code>) also guarantee the order 0, 1, 2 — without them, order would still be 0,1,2 here since they're all queued in that order with equal delay.
+        </div>
+        <button class="hide-btn" onclick="hide('p3')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 4
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p4">
+    <div class="problem-head">
+      <div class="problem-num">4</div>
+      <div class="problem-title">async/await ordering</div>
+      <div class="difficulty diff-medium">Medium</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line">console.log(<span class="cs">"1"</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">foo</span>() {</span>
+<span class="line">  console.log(<span class="cs">"2"</span>);</span>
+<span class="line">  <span class="ck">await</span> <span class="ck">null</span>;</span>
+<span class="line">  console.log(<span class="cs">"3"</span>);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">foo</span>();</span>
+<span class="line">console.log(<span class="cs">"4"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p4')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"1"
+"2"
+"4"
+"3"</div>
+        </div>
+        <div class="explanation">
+          <strong>Async functions run synchronously until the first <code>await</code>.</strong>
+          <ul>
+            <li><code>"1"</code> logs first (top-level sync code).</li>
+            <li>Calling <code>foo()</code> immediately runs its body synchronously up to <code>await null</code> — so <code>"2"</code> logs next, still synchronously.</li>
+            <li>At <code>await</code>, the rest of the function (<code>"3"</code>) is scheduled as a <strong>microtask</strong> and execution returns to the caller.</li>
+            <li><code>"4"</code> logs next (remaining synchronous top-level code).</li>
+            <li>Once the call stack is empty, the microtask queue runs — logging <code>"3"</code> last.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p4')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 5
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p5">
+    <div class="problem-head">
+      <div class="problem-num">5</div>
+      <div class="problem-title">Promise vs setTimeout race</div>
+      <div class="difficulty diff-hard">Hard</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line">console.log(<span class="cs">"start"</span>);</span>
+<span class="line"></span>
+<span class="line">setTimeout(() => console.log(<span class="cs">"timeout"</span>), <span class="cn">0</span>);</span>
+<span class="line"></span>
+<span class="line">Promise.resolve()</span>
+<span class="line">  .then(() => console.log(<span class="cs">"promise 1"</span>))</span>
+<span class="line">  .then(() => console.log(<span class="cs">"promise 2"</span>));</span>
+<span class="line"></span>
+<span class="line">console.log(<span class="cs">"end"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p5')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"start"
+"end"
+"promise 1"
+"promise 2"
+"timeout"</div>
+        </div>
+        <div class="explanation">
+          <strong>Microtasks (Promises) always run before macrotasks (setTimeout)</strong>, even with a 0ms delay.
+          <ul>
+            <li><code>"start"</code> and <code>"end"</code> run first — pure synchronous code.</li>
+            <li><code>setTimeout</code> schedules a <strong>macrotask</strong> — it goes to the back of the task queue, processed only after the current call stack AND all pending microtasks are done.</li>
+            <li><code>.then()</code> callbacks are <strong>microtasks</strong> — they run immediately after the current synchronous code finishes, before the engine even checks the macrotask queue.</li>
+            <li>The chained <code>.then()</code> (promise 2) also runs before the timeout, because the engine fully drains the microtask queue (processing new microtasks added during draining) before moving to the next macrotask.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p5')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 6
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p6">
+    <div class="problem-head">
+      <div class="problem-num">6</div>
+      <div class="problem-title">Closures inside an array of functions</div>
+      <div class="difficulty diff-medium">Medium</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">createFunctions</span>() {</span>
+<span class="line">  <span class="ck">const</span> fns = [];</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">    fns.push(() => i);</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> fns;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> [f1, f2, f3] = <span class="cf">createFunctions</span>();</span>
+<span class="line">console.log(f1(), f2(), f3());</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p6')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">3 3 3</div>
+        </div>
+        <div class="explanation">
+          Same root cause as Problem 1 — <code>var</code> creates one shared binding across the loop. All three stored functions (<code>f1</code>, <code>f2</code>, <code>f3</code>) close over the exact same <code>i</code>. By the time any of them are CALLED (after <code>createFunctions()</code> has already returned), the loop has finished and <code>i</code> is <code>3</code>. Note this doesn't even need <code>setTimeout</code> — simply calling the functions later, after the loop, is enough to expose the shared-binding issue. Swap <code>var</code> for <code>let</code> to get <code>0 1 2</code>.
+        </div>
+        <button class="hide-btn" onclick="hide('p6')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 7
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p7">
+    <div class="problem-head">
+      <div class="problem-num">7</div>
+      <div class="problem-title">async function inside a for loop</div>
+      <div class="difficulty diff-hard">Hard</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">delay</span>(ms) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise(resolve => setTimeout(resolve, ms));</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">run</span>() {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">    <span class="ck">await</span> <span class="cf">delay</span>(<span class="cn">100</span>);</span>
+<span class="line">    console.log(i);</span>
+<span class="line">  }</span>
+<span class="line">  console.log(<span class="cs">"all done"</span>);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">run</span>();</span>
+<span class="line">console.log(<span class="cs">"sync end"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p7')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"sync end"
+0            (after ~100ms)
+1            (after ~200ms)
+2            (after ~300ms)
+"all done"   (after ~300ms)</div>
+        </div>
+        <div class="explanation">
+          <strong>await pauses the entire async function</strong>, not just that iteration.
+          <ul>
+            <li><code>run()</code> is called, immediately hits <code>await delay(100)</code> in the first iteration, and yields control back to the caller — so <code>"sync end"</code> logs before anything from inside the loop.</li>
+            <li>The loop runs <strong>sequentially, not in parallel</strong> — each iteration fully waits ~100ms for the previous <code>await</code> to resolve before starting the next one. Total time ≈ 300ms, not 100ms.</li>
+            <li><code>let</code> ensures each iteration's <code>i</code> is correctly scoped (0, 1, 2 in order) — this would also work correctly with <code>var</code> here, unlike the setTimeout-in-loop trap, because each iteration's console.log runs synchronously relative to its own await resolving, not deferred all together.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p7')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 8
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p8">
+    <div class="problem-head">
+      <div class="problem-num">8</div>
+      <div class="problem-title">forEach with async callback (the "forgot to await" trap)</div>
+      <div class="difficulty diff-hard">Hard</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">delay</span>(ms) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise(resolve => setTimeout(resolve, ms));</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">run</span>() {</span>
+<span class="line">  [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>].forEach(<span class="ck">async</span> (num) => {</span>
+<span class="line">    <span class="ck">await</span> <span class="cf">delay</span>(<span class="cn">100</span>);</span>
+<span class="line">    console.log(num);</span>
+<span class="line">  });</span>
+<span class="line">  console.log(<span class="cs">"done"</span>);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">run</span>();</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p8')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"done"
+1
+2
+3      (all ~100ms later, roughly together)</div>
+        </div>
+        <div class="explanation">
+          <strong>forEach does NOT wait for async callbacks</strong> — this is a famous real-world bug pattern.
+          <ul>
+            <li><code>forEach</code> calls the async arrow function for each element but <strong>ignores the returned Promise entirely</strong> — it doesn't await anything and moves to the next iteration immediately.</li>
+            <li>All 3 async callbacks start virtually simultaneously (not sequentially!), each hits its own <code>await delay(100)</code>, and <code>run()</code> continues past the <code>forEach</code> call right away — logging <code>"done"</code> before any of the numbers.</li>
+            <li>All three delays run <strong>in parallel</strong>, so 1, 2, 3 log at roughly the same time (~100ms later), in original order since they started together — NOT sequentially like Problem 7.</li>
+            <li><strong>Fix:</strong> use a plain <code>for...of</code> loop with <code>await</code> inside, or <code>Promise.all(arr.map(async fn))</code> if parallel execution is intended but you need to wait for completion.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p8')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 9
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p9">
+    <div class="problem-head">
+      <div class="problem-num">9</div>
+      <div class="problem-title">Closures with shared mutable state</div>
+      <div class="difficulty diff-medium">Medium</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">makeCounters</span>() {</span>
+<span class="line">  <span class="ck">let</span> count = <span class="cn">0</span>;</span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    increment: () => ++count,</span>
+<span class="line">    decrement: () => --count</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> counterA = <span class="cf">makeCounters</span>();</span>
+<span class="line"><span class="ck">const</span> counterB = <span class="cf">makeCounters</span>();</span>
+<span class="line"></span>
+<span class="line">counterA.increment();</span>
+<span class="line">counterA.increment();</span>
+<span class="line">counterB.increment();</span>
+<span class="line"></span>
+<span class="line">console.log(counterA.increment());</span>
+<span class="line">console.log(counterB.increment());</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p9')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">3
+2</div>
+        </div>
+        <div class="explanation">
+          Each call to <code>makeCounters()</code> creates a <strong>brand new, independent closure</strong> with its own private <code>count</code> variable — <code>counterA</code> and <code>counterB</code> do NOT share state, even though they were created by the same function.
+          <ul>
+            <li><code>counterA</code>'s count: 0 → 1 → 2 → <strong>3</strong> (three increments total)</li>
+            <li><code>counterB</code>'s count: 0 → 1 → <strong>2</strong> (two increments total)</li>
+          </ul>
+          This demonstrates that closures capture a scope <strong>per invocation</strong> of the outer function, not per function definition — a common point of confusion with the module/factory pattern.
+        </div>
+        <button class="hide-btn" onclick="hide('p9')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PROBLEM 10
+  ══════════════════════════════════════ -->
+  <div class="problem" id="p10">
+    <div class="problem-head">
+      <div class="problem-num">10</div>
+      <div class="problem-title">The ultimate mashup — let, var, async, and setTimeout together</div>
+      <div class="difficulty diff-hard">Hard</div>
+    </div>
+    <div class="problem-body">
+      <div class="code-block">
+<span class="line">console.log(<span class="cs">"A"</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; <span class="cn">2</span>; i++) {</span>
+<span class="line">  setTimeout(() => console.log(<span class="cs">"timeout"</span>, i), <span class="cn">0</span>);</span>
+<span class="line">  Promise.resolve().then(() => console.log(<span class="cs">"promise"</span>, i));</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line">console.log(<span class="cs">"B"</span>);</span>
+      </div>
+      <button class="reveal-btn" onclick="reveal('p10')">🔍 Reveal answer</button>
+      <div class="answer-section">
+        <div class="output-box">
+          <div class="output-label">Output</div>
+          <div class="output-value">"A"
+"B"
+"promise" 0
+"promise" 1
+"timeout" 0
+"timeout" 1</div>
+        </div>
+        <div class="explanation">
+          Combines <strong>event loop priority</strong> (microtasks before macrotasks) with the <strong>let-per-iteration binding</strong>.
+          <ul>
+            <li><code>"A"</code> logs first (sync), then the loop runs twice — registering 2 timeouts and 2 promise <code>.then()</code> callbacks (as microtasks) — then <code>"B"</code> logs (still sync, since nothing async has resolved yet).</li>
+            <li>Once the synchronous code finishes, the engine drains the <strong>entire microtask queue</strong> before touching macrotasks — so BOTH promise callbacks ("promise 0", "promise 1") run before EITHER timeout callback.</li>
+            <li><code>let</code> gives each loop iteration its own <code>i</code>, so both the promise and timeout callbacks correctly capture 0 and 1 respectively — no "3, 3" style bug here.</li>
+            <li>Order within each group (promise/timeout) follows insertion order — iteration 0's callbacks were queued before iteration 1's.</li>
+          </ul>
+        </div>
+        <button class="hide-btn" onclick="hide('p10')">Hide answer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════
+       PATTERNS SUMMARY
+  ══════════════════════════════════════ -->
+  <section class="section" id="patterns">
+    <div class="section-header">
+      <div class="section-num">✓</div>
+      <h2>Key Patterns to Remember</h2>
+    </div>
+
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-title">1. var = shared binding</div>
+        <div class="pattern-desc"><code>var</code> in a loop creates ONE variable shared by all closures. By the time async callbacks run, the loop has finished and the variable holds its final value.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">2. let = fresh binding per iteration</div>
+        <div class="pattern-desc">Spec-guaranteed: each iteration of a <code>let</code>-based for-loop gets its own copy of the loop variable, correctly captured by any closure created that iteration.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">3. Sync code always runs first</div>
+        <div class="pattern-desc">ALL synchronous code in the current call stack finishes executing before ANY callback (timeout, promise, or otherwise) runs — regardless of delay value, even 0ms.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">4. Microtasks beat macrotasks</div>
+        <div class="pattern-desc">Promise <code>.then()</code>/<code>catch</code>/<code>finally</code> and <code>await</code> continuations are microtasks. <code>setTimeout</code>/<code>setInterval</code> are macrotasks. The ENTIRE microtask queue drains before the next macrotask runs.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">5. async functions run sync until first await</div>
+        <div class="pattern-desc">Code before the first <code>await</code> inside an async function executes immediately/synchronously when the function is called — it does NOT defer right away.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">6. forEach doesn't await async callbacks</div>
+        <div class="pattern-desc"><code>array.forEach(async fn)</code> fires all callbacks without waiting — they run "in parallel," and code after <code>forEach</code> continues immediately. Use <code>for...of</code> with <code>await</code>, or <code>Promise.all</code>, when order/completion matters.</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">7. Each function call = new closure scope</div>
+        <div class="pattern-desc">Calling a factory function multiple times creates independent closures each time — they do NOT share state unless you deliberately share a reference (e.g. a variable defined outside both).</div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-title">8. Sequential await = one at a time</div>
+        <div class="pattern-desc"><code>await</code> inside a <code>for</code> loop pauses the ENTIRE function at each iteration — the loop total time is the SUM of each awaited delay, not the max (unlike parallel execution).</div>
+      </div>
+    </div>
+
+    <div class="intro-callout" style="background: rgba(92,255,176,0.06); border-color: rgba(92,255,176,0.2); color: #9affd4;">
+      <span class="callout-icon">🧠</span>
+      <span><strong>Mental model for the event loop:</strong> 1) Run all synchronous code to completion. 2) Drain the ENTIRE microtask queue (promises), including any new microtasks added while draining. 3) Run ONE macrotask (e.g. one setTimeout callback). 4) Drain microtasks again. 5) Repeat from step 3.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Closure Output Puzzles · setTimeout · Promises · async/await · Event Loop
+  </footer>
+
+</div>
+
+<script>
+  function reveal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function hide(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TDZ, IIFE & Module Scope — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(255,184,108,0.1); color: var(--accent); border: 1px solid rgba(255,184,108,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(255,184,108,0.12); color: #ffd49a; border-color: rgba(255,184,108,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two / Three col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 640px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── TDZ timeline visual ── */
+  .tdz-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .tdz-diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .tdz-track { position: relative; }
+  .tdz-bar-full {
+    display: flex; height: 40px; border-radius: 8px; overflow: hidden;
+    font-family: var(--font-mono); font-size: 11px; margin-bottom: 8px;
+  }
+  .tdz-seg { display: flex; align-items: center; justify-content: center; color: #0d0f14; font-weight: 600; }
+  .tdz-red { background: linear-gradient(135deg, #ff6b6b, #e64545); flex: 2.2; }
+  .tdz-green { background: linear-gradient(135deg, #5cffb0, #2db87a); flex: 1.4; }
+  .tdz-markers { display: flex; font-size: 10.5px; color: var(--text3); font-family: var(--font-mono); }
+  .tdz-marker-a { flex: 2.2; }
+  .tdz-marker-b { flex: 1.4; }
+
+  /* ── Feature comparison table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .partial { color: var(--amber); font-weight: 500; }
+
+  /* ── IIFE syntax cards ── */
+  .iife-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px;
+  }
+  .iife-card-title { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+  .iife-card .code-block { margin: 0; }
+
+  /* ── Cheat grid ── */
+  .cheat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .cheat-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.85rem 1rem; border-left: 3px solid transparent; transition: border-color 0.2s, transform 0.2s;
+  }
+  .cheat-card:hover { transform: translateY(-2px); border-left-color: var(--accent); }
+  .cheat-title { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: 6px; font-weight: 500; }
+  .cheat-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+  .cheat-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Scope Deep-Dive</div>
+    <h1>TDZ, IIFEs &amp; Module Scope</h1>
+    <p>Temporal Dead Zone · Immediately Invoked Function Expression Patterns · Module Scope Differences</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. TDZ Deep Dive</a>
+    <a class="topic-pill" href="#s2">2. IIFE Patterns</a>
+    <a class="topic-pill" href="#s3">3. Why Use IIFEs</a>
+    <a class="topic-pill" href="#s4">4. Module Scope</a>
+    <a class="topic-pill" href="#s5">5. Scope Comparison</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — TDZ Deep Dive
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Temporal Dead Zone (TDZ) — Deep Dive</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The <strong>TDZ</strong> is the period from when a scope is entered (and <ic>let</ic>/<ic>const</ic> variables are hoisted but left <strong>uninitialized</strong>) until the line where they're actually declared executes. It's called "temporal" because it's about time/execution order, not code position.</span>
+    </div>
+
+    <div class="tdz-diagram">
+      <div class="tdz-diagram-title">Timeline of a let/const binding within its scope</div>
+      <div class="tdz-track">
+        <div class="tdz-bar-full">
+          <div class="tdz-seg tdz-red">TEMPORAL DEAD ZONE</div>
+          <div class="tdz-seg tdz-green">USABLE</div>
+        </div>
+        <div class="tdz-markers">
+          <div class="tdz-marker-a">Scope entered → variable hoisted, uninitialized</div>
+          <div class="tdz-marker-b">let x = 5 executes → usable</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'tdz-basic')">Basic TDZ</button>
+      <button class="tab-btn" onclick="showTab(event,'tdz-typeof')">typeof + TDZ</button>
+      <button class="tab-btn" onclick="showTab(event,'tdz-params')">TDZ in parameters</button>
+      <button class="tab-btn" onclick="showTab(event,'tdz-class')">TDZ with classes</button>
+    </div>
+
+    <div id="tab-tdz-basic" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// Basic TDZ — accessing before declaration throws</span></span>
+<span class="line">{</span>
+<span class="line">  console.log(x); <span class="cm">// ✗ ReferenceError: Cannot access 'x' before initialization</span></span>
+<span class="line">  <span class="ck">let</span> x = <span class="cn">10</span>;</span>
+<span class="line">  console.log(x); <span class="cm">// → 10  ✓ (TDZ has ended)</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Compare to var — no TDZ, just undefined</span></span>
+<span class="line">{</span>
+<span class="line">  console.log(y); <span class="cm">// → undefined (NOT an error — var has no TDZ)</span></span>
+<span class="line">  <span class="ck">var</span> y = <span class="cn">10</span>;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// TDZ is scope-specific — each block has its own TDZ instance</span></span>
+<span class="line"><span class="ck">let</span> z = <span class="cs">"outer"</span>;</span>
+<span class="line">{</span>
+<span class="line">  console.log(z); <span class="cm">// ✗ ReferenceError! Even though an OUTER "z" exists,</span></span>
+<span class="line">  <span class="cm">//    this block has its OWN "z" declared below, shadowing the outer one —</span></span>
+<span class="line">  <span class="cm">//    and that inner z is in ITS OWN TDZ until its declaration line runs.</span></span>
+<span class="line">  <span class="ck">let</span> z = <span class="cs">"inner"</span>;</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-tdz-typeof" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>Normally <ic>typeof</ic> on an undeclared variable is SAFE (returns <ic>"undefined"</ic>). But <ic>typeof</ic> on a <ic>let</ic>/<ic>const</ic> variable still in its TDZ is NOT safe — it throws.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// typeof is normally the SAFE way to check existence...</span></span>
+<span class="line">console.log(<span class="ck">typeof</span> neverDeclared); <span class="cm">// → "undefined"  (safe, no error)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ...but NOT when the variable IS declared later with let/const in the same scope</span></span>
+<span class="line">console.log(<span class="ck">typeof</span> myVar); <span class="cm">// ✗ ReferenceError: Cannot access 'myVar' before initialization</span></span>
+<span class="line"><span class="ck">let</span> myVar = <span class="cn">5</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Why the difference? The JS engine already knows "myVar" EXISTS in this</span></span>
+<span class="line"><span class="cm">// scope (it was hoisted), so typeof can't treat it as "doesn't exist".</span></span>
+<span class="line"><span class="cm">// It exists but is in a special "uninitialized" state — accessing it</span></span>
+<span class="line"><span class="cm">// in ANY way (read, typeof, etc.) during the TDZ throws.</span></span>
+      </div>
+    </div>
+
+    <div id="tab-tdz-params" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Default parameters are evaluated left-to-right — TDZ applies here too</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">example</span>(a = b, b = <span class="cn">2</span>) {</span>
+<span class="line">  <span class="ck">return</span> [a, b];</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">example</span>(); <span class="cm">// ✗ ReferenceError — "b" is in ITS OWN TDZ when "a" tries to reference it</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Reversed order — this works because b doesn't depend on a</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">example2</span>(a = <span class="cn">1</span>, b = a) {</span>
+<span class="line">  <span class="ck">return</span> [a, b];</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">example2</span>(); <span class="cm">// → [1, 1]  ✓ works — "a" is already initialized by the time "b" needs it</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Destructuring defaults have TDZ too</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">example3</span>({ a, b = a } = {}) {</span>
+<span class="line">  <span class="ck">return</span> [a, b];</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">example3</span>({ a: <span class="cn">10</span> }); <span class="cm">// → [10, 10]  ✓ fine, order matches</span></span>
+      </div>
+    </div>
+
+    <div id="tab-tdz-class" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Classes are also hoisted but stay in the TDZ (unlike function declarations!)</span></span>
+<span class="line"><span class="ck">const</span> a = <span class="ck">new</span> Foo(); <span class="cm">// ✗ ReferenceError: Cannot access 'Foo' before initialization</span></span>
+<span class="line"><span class="ck">class</span> Foo {}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// This is DIFFERENT from function declarations, which are fully hoisted:</span></span>
+<span class="line"><span class="ck">const</span> b = <span class="ck">new</span> <span class="cf">Bar</span>(); <span class="cm">// ✓ works fine!</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Bar</span>() {}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Class EXPRESSIONS behave the same as let/const — TDZ applies</span></span>
+<span class="line"><span class="ck">const</span> MyClass = <span class="ck">class</span> {</span>
+<span class="line">  <span class="cf">constructor</span>() { <span class="ck">this</span>.value = <span class="cn">1</span>; }</span>
+<span class="line">};</span>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why TDZ exists:</strong> it's a deliberate safety feature. Instead of silently returning <ic>undefined</ic> (as <ic>var</ic> does, hiding bugs), the TDZ forces an explicit error the moment you try to use a variable before it's ready — catching bugs at the earliest possible point.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — IIFE Patterns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>IIFE Patterns <span class="tag">Immediately Invoked Function Expression</span></h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">⚡</span>
+      <span>An <strong>IIFE</strong> is a function that is defined and executed immediately, in one step. It creates a new, isolated function scope that runs once — commonly used to avoid polluting the global scope, or to create private state via closures.</span>
+    </div>
+
+    <div class="iife-card">
+      <div class="iife-card-title">Standard form — wrap in parens, then call</div>
+      <div class="code-block">
+<span class="line">(<span class="ck">function</span>() {</span>
+<span class="line">  console.log(<span class="cs">"IIFE runs immediately!"</span>);</span>
+<span class="line">})();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Why the outer parens? "function" at the start of a statement is parsed</span></span>
+<span class="line"><span class="cm">// as a DECLARATION, which requires a name and can't be immediately invoked.</span></span>
+<span class="line"><span class="cm">// Wrapping in () forces it to be parsed as an EXPRESSION instead.</span></span>
+      </div>
+    </div>
+
+    <div class="iife-card">
+      <div class="iife-card-title">Alternative syntaxes — all equivalent</div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Parens around the whole thing (Crockford style)</span></span>
+<span class="line">(<span class="ck">function</span>() { console.log(<span class="cs">"a"</span>); })();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Parens only around the function (also common)</span></span>
+<span class="line">(<span class="ck">function</span>() { console.log(<span class="cs">"b"</span>); }());</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Unary operators also force expression parsing</span></span>
+<span class="line">!<span class="ck">function</span>() { console.log(<span class="cs">"c"</span>); }();</span>
+<span class="line">+<span class="ck">function</span>() { console.log(<span class="cs">"d"</span>); }();</span>
+<span class="line">void <span class="ck">function</span>() { console.log(<span class="cs">"e"</span>); }();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Arrow function IIFE (ES6+)</span></span>
+<span class="line">(() => { console.log(<span class="cs">"f"</span>); })();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Async IIFE — for top-level await before it was natively supported</span></span>
+<span class="line">(<span class="ck">async</span> () => {</span>
+<span class="line">  <span class="ck">const</span> data = <span class="ck">await</span> fetch(<span class="cs">"/api"</span>);</span>
+<span class="line">  console.log(<span class="cs">"g"</span>);</span>
+<span class="line">})();</span>
+      </div>
+    </div>
+
+    <div class="iife-card">
+      <div class="iife-card-title">IIFE with parameters</div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Pass values in — useful for aliasing globals or capturing current values</span></span>
+<span class="line">(<span class="ck">function</span>($, global) {</span>
+<span class="line">  <span class="cm">// $ and global are local names inside this scope</span></span>
+<span class="line">  console.log(<span class="ck">typeof</span> $);</span>
+<span class="line">})(jQuery, window);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Classic use: capturing a loop variable's CURRENT value (pre-ES6 fix)</span></span>
+<span class="line"><span class="ck">for</span> (<span class="ck">var</span> i = <span class="cn">0</span>; i &lt; <span class="cn">3</span>; i++) {</span>
+<span class="line">  (<span class="ck">function</span>(capturedI) {</span>
+<span class="line">    setTimeout(() => console.log(capturedI), <span class="cn">100</span>);</span>
+<span class="line">  })(i);</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// → 0, 1, 2  (each IIFE call gets its own "capturedI")</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Why Use IIFEs
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Why (and When) to Use IIFEs</h2>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'iife-privacy')">Avoid globals</button>
+      <button class="tab-btn" onclick="showTab(event,'iife-module')">Module pattern</button>
+      <button class="tab-btn" onclick="showTab(event,'iife-modern')">Still relevant today?</button>
+    </div>
+
+    <div id="tab-iife-privacy" class="tab-panel active">
+      <div class="before-after">
+        <div class="ba-card">
+          <div class="ba-label label-before">✗ Without IIFE — pollutes global scope</div>
+          <div class="code-block">
+<span class="line"><span class="ck">var</span> counter = <span class="cn">0</span>;</span>
+<span class="line"><span class="ck">var</span> increment = <span class="ck">function</span>() {</span>
+<span class="line">  counter++;</span>
+<span class="line">};</span>
+<span class="line"><span class="cm">// counter & increment are now</span></span>
+<span class="line"><span class="cm">// GLOBAL — any script can</span></span>
+<span class="line"><span class="cm">// read/overwrite them, name</span></span>
+<span class="line"><span class="cm">// collisions possible</span></span>
+          </div>
+        </div>
+        <div class="ba-card">
+          <div class="ba-label label-after">✓ With IIFE — isolated scope</div>
+          <div class="code-block">
+<span class="line"><span class="ck">const</span> myModule = (<span class="ck">function</span>() {</span>
+<span class="line">  <span class="ck">let</span> counter = <span class="cn">0</span>; <span class="cm">// private!</span></span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    increment: () => ++counter</span>
+<span class="line">  };</span>
+<span class="line">})();</span>
+<span class="line"><span class="cm">// counter is NOT accessible</span></span>
+<span class="line"><span class="cm">// globally — only via</span></span>
+<span class="line"><span class="cm">// myModule.increment()</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-iife-module" class="tab-panel">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>The <strong>Module Pattern</strong> — an IIFE that returns an object exposing only a public API, while keeping implementation details private via closures. This was THE standard way to organize code before ES6 modules existed.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">const</span> ShoppingCart = (<span class="ck">function</span>() {</span>
+<span class="line">  <span class="cm">// ── Private state & helpers (not accessible from outside) ──</span></span>
+<span class="line">  <span class="ck">let</span> items = [];</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">function</span> <span class="cf">calculateTotal</span>() {</span>
+<span class="line">    <span class="ck">return</span> items.reduce((sum, item) => sum + item.price, <span class="cn">0</span>);</span>
+<span class="line">  }</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// ── Public API (returned object) ──</span></span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    addItem(item) {</span>
+<span class="line">      items.push(item);</span>
+<span class="line">    },</span>
+<span class="line">    removeItem(id) {</span>
+<span class="line">      items = items.filter(i => i.id !== id);</span>
+<span class="line">    },</span>
+<span class="line">    getTotal() {</span>
+<span class="line">      <span class="ck">return</span> <span class="cf">calculateTotal</span>();</span>
+<span class="line">    }</span>
+<span class="line">  };</span>
+<span class="line">})();</span>
+<span class="line"></span>
+<span class="line">ShoppingCart.addItem({ id: <span class="cn">1</span>, price: <span class="cn">50</span> });</span>
+<span class="line">ShoppingCart.getTotal();       <span class="cm">// → 50</span></span>
+<span class="line">ShoppingCart.items;            <span class="cm">// → undefined (truly private)</span></span>
+<span class="line">ShoppingCart.calculateTotal;   <span class="cm">// → undefined (helper also private)</span></span>
+      </div>
+    </div>
+
+    <div id="tab-iife-modern" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span><strong>In modern code, ES6 modules (<ic>import</ic>/<ic>export</ic>) have replaced IIFEs for the "avoid global pollution" use case</strong> — every module already has its own isolated scope by default. IIFEs are still useful, but for narrower reasons today.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Modern equivalent using ES modules — no IIFE needed!</span></span>
+<span class="line"><span class="cm">// cart.js</span></span>
+<span class="line"><span class="ck">let</span> items = []; <span class="cm">// automatically module-scoped, not global</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">export</span> <span class="ck">function</span> <span class="cf">addItem</span>(item) { items.push(item); }</span>
+<span class="line"><span class="ck">export</span> <span class="ck">function</span> <span class="cf">getTotal</span>() { <span class="ck">return</span> items.reduce((s,i) => s+i.price, <span class="cn">0</span>); }</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Where IIFEs STILL matter today:</span></span>
+<span class="line"><span class="cm">// 1. Quick one-off scripts / browser console snippets</span></span>
+<span class="line"><span class="cm">// 2. Library/bundler output (UMD wrappers still use IIFE patterns)</span></span>
+<span class="line"><span class="cm">// 3. Avoiding var leakage in non-module &lt;script&gt; tags</span></span>
+<span class="line"><span class="cm">// 4. Top-level async operations in environments without top-level await</span></span>
+<span class="line">(<span class="ck">async</span> () => {</span>
+<span class="line">  <span class="ck">await</span> initializeApp();</span>
+<span class="line">})();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 5. Closures-in-loop fix when you can't use let (rare, legacy code)</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Module Scope
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Module Scope <span class="tag">ES6 Modules</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Every ES module (<ic>&lt;script type="module"&gt;</ic> or a <ic>.mjs</ic> file, or any file processed by a bundler as a module) has its <strong>own top-level scope</strong>. Top-level variables are NOT automatically added to the global object — unlike classic scripts.</span>
+    </div>
+
+    <div class="two-col">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Classic script — leaks to global</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="cm">&lt;script&gt;</span></span>
+<span class="line">  <span class="ck">var</span> x = <span class="cn">10</span>;</span>
+<span class="line">  <span class="ck">function</span> <span class="cf">foo</span>() {}</span>
+<span class="line"><span class="cm">&lt;/script&gt;</span></span>
+<span class="line"></span>
+<span class="line">console.log(window.x);   <span class="cm">// → 10</span></span>
+<span class="line">console.log(window.foo); <span class="cm">// → function</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Module script — isolated scope</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="cm">&lt;script type="module"&gt;</span></span>
+<span class="line">  <span class="ck">var</span> x = <span class="cn">10</span>;</span>
+<span class="line">  <span class="ck">function</span> <span class="cf">foo</span>() {}</span>
+<span class="line"><span class="cm">&lt;/script&gt;</span></span>
+<span class="line"></span>
+<span class="line">console.log(window.x);   <span class="cm">// → undefined</span></span>
+<span class="line">console.log(window.foo); <span class="cm">// → undefined</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// math.js — a module has its own file-level scope</span></span>
+<span class="line"><span class="ck">const</span> PI = <span class="cn">3.14159</span>;      <span class="cm">// private to this module, NOT global</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">square</span>(x) { <span class="ck">return</span> x * x; } <span class="cm">// also private unless exported</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">export</span> <span class="ck">function</span> <span class="cf">circleArea</span>(r) {</span>
+<span class="line">  <span class="ck">return</span> PI * <span class="cf">square</span>(r);</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">export</span> <span class="ck">const</span> VERSION = <span class="cs">"1.0"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// app.js — importing only exposes what was explicitly exported</span></span>
+<span class="line"><span class="ck">import</span> { circleArea, VERSION } <span class="ck">from</span> <span class="cs">"./math.js"</span>;</span>
+<span class="line">circleArea(<span class="cn">5</span>);  <span class="cm">// → 78.5...</span></span>
+<span class="line"><span class="cm">// PI and square() are NOT accessible here — true module privacy</span></span>
+<span class="line"><span class="cm">// import { PI } from "./math.js"; ← would fail, PI was never exported</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Modules are automatically in STRICT MODE — no need for "use strict"</span></span>
+<span class="line"><span class="cm">// Modules are also SINGLETONS — importing the same module multiple</span></span>
+<span class="line"><span class="cm">// times (from different files) reuses the same single instance/state</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span>Module scope gives you the <strong>same privacy benefits as the IIFE module pattern</strong> — without needing to manually wrap code in a function. Every module is essentially an IIFE that Node.js / the browser creates for you automatically, plus a formal import/export mechanism.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Scope Comparison Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Scope Types — Full Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead>
+        <tr><th>Scope type</th><th>Boundary</th><th>Leaks to global?</th><th>Strict mode by default?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Global (classic script)</td><td>Whole page/file</td><td class="yes">✓ Yes — IS global</td><td class="no">✗ No</td></tr>
+        <tr><td>Function scope (var)</td><td>Nearest function</td><td class="no">✗ No (unless declared at top level)</td><td class="partial">Depends</td></tr>
+        <tr><td>Block scope (let/const)</td><td>Nearest { }</td><td class="no">✗ No</td><td class="partial">Depends</td></tr>
+        <tr><td>IIFE scope</td><td>The IIFE's function body</td><td class="no">✗ No — fully isolated</td><td class="partial">Depends on "use strict" inside</td></tr>
+        <tr><td>Module scope (ES6)</td><td>The entire file</td><td class="no">✗ No — top-level vars stay local</td><td class="yes">✓ Yes — always strict</td></tr>
+      </tbody>
+    </table>
+
+    <table class="feat-table">
+      <thead><tr><th>Feature</th><th>IIFE</th><th>ES6 Module</th></tr></thead>
+      <tbody>
+        <tr><td>Needs explicit wrapping</td><td class="no">✗ Yes, manual function wrap</td><td class="yes">✓ No, automatic per file</td></tr>
+        <tr><td>Exposes public API via</td><td>Returned object</td><td><code style="font-family:var(--font-mono)">export</code> keyword</td></tr>
+        <tr><td>Runs immediately</td><td class="yes">✓ Yes, on definition</td><td class="yes">✓ Yes, on first import</td></tr>
+        <tr><td>Singleton behavior</td><td class="no">✗ No (unless you enforce it)</td><td class="yes">✓ Yes, cached after first import</td></tr>
+        <tr><td>Native browser/Node support</td><td class="yes">✓ Always (plain JS)</td><td class="yes">✓ Yes (modern environments)</td></tr>
+        <tr><td>Async top-level code</td><td>Needs async IIFE wrapper</td><td class="yes">✓ Native top-level await</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--red),#cc4545);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>typeof does NOT protect against TDZ</strong> — this is the #1 tested TDZ gotcha. It only protects against genuinely undeclared identifiers, not let/const variables still awaiting initialization.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Class declarations are in the TDZ too</strong> — unlike function declarations, you cannot instantiate a class before its declaration line, even though the class name is technically hoisted.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting the outer parens on an IIFE</strong> causes a SyntaxError: <code>function() {}();</code> fails because <code>function</code> at statement-start is parsed as a declaration (which needs a name). Always wrap: <code>(function(){})();</code></span></li>
+      <li><span class="gi">⚠️</span><span><strong>Missing semicolon before an IIFE can cause it to merge with the previous line</strong> — e.g. if the line before ends without a semicolon and happens to return a function, ASI (automatic semicolon insertion) can create bugs. Always terminate statements with semicolons before an IIFE, or start the IIFE line with a leading semicolon defensively.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>const in the module pattern doesn't make the returned object immutable</strong> — <code>const myModule = (function(){...})()</code> prevents reassigning <code>myModule</code>, but its properties can still be mutated unless you also <code>Object.freeze()</code> the returned object.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Module scope is NOT the same as block scope</strong> — top-level <code>let</code>/<code>const</code>/<code>var</code>/<code>function</code> in a module are scoped to that entire FILE, not globally, but they're still accessible anywhere within that same file (not restricted to a block).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>ES modules are singletons — importing twice does NOT re-run the module</strong>: if a module has side effects (e.g. incrementing a counter) or mutable exported state, all importers share the exact same instance, not fresh copies.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An arrow-function IIFE with an implicit object return needs double parens:</strong> <code>(() => ({ a: 1 }))()</code> — one pair for the object literal (to avoid it being read as a block), one pair to make the whole thing an IIFE.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Named function expression used as an IIFE can still create the "inner name" scoping quirk</strong> — <code>(function foo(){ ... })()</code> — the name <code>foo</code> is only accessible inside the IIFE's own body (useful for recursion), not outside.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"use strict" is implicit in modules</strong> — code that relies on non-strict behavior (like assigning to an undeclared variable silently creating a global) will throw inside a module, but might silently succeed in a classic script.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What is the Temporal Dead Zone and why does it exist?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The TDZ is the span between entering a scope (where <code>let</code>/<code>const</code> are hoisted but left uninitialized) and the line where they're actually declared. Accessing the variable anywhere in that window throws a ReferenceError.<br><br>
+          It exists as a <strong>safety mechanism</strong> — rather than silently giving you <code>undefined</code> like <code>var</code> does (which can mask bugs), the TDZ forces an explicit, early error the moment you try to use a variable before it's ready.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: Why do you need to wrap an IIFE's function in parentheses?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the JS parser sees the <code>function</code> keyword at the start of a statement, it assumes you're writing a <strong>function declaration</strong> — which requires a name and cannot be immediately invoked with trailing <code>()</code>. Wrapping the function in parentheses <code>(function(){})</code> forces the parser to treat it as a <strong>function expression</strong> instead, which CAN be immediately invoked. Unary operators like <code>!</code>, <code>+</code>, or <code>void</code> before <code>function</code> achieve the same effect.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: What problem does the module pattern (IIFE returning an object) solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It provides <strong>data privacy and namespace isolation</strong> before ES6 modules existed. By wrapping code in an IIFE, internal variables and helper functions become closures — completely inaccessible from outside — while only the properties on the returned object are exposed as the "public API". This avoids polluting the global namespace and prevents external code from directly mutating internal state.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: How is ES6 module scope different from wrapping code in an IIFE?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          They achieve similar privacy goals, but ES6 modules do it <strong>natively</strong> — every file is automatically scoped without needing a manual function wrapper. Additional differences: modules are always in strict mode by default, modules use explicit <code>export</code>/<code>import</code> instead of a returned object, modules are singletons (cached after first load), and modules support native top-level <code>await</code> (no async IIFE needed).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: Does typeof protect you from TDZ errors?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>No</strong> — this is a common trick question. <code>typeof</code> normally safely returns <code>"undefined"</code> for a variable that was never declared anywhere. But if a <code>let</code>/<code>const</code> variable IS declared later in the same scope, it has already been hoisted (registered) — the engine knows it exists but is uninitialized, so <code>typeof</code> on it during the TDZ still throws a ReferenceError, same as any other access.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: Are IIFEs still relevant in modern JavaScript, given ES6 modules exist?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Less critical for their original "avoid global pollution" purpose since ES modules solve that natively — but they're still used for: quick isolated scripts not using modules, bundler/library output (UMD wrapper patterns), one-off async initialization blocks in environments without top-level await support, and any scenario needing an isolated scope without setting up a full module system.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What's the difference in hoisting behavior between class declarations and function declarations?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Function declarations</strong> are fully hoisted — both the name and the entire function body — so you can call them before their line in the code.<br><br>
+          <strong>Class declarations</strong> are hoisted in name only (like <code>let</code>/<code>const</code>) but remain in the Temporal Dead Zone until their declaration line executes. Attempting to instantiate a class before its declaration throws a ReferenceError, even though the identifier technically exists in scope.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">new</span> <span class="cf">Foo</span>();     <span class="cm">// ✓ works — function declarations are fully hoisted</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Foo</span>() {}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">new</span> Bar();     <span class="cm">// ✗ ReferenceError — class is in the TDZ</span></span>
+<span class="line"><span class="ck">class</span> Bar {}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: What happens to top-level "var" declarations inside a module vs a classic script?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          In a <strong>classic script</strong>, top-level <code>var</code> declarations become properties of the global object (<code>window</code> in browsers) — <code>var x = 10</code> makes <code>window.x === 10</code>.<br><br>
+          In an <strong>ES module</strong>, top-level <code>var</code> (and <code>let</code>/<code>const</code>/<code>function</code>) declarations are scoped to that module file only — they do NOT attach to the global object, even though they're still accessible throughout that same file. This is one of the core reasons modules prevent global namespace pollution.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Temporal Dead Zone · IIFE Patterns · Module Scope
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
