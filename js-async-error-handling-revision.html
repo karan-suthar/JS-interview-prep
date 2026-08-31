@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Async/Await Error Handling — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff6b6b;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,107,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,107,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,107,107,0.1); color: var(--accent);
+    border: 1px solid rgba(255,107,107,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff6b6b 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4545);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(255,107,107,0.1); color: var(--accent); border: 1px solid rgba(255,107,107,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(255,107,107,0.12); color: #ffaaaa; border-color: rgba(255,107,107,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two / Three col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 640px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .partial { color: var(--amber); font-weight: 500; }
+
+  /* ── Pattern cards ── */
+  .pattern-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .pattern-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .pattern-card .code-block { margin: 8px 0 0; }
+  .pattern-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── AbortController flow diagram ── */
+  .flow-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .flow-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .flow-steps { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .flow-step {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 0.6rem 0.9rem; font-size: 12px; text-align: center; min-width: 130px; flex: 1;
+  }
+  .flow-step .step-label { color: var(--text3); font-size: 10px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.07em; }
+  .flow-step .step-val { font-family: var(--font-mono); color: var(--text); font-size: 12px; }
+  .flow-arrow { display: flex; align-items: center; justify-content: center; padding: 0 8px; color: var(--text3); font-size: 16px; flex-shrink: 0; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Async Error Handling</div>
+    <h1>Async/Await Error Handling</h1>
+    <p>try/catch Patterns · Unhandled Rejections · AbortController · Cancellation</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. try/catch Basics</a>
+    <a class="topic-pill" href="#s2">2. Patterns</a>
+    <a class="topic-pill" href="#s3">3. Parallel Errors</a>
+    <a class="topic-pill" href="#s4">4. Unhandled Rejections</a>
+    <a class="topic-pill" href="#s5">5. AbortController</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — try/catch Basics
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>try/catch Basics with async/await</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>When you <ic>await</ic> a promise that rejects, it <strong>throws</strong> the rejection reason as a regular JS exception at that line — meaning ordinary <ic>try/catch</ic> can catch it, just like synchronous errors.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Promise chain style</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">getUser</span>(id) {</span>
+<span class="line">  <span class="ck">return</span> fetch(`/users/${id}`)</span>
+<span class="line">    .then(res => res.json())</span>
+<span class="line">    .then(data => data.name)</span>
+<span class="line">    .catch(err => {</span>
+<span class="line">      console.error(err);</span>
+<span class="line">      <span class="ck">throw</span> err;</span>
+<span class="line">    });</span>
+<span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ async/await style — flatter, reads like sync code</div>
+        <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">getUser</span>(id) {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> res = <span class="ck">await</span> fetch(`/users/${id}`);</span>
+<span class="line">    <span class="ck">const</span> data = <span class="ck">await</span> res.json();</span>
+<span class="line">    <span class="ck">return</span> data.name;</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.error(err);</span>
+<span class="line">    <span class="ck">throw</span> err;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// A rejected await throws — catch it like any synchronous error</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">fetchData</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> result = <span class="ck">await</span> Promise.reject(<span class="ck">new</span> Error(<span class="cs">"Network failed"</span>));</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.log(err.message); <span class="cm">// → "Network failed"</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// An async function that throws automatically returns a REJECTED promise</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">risky</span>() {</span>
+<span class="line">  <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">"boom"</span>);</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">risky</span>().catch(err => console.log(err.message)); <span class="cm">// → "boom"</span></span>
+<span class="line"><span class="cm">// You never need to manually "return Promise.reject(...)" from an async fn</span></span>
+<span class="line"><span class="cm">// — a thrown error is automatically converted into a rejected promise.</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>try/catch only catches errors from <ic>await</ic>-ed expressions inside the try block</strong> — synchronous code that schedules a promise WITHOUT awaiting it (e.g. a fire-and-forget <ic>somePromise()</ic> call without <ic>await</ic>) will NOT be caught, since the try block has already exited by the time it rejects.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Practical Patterns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Practical try/catch Patterns</h2>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'pat-multi')">Multiple awaits</button>
+      <button class="tab-btn" onclick="showTab(event,'pat-finally')">finally cleanup</button>
+      <button class="tab-btn" onclick="showTab(event,'pat-tuple')">Result tuple (no throw)</button>
+      <button class="tab-btn" onclick="showTab(event,'pat-wrapper')">Reusable error wrapper</button>
+    </div>
+
+    <div id="tab-pat-multi" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>A single <ic>try</ic> block can wrap multiple <ic>await</ic> calls — the FIRST one to reject jumps straight to <ic>catch</ic>, skipping the rest of the try block (just like sync exceptions).</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">checkout</span>(cartId) {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> cart = <span class="ck">await</span> <span class="cf">fetchCart</span>(cartId);       <span class="cm">// if this fails...</span></span>
+<span class="line">    <span class="ck">const</span> payment = <span class="ck">await</span> <span class="cf">processPayment</span>(cart); <span class="cm">// ...this NEVER runs</span></span>
+<span class="line">    <span class="ck">const</span> receipt = <span class="ck">await</span> <span class="cf">sendReceipt</span>(payment); <span class="cm">// ...neither does this</span></span>
+<span class="line">    <span class="ck">return</span> receipt;</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    <span class="cm">// catches a failure from ANY of the three awaited calls above</span></span>
+<span class="line">    console.error(<span class="cs">"Checkout failed:"</span>, err.message);</span>
+<span class="line">    <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">"Unable to complete checkout"</span>); <span class="cm">// re-throw a cleaner error</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-pat-finally" class="tab-panel">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span><ic>finally</ic> runs regardless of success or failure — perfect for cleanup like hiding loading spinners, closing connections, or releasing locks.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadData</span>() {</span>
+<span class="line">  setLoading(<span class="ck">true</span>);</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> data = <span class="ck">await</span> fetch(<span class="cs">"/api/data"</span>).then(r => r.json());</span>
+<span class="line">    setData(data);</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    setError(err.message);</span>
+<span class="line">  } <span class="ck">finally</span> {</span>
+<span class="line">    setLoading(<span class="ck">false</span>); <span class="cm">// ALWAYS runs — success, failure, or even a re-thrown error</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// finally runs even if you return early from try or catch</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">example</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">return</span> <span class="cs">"from try"</span>;</span>
+<span class="line">  } <span class="ck">finally</span> {</span>
+<span class="line">    console.log(<span class="cs">"cleanup runs before the return actually completes"</span>);</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-pat-tuple" class="tab-panel">
+      <div class="callout callout-purple">
+        <span class="callout-icon">🎯</span>
+        <span>Popular alternative to try/catch — a helper that converts a promise into a <strong>[error, data] tuple</strong> (inspired by Go). Avoids nested try/catch blocks and makes error handling explicit at the call site.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Helper: never rejects — always resolves with [error, data]</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">to</span>(promise) {</span>
+<span class="line">  <span class="ck">return</span> promise</span>
+<span class="line">    .then((data) => [<span class="ck">null</span>, data])</span>
+<span class="line">    .catch((err) => [err, <span class="ck">undefined</span>]);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — no try/catch needed, errors are just data now</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">getUser</span>(id) {</span>
+<span class="line">  <span class="ck">const</span> [err, user] = <span class="ck">await</span> <span class="cf">to</span>(fetch(`/users/${id}`).then(r => r.json()));</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">if</span> (err) {</span>
+<span class="line">    console.error(<span class="cs">"Failed to fetch user:"</span>, err.message);</span>
+<span class="line">    <span class="ck">return</span> <span class="ck">null</span>;</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> user;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Especially useful for sequential calls with DIFFERENT error handling needs</span></span>
+<span class="line"><span class="ck">const</span> [err1, cart]    = <span class="ck">await</span> <span class="cf">to</span>(<span class="cf">fetchCart</span>(id));</span>
+<span class="line"><span class="ck">const</span> [err2, payment] = <span class="ck">await</span> <span class="cf">to</span>(<span class="cf">processPayment</span>(cart));</span>
+<span class="line"><span class="cm">// each step's error is handled independently, without deep nesting</span></span>
+      </div>
+    </div>
+
+    <div id="tab-pat-wrapper" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Reusable higher-order wrapper — centralizes error handling logic</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">withErrorHandling</span>(asyncFn) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">async</span> (...args) => {</span>
+<span class="line">    <span class="ck">try</span> {</span>
+<span class="line">      <span class="ck">return</span> <span class="ck">await</span> asyncFn(...args);</span>
+<span class="line">    } <span class="ck">catch</span> (err) {</span>
+<span class="line">      logToMonitoring(err);           <span class="cm">// e.g. Sentry, Datadog</span></span>
+<span class="line">      showToast(<span class="cs">"Something went wrong"</span>); <span class="cm">// user-facing UI feedback</span></span>
+<span class="line">      <span class="ck">return</span> <span class="ck">null</span>;                      <span class="cm">// safe fallback value</span></span>
+<span class="line">    }</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — wrap once, get consistent error handling everywhere</span></span>
+<span class="line"><span class="ck">const</span> safeGetUser = <span class="cf">withErrorHandling</span>(<span class="ck">async</span> (id) => {</span>
+<span class="line">  <span class="ck">const</span> res = <span class="ck">await</span> fetch(`/users/${id}`);</span>
+<span class="line">  <span class="ck">if</span> (!res.ok) <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">`HTTP ${res.status}`</span>);</span>
+<span class="line">  <span class="ck">return</span> res.json();</span>
+<span class="line">});</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> user = <span class="ck">await</span> safeGetUser(<span class="cn">42</span>); <span class="cm">// errors handled automatically, consistently</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Handling Parallel Errors
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Error Handling with Parallel Requests</h2>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Running <ic>await</ic> calls one after another (sequentially) when they don't depend on each other wastes time. But running them in parallel changes how you need to handle errors.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Sequential — slow, unnecessary waiting</div>
+        <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadDashboard</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> user = <span class="ck">await</span> <span class="cf">fetchUser</span>();</span>
+<span class="line">    <span class="ck">const</span> posts = <span class="ck">await</span> <span class="cf">fetchPosts</span>();</span>
+<span class="line">    <span class="ck">const</span> stats = <span class="ck">await</span> <span class="cf">fetchStats</span>();</span>
+<span class="line">    <span class="ck">return</span> { user, posts, stats };</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.error(err);</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Total time = sum of all three (e.g. 300ms)</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Parallel with Promise.all — faster</div>
+        <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadDashboard</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> [user, posts, stats] = <span class="ck">await</span> Promise.all([</span>
+<span class="line">      <span class="cf">fetchUser</span>(),</span>
+<span class="line">      <span class="cf">fetchPosts</span>(),</span>
+<span class="line">      <span class="cf">fetchStats</span>()</span>
+<span class="line">    ]);</span>
+<span class="line">    <span class="ck">return</span> { user, posts, stats };</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.error(err); <span class="cm">// fires on the FIRST rejection, others ignored</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Total time = the SLOWEST of the three (e.g. 150ms)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Promise.all fails fast — ONE rejection loses you ALL the other results,</span></span>
+<span class="line"><span class="cm">// even the ones that succeeded. Use allSettled if partial success is OK.</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadDashboardSafely</span>() {</span>
+<span class="line">  <span class="ck">const</span> results = <span class="ck">await</span> Promise.allSettled([</span>
+<span class="line">    <span class="cf">fetchUser</span>(),</span>
+<span class="line">    <span class="cf">fetchPosts</span>(),</span>
+<span class="line">    <span class="cf">fetchStats</span>()</span>
+<span class="line">  ]);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">const</span> [userResult, postsResult, statsResult] = results;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    user:  userResult.status === <span class="cs">"fulfilled"</span> ? userResult.value : <span class="ck">null</span>,</span>
+<span class="line">    posts: postsResult.status === <span class="cs">"fulfilled"</span> ? postsResult.value : [],</span>
+<span class="line">    stats: statsResult.status === <span class="cs">"fulfilled"</span> ? statsResult.value : <span class="ck">null</span>,</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Dashboard still renders with partial data even if one request fails</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Unhandled Rejections
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Unhandled Promise Rejections</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>An <strong>unhandled rejection</strong> happens when a promise rejects and NOTHING is attached to handle it (no <ic>.catch()</ic>, no surrounding <ic>try/catch</ic> on an <ic>await</ic>). In Node.js this can crash the process; in browsers it logs a console warning and fires a global event.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Classic unhandled rejection — fire-and-forget async call</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">riskyOperation</span>() {</span>
+<span class="line">  <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">"failed"</span>);</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">riskyOperation</span>(); <span class="cm">// ✗ NOT awaited, NOT .catch()'d — unhandled rejection!</span></span>
+<span class="line"><span class="cm">// The error is silently swallowed until the browser/Node reports it</span></span>
+<span class="line"><span class="cm">// as an "UnhandledPromiseRejectionWarning" — your app doesn't know it failed</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix 1 — always await inside an async context</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">main</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">await</span> <span class="cf">riskyOperation</span>();</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.error(<span class="cs">"Caught:"</span>, err.message);</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix 2 — attach .catch() if you can't/don't want to await</span></span>
+<span class="line"><span class="cf">riskyOperation</span>().catch(err => console.error(<span class="cs">"Caught:"</span>, err.message));</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'unh-browser')">Browser: global handler</button>
+      <button class="tab-btn" onclick="showTab(event,'unh-node')">Node.js: process handler</button>
+    </div>
+
+    <div id="tab-unh-browser" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>As a <strong>last line of defense</strong> (not a substitute for proper try/catch), you can globally catch any rejection that slipped through unhandled.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Global safety net in the browser</span></span>
+<span class="line">window.addEventListener(<span class="cs">"unhandledrejection"</span>, (event) => {</span>
+<span class="line">  console.error(<span class="cs">"Unhandled rejection:"</span>, event.reason);</span>
+<span class="line">  logToMonitoring(event.reason); <span class="cm">// e.g. send to Sentry</span></span>
+<span class="line">  event.preventDefault();        <span class="cm">// suppress the default console warning</span></span>
+<span class="line">});</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Bonus: fires when a PREVIOUSLY unhandled rejection gets handled LATE</span></span>
+<span class="line">window.addEventListener(<span class="cs">"rejectionhandled"</span>, (event) => {</span>
+<span class="line">  console.log(<span class="cs">"A rejection was handled after the fact"</span>);</span>
+<span class="line">});</span>
+      </div>
+    </div>
+
+    <div id="tab-unh-node" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>In modern Node.js, an unhandled rejection <strong>terminates the process by default</strong> (since Node 15) — this global handler is important for logging before that happens, or to override the behavior.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Global safety net in Node.js</span></span>
+<span class="line">process.on(<span class="cs">"unhandledRejection"</span>, (reason, promise) => {</span>
+<span class="line">  console.error(<span class="cs">"Unhandled Rejection at:"</span>, promise, <span class="cs">"reason:"</span>, reason);</span>
+<span class="line">  logToMonitoring(reason);</span>
+<span class="line">  <span class="cm">// Best practice: log it, then gracefully shut down —</span></span>
+<span class="line">  <span class="cm">// don't just ignore it and keep running in a possibly broken state</span></span>
+<span class="line">  process.exit(<span class="cn">1</span>);</span>
+<span class="line">});</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Also catch synchronous uncaught exceptions (a related, separate concern)</span></span>
+<span class="line">process.on(<span class="cs">"uncaughtException"</span>, (err) => {</span>
+<span class="line">  console.error(<span class="cs">"Uncaught Exception:"</span>, err);</span>
+<span class="line">  process.exit(<span class="cn">1</span>);</span>
+<span class="line">});</span>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Best practice:</strong> global handlers are a safety net for logging/monitoring, NOT a substitute for handling errors at the source. Always prefer explicit <ic>try/catch</ic> or <ic>.catch()</ic> at the call site — global handlers should rarely (ideally never) actually fire in a well-written app.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — AbortController
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>AbortController — Cancelling Async Work</h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🛑</span>
+      <span><strong>AbortController</strong> provides a standard way to cancel in-flight async operations — most commonly <ic>fetch()</ic> requests. Promises themselves can't be "cancelled" once created, so AbortController works by signaling the underlying operation to stop and reject early.</span>
+    </div>
+
+    <div class="flow-diagram">
+      <div class="flow-title">How it works</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-label">1. Create</div>
+          <div class="step-val">new AbortController()</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">2. Pass signal</div>
+          <div class="step-val">fetch(url, {signal})</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">3. Trigger cancel</div>
+          <div class="step-val">controller.abort()</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-label">4. Fetch rejects</div>
+          <div class="step-val" style="color:var(--red)">AbortError thrown</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'ac-basic')">Basic usage</button>
+      <button class="tab-btn" onclick="showTab(event,'ac-timeout')">Timeout pattern</button>
+      <button class="tab-btn" onclick="showTab(event,'ac-cleanup')">React cleanup pattern</button>
+      <button class="tab-btn" onclick="showTab(event,'ac-multi')">Cancel multiple requests</button>
+    </div>
+
+    <div id="tab-ac-basic" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">fetchData</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> res = <span class="ck">await</span> fetch(<span class="cs">"/api/data"</span>, { signal: controller.signal });</span>
+<span class="line">    <span class="ck">const</span> data = <span class="ck">await</span> res.json();</span>
+<span class="line">    console.log(data);</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    <span class="ck">if</span> (err.name === <span class="cs">"AbortError"</span>) {</span>
+<span class="line">      console.log(<span class="cs">"Request was cancelled"</span>);</span>
+<span class="line">    } <span class="ck">else</span> {</span>
+<span class="line">      console.error(<span class="cs">"Fetch failed:"</span>, err);</span>
+<span class="line">    }</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">fetchData</span>();</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Somewhere else — e.g. user clicks "cancel" button</span></span>
+<span class="line">cancelButton.addEventListener(<span class="cs">"click"</span>, () => {</span>
+<span class="line">  controller.abort(); <span class="cm">// triggers the fetch's promise to reject with AbortError</span></span>
+<span class="line">});</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Optional: pass a custom reason</span></span>
+<span class="line">controller.abort(<span class="cs">"User navigated away"</span>);</span>
+<span class="line"><span class="cm">// err.message or controller.signal.reason will reflect this</span></span>
+      </div>
+    </div>
+
+    <div id="tab-ac-timeout" class="tab-panel">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>The modern, native way to implement fetch timeouts — no need for the <ic>Promise.race</ic> trick anymore.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Native shortcut — AbortSignal.timeout() (modern browsers/Node 17+)</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">fetchWithTimeout</span>(url, ms = <span class="cn">5000</span>) {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> res = <span class="ck">await</span> fetch(url, { signal: AbortSignal.timeout(ms) });</span>
+<span class="line">    <span class="ck">return</span> <span class="ck">await</span> res.json();</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    <span class="ck">if</span> (err.name === <span class="cs">"TimeoutError"</span>) {</span>
+<span class="line">      <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">`Request to ${url} timed out after ${ms}ms`</span>);</span>
+<span class="line">    }</span>
+<span class="line">    <span class="ck">throw</span> err;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Manual version — for older environments / more control</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">fetchWithManualTimeout</span>(url, ms) {</span>
+<span class="line">  <span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line">  <span class="ck">const</span> timeoutId = setTimeout(() => controller.abort(), ms);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> fetch(url, { signal: controller.signal })</span>
+<span class="line">    .finally(() => clearTimeout(timeoutId)); <span class="cm">// cleanup — avoid dangling timer</span></span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-ac-cleanup" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>Very common interview scenario: preventing a "setState on unmounted component" warning by cancelling in-flight requests when a component unmounts.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// React useEffect cleanup pattern</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadUser</span>() {</span>
+<span class="line">    <span class="ck">try</span> {</span>
+<span class="line">      <span class="ck">const</span> res = <span class="ck">await</span> fetch(`/users/${userId}`, { signal: controller.signal });</span>
+<span class="line">      <span class="ck">const</span> data = <span class="ck">await</span> res.json();</span>
+<span class="line">      setUser(data); <span class="cm">// only runs if the request wasn't aborted</span></span>
+<span class="line">    } <span class="ck">catch</span> (err) {</span>
+<span class="line">      <span class="ck">if</span> (err.name !== <span class="cs">"AbortError"</span>) {</span>
+<span class="line">        setError(err.message); <span class="cm">// ignore expected abort errors, handle real ones</span></span>
+<span class="line">      }</span>
+<span class="line">    }</span>
+<span class="line">  }</span>
+<span class="line"></span>
+<span class="line">  <span class="cf">loadUser</span>();</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// Cleanup function — runs on unmount OR before the effect re-runs</span></span>
+<span class="line">  <span class="ck">return</span> () => controller.abort();</span>
+<span class="line">}, [userId]);</span>
+<span class="line"><span class="cm">// Prevents calling setUser() after the component has already unmounted,</span></span>
+<span class="line"><span class="cm">// and cancels the STALE request if userId changes before the fetch finishes</span></span>
+      </div>
+    </div>
+
+    <div id="tab-ac-multi" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// ONE controller can cancel MULTIPLE requests at once</span></span>
+<span class="line"><span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line"><span class="ck">const</span> { signal } = controller;</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">loadAll</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">const</span> [users, posts, comments] = <span class="ck">await</span> Promise.all([</span>
+<span class="line">      fetch(<span class="cs">"/api/users"</span>, { signal }).then(r => r.json()),</span>
+<span class="line">      fetch(<span class="cs">"/api/posts"</span>, { signal }).then(r => r.json()),</span>
+<span class="line">      fetch(<span class="cs">"/api/comments"</span>, { signal }).then(r => r.json())</span>
+<span class="line">    ]);</span>
+<span class="line">    <span class="ck">return</span> { users, posts, comments };</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    <span class="ck">if</span> (err.name === <span class="cs">"AbortError"</span>) {</span>
+<span class="line">      console.log(<span class="cs">"All requests cancelled together"</span>);</span>
+<span class="line">    }</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line">controller.abort(); <span class="cm">// cancels ALL THREE fetches sharing this signal at once</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// You can also listen for the abort event directly</span></span>
+<span class="line">signal.addEventListener(<span class="cs">"abort"</span>, () => {</span>
+<span class="line">  console.log(<span class="cs">"Signal aborted, reason:"</span>, signal.reason);</span>
+<span class="line">});</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>try/catch does NOT catch errors from un-awaited promises</strong> — if you call an async function without <code>await</code> inside a try block, and it rejects LATER (after the try block has already finished), the catch block will NOT see it. Always <code>await</code> what you want to catch.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>forEach with async callbacks bypasses your try/catch</strong> — errors thrown inside <code>arr.forEach(async fn)</code> become unhandled rejections since forEach doesn't await the returned promises. Use a <code>for...of</code> loop with <code>await</code> instead if you need proper error propagation.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Promise.all rejects fast and discards other results</strong> — even successful results from other promises in the array are lost when using try/catch around <code>Promise.all</code>; only the first error is caught. Use <code>Promise.allSettled</code> if you need partial results.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>fetch() does NOT reject on HTTP error status codes</strong> (404, 500, etc.) — it only rejects on network failures. You must manually check <code>res.ok</code> or <code>res.status</code> and throw yourself if you want 4xx/5xx to be treated as errors.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>AbortController.abort() causes the fetch promise to REJECT</strong>, not silently resolve with nothing — you must catch the resulting <code>AbortError</code> explicitly, or it becomes an unhandled/unexpected error in your catch block.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A single AbortController can only be used once</strong> — after calling <code>.abort()</code>, that controller's signal is permanently aborted. You need a NEW <code>AbortController</code> instance for the next request (e.g. recreate it on each new fetch attempt, like in the React useEffect pattern).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not all APIs support AbortSignal</strong> — only APIs explicitly built to accept it (like <code>fetch</code>) can be cancelled this way. A plain <code>setTimeout</code>-based promise or a database call not written to check the signal will keep running even after <code>.abort()</code> is called, unless you manually check <code>signal.aborted</code> inside your own async logic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Errors thrown inside a .then() callback are caught by the NEXT .catch(), not synchronously</strong> — mixing async/await with raw .then() chains can create confusing error propagation paths; prefer to stick with one style consistently within a function.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>console.error inside a catch block does not stop propagation</strong> — if you log an error but don't explicitly handle/return/re-throw appropriately, calling code may still proceed as if nothing went wrong (e.g. using <code>undefined</code> data downstream), causing a second, confusing failure later.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>finally can swallow the original error</strong> if it also throws or returns a value — a <code>return</code> statement inside <code>finally</code> overrides any value/error from the try/catch block, which is rarely what you want.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4545);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: How does try/catch work with await under the hood?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When an <code>await</code>-ed promise rejects, the JS engine converts that rejection into a thrown exception at that exact line — behaving exactly like a synchronous <code>throw</code>. This means ordinary <code>try/catch</code> syntax works for async code, catching both synchronous throws AND asynchronous rejections in the same block, which is the main ergonomic win over raw <code>.then()/.catch()</code> chains.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: What is an unhandled promise rejection, and how do you prevent it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It occurs when a promise rejects and no <code>.catch()</code> or surrounding <code>try/catch</code> (via awaiting it) ever handles that rejection. In Node.js this can crash the process by default; in browsers it logs a console warning.<br><br>
+          Prevent it by always attaching error handling: either <code>await</code> the call inside a <code>try/catch</code>, or chain <code>.catch()</code> if you're not awaiting. As a last-resort safety net (not a fix), you can add a global <code>window.addEventListener("unhandledrejection", ...)</code> or Node's <code>process.on("unhandledRejection", ...)</code> handler for logging/monitoring.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: Why doesn't fetch() reject on a 404 or 500 response?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          By design, <code>fetch()</code> only rejects when the request itself fails at the <strong>network level</strong> (e.g. no connection, DNS failure, CORS block) — it treats any successful HTTP response, including 4xx/5xx status codes, as a "successful" fetch, since technically the server did respond. You must manually check <code>response.ok</code> (or <code>response.status</code>) and explicitly <code>throw</code> if you want error status codes to be treated as failures in your try/catch flow.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">const</span> res = <span class="ck">await</span> fetch(url);</span>
+<span class="line"><span class="ck">if</span> (!res.ok) {</span>
+<span class="line">  <span class="ck">throw</span> <span class="ck">new</span> Error(`HTTP error: ${res.status}`);</span>
+<span class="line">}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: How does AbortController actually cancel a fetch request?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          You create an <code>AbortController</code>, pass its <code>.signal</code> property into <code>fetch(url, { signal })</code>, and hold onto the controller. Calling <code>controller.abort()</code> sets the signal's <code>aborted</code> flag to true and dispatches an <code>abort</code> event — <code>fetch</code> is built to listen for this and immediately rejects its pending promise with a <code>DOMException</code> named <code>"AbortError"</code>. This lets you cancel in-flight network requests, which is otherwise impossible with a plain Promise (once created, a promise's underlying work can't normally be stopped).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: Why would you use Promise.allSettled instead of Promise.all with try/catch for parallel requests?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>Promise.all</code> fails fast — a SINGLE rejection causes the entire operation to reject, discarding any results from promises that DID succeed. This is fine when every result is required, but wasteful when partial success is acceptable (e.g. a dashboard with several independent widgets). <code>Promise.allSettled</code> always resolves with a status report for every promise, letting you render whatever succeeded while gracefully handling/displaying errors for whatever failed — without one failure blocking everything else.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: Why is cancelling requests important in a React component, and how do you implement it correctly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Without cancellation, if a component unmounts (or its dependencies change) before an in-flight fetch completes, the eventual <code>.then()</code>/<code>await</code> continuation may try to call <code>setState</code> on an unmounted component — causing a memory leak warning, or worse, applying stale data from an outdated request. The fix: create an <code>AbortController</code> inside <code>useEffect</code>, pass its signal to <code>fetch</code>, and return a cleanup function that calls <code>controller.abort()</code> — React automatically runs this cleanup on unmount or before the effect re-runs due to a dependency change.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What happens if you put a return statement inside a finally block?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It <strong>overrides</strong> any return value or thrown error from the corresponding try/catch block — this is a rarely-intentional but legal JS behavior, and a common source of subtle bugs.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">example</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    <span class="ck">throw</span> <span class="ck">new</span> Error(<span class="cs">"original error"</span>);</span>
+<span class="line">  } <span class="ck">finally</span> {</span>
+<span class="line">    <span class="ck">return</span> <span class="cs">"overridden!"</span>; <span class="cm">// swallows the thrown error entirely!</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">example</span>().then(console.log); <span class="cm">// → "overridden!" — the error never surfaces</span></span>
+          </div>
+          Best practice: avoid <code>return</code> (or <code>throw</code>) inside <code>finally</code> — reserve it purely for cleanup side effects like clearing timers or hiding loaders.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Can you reuse the same AbortController for multiple separate fetch attempts, one after another?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>No</strong> — once <code>.abort()</code> is called on a controller, its signal is permanently marked as aborted; you cannot "reset" it for reuse. Any NEW fetch you attach to that same signal afterward would be immediately treated as already aborted. The correct pattern is to create a fresh <code>new AbortController()</code> for each new request attempt (this is exactly why the React cleanup pattern creates a new controller inside the effect on every run, rather than one shared across the component's lifetime).
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Async/Await Error Handling · try/catch · Unhandled Rejections · AbortController
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

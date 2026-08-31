@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implement Promise.all/race/allSettled — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(189,147,249,0.1); color: var(--accent); border: 1px solid rgba(189,147,249,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(189,147,249,0.12); color: #d9c0ff; border-color: rgba(189,147,249,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Visual behavior diagram ── */
+  .behavior-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .behavior-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .promise-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: nowrap; }
+  .promise-label { font-family: var(--font-mono); font-size: 11px; color: var(--text2); width: 70px; flex-shrink: 0; }
+  .promise-bar-track { flex: 1; height: 22px; background: var(--bg3); border-radius: 5px; position: relative; overflow: hidden; min-width: 180px; }
+  .promise-bar-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 5px; display: flex; align-items: center; padding-left: 8px; font-family: var(--font-mono); font-size: 10px; color: #0d0f14; font-weight: 600; }
+  .fill-resolve { background: linear-gradient(90deg, #5cffb0, #2db87a); }
+  .fill-reject { background: linear-gradient(90deg, #ff6b6b, #cc4545); }
+  .marker-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--yellow); }
+  .marker-label { position: absolute; top: -18px; font-family: var(--font-mono); font-size: 9px; color: var(--yellow); white-space: nowrap; transform: translateX(-50%); }
+
+  /* ── Feature comparison table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Step build cards ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .step-num-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    background: rgba(189,147,249,0.1); border: 1px solid rgba(189,147,249,0.25);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .step-card .code-block { margin: 8px 0 0; }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Promise Combinators</div>
+    <h1>Implement Promise Combinators</h1>
+    <p>Promise.all · Promise.race · Promise.allSettled — built from scratch, with Promise.any as a bonus</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s0">Refresher</a>
+    <a class="topic-pill" href="#s1">Promise.all</a>
+    <a class="topic-pill" href="#s2">Promise.race</a>
+    <a class="topic-pill" href="#s3">Promise.allSettled</a>
+    <a class="topic-pill" href="#s4">Bonus: Promise.any</a>
+    <a class="topic-pill" href="#s5">Comparison</a>
+    <a class="topic-pill" href="#s6">Gotchas</a>
+    <a class="topic-pill" href="#s7">Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Method</th><th>Resolves when...</th><th>Rejects when...</th><th>Result shape</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Promise.all</td><td>ALL promises fulfill</td><td>ANY promise rejects (fails fast)</td><td>Array of values, same order as input</td></tr>
+      <tr><td>Promise.race</td><td>FIRST promise settles (fulfill OR reject)</td><td>FIRST promise settles as reject</td><td>The single settled value/reason</td></tr>
+      <tr><td>Promise.allSettled</td><td>ALL promises settle (never rejects)</td><td>Never rejects</td><td>Array of {status, value/reason} objects</td></tr>
+      <tr><td>Promise.any</td><td>FIRST promise fulfills</td><td>ALL promises reject</td><td>The single fulfilled value, or AggregateError</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 0 — Quick Refresher
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s0">
+    <div class="section-header">
+      <div class="section-num">0</div>
+      <h2>Quick Refresher — Building Blocks You'll Need</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>All four implementations rely on the same core pattern: return a <strong>new Promise</strong>, iterate the input array with <ic>.forEach</ic>/<ic>.map</ic>, attach <ic>.then()</ic>/<ic>.catch()</ic> to each item, and use a shared counter (closure) to know when to <ic>resolve</ic>/<ic>reject</ic> the outer promise.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Key facts to remember before implementing:</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 1. Promise.resolve(x) wraps non-promise values so .then() always works</span></span>
+<span class="line">Promise.resolve(<span class="cn">5</span>).then(v => console.log(v)); <span class="cm">// → 5</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 2. An empty array resolves Promise.all IMMEDIATELY with []</span></span>
+<span class="line">Promise.all([]).then(r => console.log(r)); <span class="cm">// → []</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 3. Results must preserve ORIGINAL ORDER, not completion order</span></span>
+<span class="line"><span class="cm">// (a promise that resolves 2nd but was passed 1st still goes to index 0)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// 4. new Promise(executor) — the executor runs SYNCHRONOUSLY and</span></span>
+<span class="line"><span class="cm">// receives (resolve, reject) functions to settle the promise</span></span>
+<span class="line"><span class="ck">const</span> p = <span class="ck">new</span> Promise((resolve, reject) => {</span>
+<span class="line">  <span class="cm">// call resolve(value) or reject(error) — only the FIRST call counts</span></span>
+<span class="line">});</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Promise.all
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Promise.all() <span class="tag">fail-fast</span></h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Waits for <strong>all</strong> promises to fulfill and returns their values in order. If <strong>any</strong> promise rejects, the whole thing rejects immediately with that reason — it doesn't wait for the others.</p>
+
+    <div class="behavior-diagram">
+      <div class="behavior-title">Visual — all succeed vs one fails</div>
+      <div class="promise-row">
+        <div class="promise-label">p1 (100ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:33%">resolve</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p2 (200ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:66%">resolve</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p3 (300ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:100%">resolve</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin:6px 0 14px;">→ Promise.all resolves at 300ms with [v1, v2, v3] (waits for the SLOWEST)</div>
+
+      <div class="promise-row">
+        <div class="promise-label">p1 (100ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:33%">resolve</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p2 (50ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-reject" style="width:16%">reject!</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p3 (300ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:100%; opacity:0.3">(ignored)</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">→ Promise.all REJECTS at 50ms as soon as p2 fails — doesn't wait for p1/p3</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">promiseAll</span>(promises) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise((resolve, reject) => {</span>
+<span class="line">    <span class="ck">const</span> results = [];</span>
+<span class="line">    <span class="ck">let</span> completedCount = <span class="cn">0</span>;</span>
+<span class="line"></span>
+<span class="line">    <span class="cm">// Edge case: empty array resolves immediately</span></span>
+<span class="line">    <span class="ck">if</span> (promises.length === <span class="cn">0</span>) {</span>
+<span class="line">      resolve([]);</span>
+<span class="line">      <span class="ck">return</span>;</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    promises.forEach((p, index) => {</span>
+<span class="line">      <span class="cm">// Promise.resolve() safely handles non-promise values too</span></span>
+<span class="line">      Promise.resolve(p)</span>
+<span class="line">        .then((value) => {</span>
+<span class="line">          results[index] = value; <span class="cm">// preserve ORIGINAL order, not completion order</span></span>
+<span class="line">          completedCount++;</span>
+<span class="line"></span>
+<span class="line">          <span class="ck">if</span> (completedCount === promises.length) {</span>
+<span class="line">            resolve(results); <span class="cm">// all done — resolve with the full array</span></span>
+<span class="line">          }</span>
+<span class="line">        })</span>
+<span class="line">        .catch(reject); <span class="cm">// ANY rejection immediately rejects the outer promise</span></span>
+<span class="line">    });</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage / test</span></span>
+<span class="line"><span class="cf">promiseAll</span>([</span>
+<span class="line">  Promise.resolve(<span class="cn">1</span>),</span>
+<span class="line">  <span class="ck">new</span> Promise(res => setTimeout(() => res(<span class="cn">2</span>), <span class="cn">100</span>)),</span>
+<span class="line">  <span class="cn">3</span> <span class="cm">// non-promise values are allowed too</span></span>
+<span class="line">]).then(console.log); <span class="cm">// → [1, 2, 3]  (after ~100ms)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cf">promiseAll</span>([</span>
+<span class="line">  Promise.resolve(<span class="cn">1</span>),</span>
+<span class="line">  Promise.reject(<span class="cs">"error!"</span>),</span>
+<span class="line">  Promise.resolve(<span class="cn">3</span>)</span>
+<span class="line">]).catch(console.log); <span class="cm">// → "error!"  (immediately, doesn't wait)</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design points:</strong> use a <ic>results[index] = value</ic> assignment (not <ic>.push()</ic>) to guarantee original ordering regardless of which promise finishes first. Track completion with a counter rather than checking array length, since sparse assignment can make <ic>.length</ic> misleading. The first rejection short-circuits everything via <ic>.catch(reject)</ic>.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Promise.race
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Promise.race() <span class="tag">first settled wins</span></h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Settles as soon as the <strong>first</strong> promise settles — whether that's a fulfillment or a rejection. Simplest of the four to implement.</p>
+
+    <div class="behavior-diagram">
+      <div class="behavior-title">Visual — fastest promise decides the outcome, win or lose</div>
+      <div class="promise-row">
+        <div class="promise-label">p1 (100ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:33%">resolve ⭐</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p2 (200ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-reject" style="width:66%; opacity:0.3">(ignored)</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p3 (300ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:100%; opacity:0.3">(ignored)</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">→ Promise.race resolves at 100ms with p1's value — p2 and p3's outcomes are simply ignored, even p2's rejection</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">promiseRace</span>(promises) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise((resolve, reject) => {</span>
+<span class="line">    <span class="cm">// Note: unlike Promise.all, an empty array here means the returned</span></span>
+<span class="line">    <span class="cm">// promise NEVER settles — that matches the real spec behavior!</span></span>
+<span class="line">    promises.forEach((p) => {</span>
+<span class="line">      Promise.resolve(p)</span>
+<span class="line">        .then(resolve) <span class="cm">// first to fulfill wins — resolve() only acts on FIRST call</span></span>
+<span class="line">        .catch(reject); <span class="cm">// first to reject also wins, if it's first overall</span></span>
+<span class="line">    });</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage / test</span></span>
+<span class="line"><span class="cf">promiseRace</span>([</span>
+<span class="line">  <span class="ck">new</span> Promise(res => setTimeout(() => res(<span class="cs">"slow"</span>), <span class="cn">300</span>)),</span>
+<span class="line">  <span class="ck">new</span> Promise(res => setTimeout(() => res(<span class="cs">"fast"</span>), <span class="cn">100</span>))</span>
+<span class="line">]).then(console.log); <span class="cm">// → "fast"  (after ~100ms)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical use case: timeout pattern</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">withTimeout</span>(promise, ms) {</span>
+<span class="line">  <span class="ck">const</span> timeout = <span class="ck">new</span> Promise((_, reject) =></span>
+<span class="line">    setTimeout(() => reject(<span class="ck">new</span> Error(<span class="cs">"Timed out"</span>)), ms)</span>
+<span class="line">  );</span>
+<span class="line">  <span class="ck">return</span> <span class="cf">promiseRace</span>([promise, timeout]); <span class="cm">// whichever finishes first wins</span></span>
+<span class="line">}</span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design point:</strong> a JS Promise can only be settled <em>once</em> — calling <ic>resolve()</ic> or <ic>reject()</ic> multiple times is safe; only the FIRST call has any effect, all subsequent calls are silently ignored. This built-in behavior is exactly what makes <ic>Promise.race</ic> trivial to implement — you don't need to manually track "has anyone won yet."
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Promise.allSettled
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Promise.allSettled() <span class="tag">never rejects</span></h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Waits for <strong>every</strong> promise to settle (fulfill OR reject) and returns a status report for each — it <strong>never rejects</strong> itself, regardless of how many individual promises fail.</p>
+
+    <div class="behavior-diagram">
+      <div class="behavior-title">Visual — mix of success and failure, all captured</div>
+      <div class="promise-row">
+        <div class="promise-label">p1 (100ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:33%">fulfilled</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p2 (150ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-reject" style="width:50%">rejected</div></div>
+      </div>
+      <div class="promise-row">
+        <div class="promise-label">p3 (300ms)</div>
+        <div class="promise-bar-track"><div class="promise-bar-fill fill-resolve" style="width:100%">fulfilled</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">→ allSettled resolves at 300ms with status for ALL THREE — nothing is thrown away, p2's rejection is just recorded, not propagated</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">promiseAllSettled</span>(promises) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise((resolve) => { <span class="cm">// note: no "reject" param needed — never rejects!</span></span>
+<span class="line">    <span class="ck">const</span> results = [];</span>
+<span class="line">    <span class="ck">let</span> completedCount = <span class="cn">0</span>;</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (promises.length === <span class="cn">0</span>) {</span>
+<span class="line">      resolve([]);</span>
+<span class="line">      <span class="ck">return</span>;</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    promises.forEach((p, index) => {</span>
+<span class="line">      Promise.resolve(p)</span>
+<span class="line">        .then((value) => {</span>
+<span class="line">          results[index] = { status: <span class="cs">"fulfilled"</span>, value };</span>
+<span class="line">        })</span>
+<span class="line">        .catch((reason) => {</span>
+<span class="line">          results[index] = { status: <span class="cs">"rejected"</span>, reason };</span>
+<span class="line">        })</span>
+<span class="line">        .finally(() => { <span class="cm">// runs whether fulfilled OR rejected</span></span>
+<span class="line">          completedCount++;</span>
+<span class="line">          <span class="ck">if</span> (completedCount === promises.length) {</span>
+<span class="line">            resolve(results); <span class="cm">// always resolve, never reject</span></span>
+<span class="line">          }</span>
+<span class="line">        });</span>
+<span class="line">    });</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage / test</span></span>
+<span class="line"><span class="cf">promiseAllSettled</span>([</span>
+<span class="line">  Promise.resolve(<span class="cn">1</span>),</span>
+<span class="line">  Promise.reject(<span class="cs">"oops"</span>),</span>
+<span class="line">  Promise.resolve(<span class="cn">3</span>)</span>
+<span class="line">]).then(console.log);</span>
+<span class="line"><span class="cm">// → [</span></span>
+<span class="line"><span class="cm">//     { status: "fulfilled", value: 1 },</span></span>
+<span class="line"><span class="cm">//     { status: "rejected", reason: "oops" },</span></span>
+<span class="line"><span class="cm">//     { status: "fulfilled", value: 3 }</span></span>
+<span class="line"><span class="cm">//   ]</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design points:</strong> the outer Promise's executor doesn't even need a <ic>reject</ic> parameter since it's never used — <ic>allSettled</ic> is designed to NEVER reject. Using <ic>.finally()</ic> to increment the counter (instead of duplicating that logic in both <ic>.then()</ic> and <ic>.catch()</ic>) keeps the code DRY and guarantees the counter increments exactly once per promise, regardless of outcome.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Bonus: Promise.any
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Bonus: Promise.any() <span class="tag">ES2021</span></h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">The "opposite" of <ic>Promise.all</ic> in terms of success/failure — settles as soon as the <strong>first</strong> promise fulfills. Only rejects if <strong>every</strong> promise rejects, with a special <ic>AggregateError</ic>.</p>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">promiseAny</span>(promises) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">new</span> Promise((resolve, reject) => {</span>
+<span class="line">    <span class="ck">const</span> errors = [];</span>
+<span class="line">    <span class="ck">let</span> rejectedCount = <span class="cn">0</span>;</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (promises.length === <span class="cn">0</span>) {</span>
+<span class="line">      reject(<span class="ck">new</span> AggregateError([], <span class="cs">"All promises were rejected"</span>));</span>
+<span class="line">      <span class="ck">return</span>;</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    promises.forEach((p, index) => {</span>
+<span class="line">      Promise.resolve(p)</span>
+<span class="line">        .then(resolve) <span class="cm">// FIRST success wins immediately</span></span>
+<span class="line">        .catch((err) => {</span>
+<span class="line">          errors[index] = err; <span class="cm">// track errors in original order</span></span>
+<span class="line">          rejectedCount++;</span>
+<span class="line"></span>
+<span class="line">          <span class="ck">if</span> (rejectedCount === promises.length) {</span>
+<span class="line">            <span class="cm">// only reject once EVERY promise has failed</span></span>
+<span class="line">            reject(<span class="ck">new</span> AggregateError(errors, <span class="cs">"All promises were rejected"</span>));</span>
+<span class="line">          }</span>
+<span class="line">        });</span>
+<span class="line">    });</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage / test</span></span>
+<span class="line"><span class="cf">promiseAny</span>([</span>
+<span class="line">  Promise.reject(<span class="cs">"fail 1"</span>),</span>
+<span class="line">  Promise.resolve(<span class="cs">"success!"</span>),</span>
+<span class="line">  Promise.reject(<span class="cs">"fail 2"</span>)</span>
+<span class="line">]).then(console.log); <span class="cm">// → "success!"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cf">promiseAny</span>([</span>
+<span class="line">  Promise.reject(<span class="cs">"fail 1"</span>),</span>
+<span class="line">  Promise.reject(<span class="cs">"fail 2"</span>)</span>
+<span class="line">]).catch(err => {</span>
+<span class="line">  console.log(err.errors); <span class="cm">// → ["fail 1", "fail 2"]</span></span>
+<span class="line">});</span>
+      </div>
+      <div class="step-desc">
+        Notice the symmetry with <ic>Promise.all</ic>: it's essentially the SAME code structure, with fulfillment/rejection roles swapped. This is a great thing to point out in an interview — it shows you understand the underlying pattern rather than memorizing 4 separate solutions.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Full Comparison
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Side-by-Side Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead>
+        <tr><th>Behavior</th><th>all</th><th>race</th><th>allSettled</th><th>any</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Waits for all to complete</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td>Can reject</td><td class="yes">✓ on first rejection</td><td class="yes">✓ if first settled is rejection</td><td class="no">✗ never</td><td class="yes">✓ only if ALL reject</td></tr>
+        <tr><td>Short-circuits on failure</td><td class="yes">✓</td><td class="yes">✓ (settles on anything)</td><td class="no">✗</td><td class="no">✗ (waits out failures)</td></tr>
+        <tr><td>Short-circuits on success</td><td class="no">✗ (needs ALL to succeed)</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓</td></tr>
+        <tr><td>Result on success</td><td>Array of values</td><td>Single value</td><td>Array of status objects</td><td>Single value</td></tr>
+        <tr><td>Empty array behavior</td><td>Resolves with []</td><td>Never settles</td><td>Resolves with []</td><td>Rejects w/ AggregateError</td></tr>
+        <tr><td>Typical use case</td><td>Fetch multiple required resources</td><td>Timeout race, fastest server</td><td>Batch operations, partial success OK</td><td>Fallback / redundant sources</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">🧠</span>
+      <span><strong>Pattern recognition:</strong> all four share the exact same skeleton — <ic>new Promise()</ic>, loop with <ic>forEach</ic>, <ic>Promise.resolve(p).then().catch()</ic> per item, and a counter closure to know when to settle the outer promise. Only the resolve/reject conditions and result shape differ. Understanding this ONE pattern lets you derive all four in an interview, rather than memorizing four unrelated solutions.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Using .push() instead of results[index] = value</strong> breaks ordering — since promises can resolve in any order, pushing results as they complete does NOT preserve the original input order. Always assign directly by index.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting the empty-array edge case</strong> for <code>Promise.all</code>/<code>allSettled</code> — without an explicit check, the counter-based resolve condition (<code>completedCount === promises.length</code>) never becomes true because it's never even triggered by the empty <code>forEach</code>, so the promise hangs forever.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Promise.race with an empty array never settles</strong> — this actually matches the real spec behavior (not a bug to fix), but it's a common "what happens here?" interview trap.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not wrapping items with Promise.resolve()</strong> — the input array can contain plain values, not just promises. <code>Promise.resolve(item)</code> normalizes both cases so <code>.then()</code> always works, whether <code>item</code> is a promise or a raw value.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Calling resolve/reject more than once is safe but wasteful</strong> — a native Promise only honors the FIRST settle call and ignores the rest, which is exactly what makes <code>Promise.race</code> so simple. But if you're implementing your OWN promise-like class instead of relying on native Promises, you'd need to guard against double-settling manually.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>allSettled's counter logic must NOT stop early on rejection</strong> — unlike <code>Promise.all</code>, you must continue processing every promise and only resolve once ALL have settled, using <code>.finally()</code> or incrementing in both the success and failure branches.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>AggregateError needs the errors array in the SAME order</strong> as the original promises for <code>Promise.any</code> — mirror the same index-based assignment pattern used for successful results elsewhere.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Real Promise.all/race/allSettled accept any iterable, not just arrays</strong> — technically the spec supports any iterable (Sets, generator results, etc.), though a from-scratch interview implementation using <code>.forEach()</code> only strictly needs to support arrays unless explicitly asked to handle iterables.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What's the core pattern shared by all Promise combinator implementations?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Return a <code>new Promise((resolve, reject) => {...})</code>, iterate the input array with <code>.forEach()</code>, wrap each item with <code>Promise.resolve()</code> to normalize non-promise values, attach <code>.then()</code>/<code>.catch()</code> handlers, and use a closure-captured counter (plus a results array indexed by position) to determine when and how to settle the outer promise. Only the specific resolve/reject conditions differ between <code>all</code>, <code>race</code>, <code>allSettled</code>, and <code>any</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: Why use results[index] = value instead of results.push(value)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because promises can resolve in ANY order regardless of their position in the input array — a slower first promise might finish after a faster third promise. <code>results.push(value)</code> would add results in <strong>completion order</strong>, which breaks the contract that <code>Promise.all</code> preserves <strong>input order</strong>. Assigning directly by index (<code>results[index] = value</code>) guarantees the output array always matches the input array's order, regardless of which promise settles first.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: Why does Promise.race work correctly without any extra "has someone already won" tracking logic?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because native JS Promises can only be settled <strong>once</strong> — after the first call to <code>resolve()</code> or <code>reject()</code>, all subsequent calls are silently ignored by the Promise machinery itself. So even though every input promise's <code>.then(resolve)</code>/<code>.catch(reject)</code> is attached, only the FIRST one to actually fire has any real effect on the outer promise. This built-in "settle once" guarantee is what makes the <code>race</code> implementation so short.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: Why doesn't allSettled's executor function need a reject parameter?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          By design, <code>Promise.allSettled</code> NEVER rejects — its entire purpose is to let you know the outcome of every promise (success or failure) without short-circuiting. Since the outer promise is only ever resolved (never rejected), there's no need to accept or use the <code>reject</code> parameter from the executor — you can even omit it entirely: <code>new Promise((resolve) => {...})</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: What happens if you call Promise.all([]) — an empty array? Why does your implementation need to handle this explicitly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The real <code>Promise.all([])</code> resolves <strong>immediately</strong> with an empty array <code>[]</code>. In a from-scratch implementation, if you rely purely on the counter check inside the <code>.forEach()</code> callback (<code>completedCount === promises.length</code>), that check is literally never reached when the array is empty — <code>.forEach()</code> on <code>[]</code> doesn't call the callback at all. Without an explicit early-return check for the empty case, your promise would hang forever instead of resolving.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: How would you use Promise.race to implement a fetch timeout?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Race the actual request against a promise that rejects after a fixed delay:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">function</span> <span class="cf">fetchWithTimeout</span>(url, ms) {</span>
+<span class="line">  <span class="ck">const</span> timeout = <span class="ck">new</span> Promise((_, reject) =></span>
+<span class="line">    setTimeout(() => reject(<span class="ck">new</span> Error(<span class="cs">"Request timed out"</span>)), ms)</span>
+<span class="line">  );</span>
+<span class="line">  <span class="ck">return</span> Promise.race([fetch(url), timeout]);</span>
+<span class="line">}</span>
+          </div>
+          Whichever settles first — the real fetch or the timeout's rejection — determines the outcome. This is one of the most common real-world uses of <code>Promise.race</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What's the difference between Promise.all and Promise.allSettled in terms of error handling philosophy?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>Promise.all</code> follows an <strong>"all or nothing"</strong> philosophy — it's for when every operation is required to succeed; a single failure means the whole batch is considered failed, and you get just the first error.<br><br>
+          <code>Promise.allSettled</code> follows a <strong>"tell me everything"</strong> philosophy — it's for when partial success is acceptable and you want a complete report of what succeeded and what failed, so you can handle each case individually (e.g. showing results for the requests that worked while logging errors for the ones that didn't).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: How is Promise.any's implementation related to Promise.all's implementation?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          They're structural mirrors of each other with fulfillment and rejection roles swapped. <code>Promise.all</code> resolves when all succeed and rejects fast on the first failure. <code>Promise.any</code> resolves fast on the first success and rejects only when all fail (bundling every error into an <code>AggregateError</code>). If you understand one, you can derive the other by swapping which outcome triggers early-exit vs which requires waiting for every promise to finish.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Promise.all · Promise.race · Promise.allSettled · Promise.any — implemented from scratch
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
