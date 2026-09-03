@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generators &amp; Async Iterators — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(92,255,176,0.1); color: var(--accent); border: 1px solid rgba(92,255,176,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(92,255,176,0.12); color: #7affc4; border-color: rgba(92,255,176,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Two/Three col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 640px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Generator execution trace visual ── */
+  .trace-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .trace-diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .trace-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; }
+  .trace-call { background: var(--bg3); border: 1px solid var(--border2); border-radius: 5px; padding: 5px 11px; color: var(--text); min-width: 130px; }
+  .trace-arrow { color: var(--text3); }
+  .trace-result { background: rgba(92,255,176,0.08); border: 1px solid rgba(92,255,176,0.25); border-radius: 5px; padding: 5px 11px; color: var(--teal); }
+  .trace-result.done { background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.25); color: var(--red); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Pattern cards ── */
+  .pattern-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .pattern-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .pattern-card .code-block { margin: 8px 0 0; }
+  .pattern-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Generators &amp; Iterators</div>
+    <h1>Generators &amp; Async Iterators</h1>
+    <p>function* · yield · Lazy Evaluation · Async Generators · Pagination Use Cases</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Iterators/Iterables</a>
+    <a class="topic-pill" href="#s2">2. Generator Basics</a>
+    <a class="topic-pill" href="#s3">3. Lazy Evaluation</a>
+    <a class="topic-pill" href="#s4">4. yield* Delegation</a>
+    <a class="topic-pill" href="#s5">5. Async Generators</a>
+    <a class="topic-pill" href="#s6">6. Pagination Pattern</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Iterators & Iterables
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Iterators &amp; Iterables — The Foundation</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>An object is <strong>iterable</strong> if it implements <ic>Symbol.iterator</ic> — a method returning an <strong>iterator</strong>: an object with a <ic>.next()</ic> method that returns <ic>{ value, done }</ic>. This protocol powers <ic>for...of</ic>, spread syntax, and destructuring. Generators are simply a much easier way to CREATE objects that follow this protocol.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// The iterator protocol, by hand — verbose and easy to get wrong</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">createRangeIterator</span>(start, end) {</span>
+<span class="line">  <span class="ck">let</span> current = start;</span>
+<span class="line">  <span class="ck">return</span> {</span>
+<span class="line">    next() {</span>
+<span class="line">      <span class="ck">if</span> (current &lt;= end) {</span>
+<span class="line">        <span class="ck">return</span> { value: current++, done: <span class="ck">false</span> };</span>
+<span class="line">      }</span>
+<span class="line">      <span class="ck">return</span> { value: <span class="ck">undefined</span>, done: <span class="ck">true</span> };</span>
+<span class="line">    }</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> it = <span class="cf">createRangeIterator</span>(<span class="cn">1</span>, <span class="cn">3</span>);</span>
+<span class="line">it.next(); <span class="cm">// → { value: 1, done: false }</span></span>
+<span class="line">it.next(); <span class="cm">// → { value: 2, done: false }</span></span>
+<span class="line">it.next(); <span class="cm">// → { value: 3, done: false }</span></span>
+<span class="line">it.next(); <span class="cm">// → { value: undefined, done: true }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Making something ITERABLE (usable with for...of) needs Symbol.iterator</span></span>
+<span class="line"><span class="ck">const</span> range = {</span>
+<span class="line">  start: <span class="cn">1</span>, end: <span class="cn">3</span>,</span>
+<span class="line">  [Symbol.iterator]() {</span>
+<span class="line">    <span class="ck">return</span> <span class="cf">createRangeIterator</span>(<span class="ck">this</span>.start, <span class="ck">this</span>.end);</span>
+<span class="line">  }</span>
+<span class="line">};</span>
+<span class="line"><span class="ck">for</span> (<span class="ck">const</span> n <span class="ck">of</span> range) console.log(n); <span class="cm">// → 1, 2, 3</span></span>
+<span class="line">[...range]; <span class="cm">// → [1, 2, 3]  (spread also uses the iterator protocol)</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Writing this by hand is verbose and error-prone — manually tracking state (<ic>current</ic>) outside the function. <strong>Generators solve exactly this problem</strong>, which is why they exist.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Generator Basics
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Generator Basics <ic style="font-size:14px">function*</ic> <span class="tag">ES6</span></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A <strong>generator function</strong> (declared with <ic>function*</ic>) can be <strong>paused and resumed</strong>. Calling it doesn't run the body — it returns a <strong>generator object</strong> (which is both an iterator AND iterable). Each call to <ic>.next()</ic> runs the body until the next <ic>yield</ic>, then pauses.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// The SAME range example — trivially easy with a generator</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">range</span>(start, end) {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">let</span> i = start; i &lt;= end; i++) {</span>
+<span class="line">    <span class="ck">yield</span> i; <span class="cm">// pause here, hand back "i", wait to be resumed</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> gen = <span class="cf">range</span>(<span class="cn">1</span>, <span class="cn">3</span>); <span class="cm">// nothing runs yet! returns a generator object</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: 1, done: false }  (runs until first yield)</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: 2, done: false }  (resumes, runs until next yield)</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: 3, done: false }</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: undefined, done: true }  (loop ends, function returns)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Generators are automatically iterable — for...of just works</span></span>
+<span class="line"><span class="ck">for</span> (<span class="ck">const</span> n <span class="ck">of</span> <span class="cf">range</span>(<span class="cn">1</span>, <span class="cn">3</span>)) console.log(n); <span class="cm">// → 1, 2, 3</span></span>
+<span class="line">[...<span class="cf">range</span>(<span class="cn">1</span>, <span class="cn">3</span>)]; <span class="cm">// → [1, 2, 3]</span></span>
+    </div>
+
+    <div class="trace-diagram">
+      <div class="trace-diagram-title">Execution trace — pause/resume in action</div>
+      <div class="trace-row"><div class="trace-call">gen.next()</div><div class="trace-arrow">→</div><div class="trace-result">{ value: 1, done: false }</div><span style="color:var(--text3);font-size:11px">runs to first yield</span></div>
+      <div class="trace-row"><div class="trace-call">gen.next()</div><div class="trace-arrow">→</div><div class="trace-result">{ value: 2, done: false }</div><span style="color:var(--text3);font-size:11px">resumes AFTER yield, loops, pauses again</span></div>
+      <div class="trace-row"><div class="trace-call">gen.next()</div><div class="trace-arrow">→</div><div class="trace-result">{ value: 3, done: false }</div></div>
+      <div class="trace-row"><div class="trace-call">gen.next()</div><div class="trace-arrow">→</div><div class="trace-result done">{ value: undefined, done: true }</div><span style="color:var(--text3);font-size:11px">loop condition false, function ends</span></div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'gen-return')">Return values</button>
+      <button class="tab-btn" onclick="showTab(event,'gen-input')">Passing values IN</button>
+      <button class="tab-btn" onclick="showTab(event,'gen-methods')">.return() and .throw()</button>
+    </div>
+
+    <div id="tab-gen-return" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// A "return" inside a generator sets the FINAL value with done: true</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">example</span>() {</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">2</span>;</span>
+<span class="line">  <span class="ck">return</span> <span class="cs">"finished!"</span>; <span class="cm">// this becomes the value on the FINAL next() call</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> gen = <span class="cf">example</span>();</span>
+<span class="line">gen.next(); <span class="cm">// → { value: 1, done: false }</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: 2, done: false }</span></span>
+<span class="line">gen.next(); <span class="cm">// → { value: "finished!", done: true }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ⚠️ for...of and spread IGNORE the final return value!</span></span>
+<span class="line">[...<span class="cf">example</span>()]; <span class="cm">// → [1, 2]   ("finished!" is dropped — done:true values are excluded)</span></span>
+      </div>
+    </div>
+
+    <div id="tab-gen-input" class="tab-panel">
+      <div class="callout callout-purple">
+        <span class="callout-icon">🔄</span>
+        <span><ic>yield</ic> is a two-way street — it both sends a value OUT and can receive a value IN via the next call to <ic>.next(valueToSend)</ic>.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span>* <span class="cf">conversation</span>() {</span>
+<span class="line">  <span class="ck">const</span> name = <span class="ck">yield</span> <span class="cs">"What's your name?"</span>;</span>
+<span class="line">  <span class="ck">const</span> age = <span class="ck">yield</span> `Nice to meet you, ${name}! How old are you?`;</span>
+<span class="line">  <span class="ck">return</span> `${name} is ${age} years old.`;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> convo = <span class="cf">conversation</span>();</span>
+<span class="line">convo.next();               <span class="cm">// → { value: "What's your name?", done: false }</span></span>
+<span class="line">convo.next(<span class="cs">"Alice"</span>);       <span class="cm">// → { value: "Nice to meet you, Alice! How old are you?", done: false }</span></span>
+<span class="line">convo.next(<span class="cn">30</span>);            <span class="cm">// → { value: "Alice is 30 years old.", done: true }</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Note: the value passed to the FIRST .next() call is always discarded</span></span>
+<span class="line"><span class="cm">// (there's no "yield" waiting to receive it yet on the first call)</span></span>
+      </div>
+    </div>
+
+    <div id="tab-gen-methods" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="ck">function</span>* <span class="cf">example</span>() {</span>
+<span class="line">  <span class="ck">try</span> {</span>
+<span class="line">    console.log(<span class="cs">"start"</span>);</span>
+<span class="line">    <span class="ck">yield</span> <span class="cn">1</span>;</span>
+<span class="line">    console.log(<span class="cs">"after first yield"</span>); <span class="cm">// never reached if .return() called first</span></span>
+<span class="line">    <span class="ck">yield</span> <span class="cn">2</span>;</span>
+<span class="line">  } <span class="ck">catch</span> (err) {</span>
+<span class="line">    console.log(<span class="cs">"caught:"</span>, err.message);</span>
+<span class="line">  } <span class="ck">finally</span> {</span>
+<span class="line">    console.log(<span class="cs">"cleanup"</span>); <span class="cm">// runs on early return OR throw OR normal completion</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> gen1 = <span class="cf">example</span>();</span>
+<span class="line">gen1.next();          <span class="cm">// logs "start" → { value: 1, done: false }</span></span>
+<span class="line">gen1.return(<span class="cs">"early exit"</span>); <span class="cm">// forces early completion → logs "cleanup"</span></span>
+<span class="line"><span class="cm">// → { value: "early exit", done: true }</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> gen2 = <span class="cf">example</span>();</span>
+<span class="line">gen2.next();          <span class="cm">// logs "start"</span></span>
+<span class="line">gen2.throw(<span class="ck">new</span> Error(<span class="cs">"oops"</span>)); <span class="cm">// injects an error AT the paused yield point</span></span>
+<span class="line"><span class="cm">// → logs "caught: oops", then "cleanup"</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Lazy Evaluation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Lazy Evaluation — Why Generators Matter</h2>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Lazy evaluation</strong> means values are computed ONLY when actually requested (via <ic>.next()</ic>), not all upfront. This lets you represent <strong>infinite sequences</strong> and avoid wasting memory/computation on values nobody asked for.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Eager — computes everything upfront</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">getFirstNSquares</span>(n) {</span>
+<span class="line">  <span class="ck">const</span> result = [];</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; ; i++) {</span>
+<span class="line">    result.push(i * i);</span>
+<span class="line">    <span class="ck">if</span> (result.length === n) <span class="ck">break</span>;</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> result; <span class="cm">// entire array built</span></span>
+<span class="line">}         <span class="cm">// before returning ANYTHING</span></span>
+<span class="line"><span class="cf">getFirstNSquares</span>(<span class="cn">1000000</span>); <span class="cm">// builds a million-item array even if you only need the first 3</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Lazy — computes only what's consumed</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span>* <span class="cf">squares</span>() {</span>
+<span class="line">  <span class="ck">let</span> i = <span class="cn">0</span>;</span>
+<span class="line">  <span class="ck">while</span> (<span class="ck">true</span>) { <span class="cm">// infinite! but that's OK</span></span>
+<span class="line">    <span class="ck">yield</span> i * i;</span>
+<span class="line">    i++;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">const</span> gen = <span class="cf">squares</span>();</span>
+<span class="line">gen.next().value; <span class="cm">// → 0</span></span>
+<span class="line">gen.next().value; <span class="cm">// → 1</span></span>
+<span class="line">gen.next().value; <span class="cm">// → 4</span></span>
+<span class="line"><span class="cm">// only 3 values ever computed, regardless of "infinite" definition</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Practical lazy pattern — take(n) helper to pull N items from an infinite generator</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">take</span>(iterable, n) {</span>
+<span class="line">  <span class="ck">const</span> result = [];</span>
+<span class="line">  <span class="ck">const</span> it = iterable[Symbol.iterator]();</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">let</span> i = <span class="cn">0</span>; i &lt; n; i++) {</span>
+<span class="line">    <span class="ck">const</span> { value, done } = it.next();</span>
+<span class="line">    <span class="ck">if</span> (done) <span class="ck">break</span>;</span>
+<span class="line">    result.push(value);</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> result;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cf">take</span>(<span class="cf">squares</span>(), <span class="cn">5</span>); <span class="cm">// → [0, 1, 4, 9, 16]  (works on an INFINITE generator safely)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Infinite Fibonacci sequence — impossible to represent as an array upfront</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">fibonacci</span>() {</span>
+<span class="line">  <span class="ck">let</span> [a, b] = [<span class="cn">0</span>, <span class="cn">1</span>];</span>
+<span class="line">  <span class="ck">while</span> (<span class="ck">true</span>) {</span>
+<span class="line">    <span class="ck">yield</span> a;</span>
+<span class="line">    [a, b] = [b, a + b];</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">take</span>(<span class="cf">fibonacci</span>(), <span class="cn">8</span>); <span class="cm">// → [0, 1, 1, 2, 3, 5, 8, 13]</span></span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Lazy pipelines:</strong> you can chain generator functions together to build lazy transformation pipelines (like a lazy version of map/filter) — each step only pulls the next value when the step after it asks, avoiding building large intermediate arrays.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Lazy map/filter — process an infinite stream without intermediate arrays</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">mapGen</span>(iterable, fn) {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> item <span class="ck">of</span> iterable) <span class="ck">yield</span> fn(item);</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span>* <span class="cf">filterGen</span>(iterable, predicate) {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> item <span class="ck">of</span> iterable) <span class="ck">if</span> (predicate(item)) <span class="ck">yield</span> item;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Chain lazily: "even fibonacci numbers, doubled" — computed ONE AT A TIME</span></span>
+<span class="line"><span class="ck">const</span> pipeline = <span class="cf">mapGen</span>(<span class="cf">filterGen</span>(<span class="cf">fibonacci</span>(), n => n % <span class="cn">2</span> === <span class="cn">0</span>), n => n * <span class="cn">2</span>);</span>
+<span class="line"><span class="cf">take</span>(pipeline, <span class="cn">4</span>); <span class="cm">// → [0, 4, 16, 6*8=? ...] processes only as many fib numbers as needed</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — yield* Delegation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2><ic style="font-size:16px">yield*</ic> — Delegating to Another Generator</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>yield*</ic> delegates iteration to another iterable (often another generator) — it yields each of ITS values one by one, as if they were written inline. Great for composing generators without manual loops.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span>* <span class="cf">inner</span>() {</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">2</span>;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Without yield* — tedious manual delegation</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">outerManual</span>() {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> val <span class="ck">of</span> <span class="cf">inner</span>()) <span class="ck">yield</span> val;</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">3</span>;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// With yield* — clean delegation</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">outer</span>() {</span>
+<span class="line">  <span class="ck">yield</span>* <span class="cf">inner</span>();  <span class="cm">// yields 1, then 2, automatically</span></span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">3</span>;</span>
+<span class="line">}</span>
+<span class="line">[...<span class="cf">outer</span>()]; <span class="cm">// → [1, 2, 3]</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// yield* also works on ANY iterable, not just generators</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">flattenOnce</span>() {</span>
+<span class="line">  <span class="ck">yield</span>* [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>];      <span class="cm">// arrays are iterable</span></span>
+<span class="line">  <span class="ck">yield</span>* <span class="cs">"abc"</span>;         <span class="cm">// strings are iterable too — yields 'a', 'b', 'c'</span></span>
+<span class="line">}</span>
+<span class="line">[...<span class="cf">flattenOnce</span>()]; <span class="cm">// → [1, 2, 3, 'a', 'b', 'c']</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical: recursively flatten a nested tree structure, lazily</span></span>
+<span class="line"><span class="ck">function</span>* <span class="cf">flattenTree</span>(node) {</span>
+<span class="line">  <span class="ck">yield</span> node.value;</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> child <span class="ck">of</span> node.children || []) {</span>
+<span class="line">    <span class="ck">yield</span>* <span class="cf">flattenTree</span>(child); <span class="cm">// recursive delegation</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Async Generators & Async Iterators
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Async Generators &amp; <ic style="font-size:14px">for await...of</ic> <span class="tag">ES2018</span></h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">⚡</span>
+      <span>An <strong>async generator</strong> (<ic>async function*</ic>) combines generators with async/await — each <ic>yield</ic>ed value can come from an <ic>await</ic>ed operation. Consume it with <ic>for await...of</ic> instead of a regular <ic>for...of</ic>.</span>
+    </div>
+
+    <div class="two-col">
+      <div class="ba-card">
+        <div class="ba-label label-before">Sync generator</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">function</span>* <span class="cf">syncGen</span>() {</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">yield</span> <span class="cn">2</span>;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">for</span> (<span class="ck">const</span> v <span class="ck">of</span> <span class="cf">syncGen</span>()) {</span>
+<span class="line">  console.log(v);</span>
+<span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">Async generator</div>
+        <div class="code-block" style="margin:0">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span>* <span class="cf">asyncGen</span>() {</span>
+<span class="line">  <span class="ck">yield</span> <span class="ck">await</span> fetchOne();</span>
+<span class="line">  <span class="ck">yield</span> <span class="ck">await</span> fetchTwo();</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">for</span> <span class="ck">await</span> (<span class="ck">const</span> v <span class="ck">of</span> <span class="cf">asyncGen</span>()) {</span>
+<span class="line">  console.log(v);</span>
+<span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Practical: yielding results from a series of API calls, one at a time</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span>* <span class="cf">fetchUsers</span>(ids) {</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> id <span class="ck">of</span> ids) {</span>
+<span class="line">    <span class="ck">const</span> res = <span class="ck">await</span> fetch(`/users/${id}`);</span>
+<span class="line">    <span class="ck">const</span> user = <span class="ck">await</span> res.json();</span>
+<span class="line">    <span class="ck">yield</span> user; <span class="cm">// pause here until the CONSUMER asks for the next one</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">main</span>() {</span>
+<span class="line">  <span class="ck">for</span> <span class="ck">await</span> (<span class="ck">const</span> user <span class="ck">of</span> <span class="cf">fetchUsers</span>([<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>])) {</span>
+<span class="line">    console.log(user.name); <span class="cm">// processes each user as soon as it arrives</span></span>
+<span class="line">  }        <span class="cm">// — doesn't wait for ALL fetches before showing the first result</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Async iterables also exist natively — e.g. reading a stream</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">readStream</span>(response) {</span>
+<span class="line">  <span class="ck">for</span> <span class="ck">await</span> (<span class="ck">const</span> chunk <span class="ck">of</span> response.body) {</span>
+<span class="line">    console.log(<span class="cs">"Received chunk:"</span>, chunk.length, <span class="cs">"bytes"</span>);</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Feature</th><th>Sync Generator</th><th>Async Generator</th></tr></thead>
+      <tbody>
+        <tr><td>Declaration</td><td>function*</td><td>async function*</td></tr>
+        <tr><td>yield can await inside</td><td class="no">✗ No</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>.next() returns</td><td>{ value, done }</td><td>Promise&lt;{ value, done }&gt;</td></tr>
+        <tr><td>Consumed with</td><td>for...of</td><td>for await...of</td></tr>
+        <tr><td>Symbol used</td><td>Symbol.iterator</td><td>Symbol.asyncIterator</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Pagination Use Case
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Real-World Use Case: Pagination</h2>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span>Pagination is a textbook use case for async generators — the consumer treats a paginated API as a <strong>single, flat, lazy stream</strong>, without manually managing page numbers or "has more" flags at the call site.</span>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-title">Auto-paginating async generator</div>
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span>* <span class="cf">fetchAllPages</span>(baseUrl) {</span>
+<span class="line">  <span class="ck">let</span> url = baseUrl;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">while</span> (url) {</span>
+<span class="line">    <span class="ck">const</span> res = <span class="ck">await</span> fetch(url);</span>
+<span class="line">    <span class="ck">const</span> page = <span class="ck">await</span> res.json();</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">yield</span>* page.items;          <span class="cm">// flatten — yield each ITEM, not the whole page</span></span>
+<span class="line"></span>
+<span class="line">    url = page.nextPageUrl || <span class="ck">null</span>; <span class="cm">// null/undefined stops the while loop</span></span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Consumer code — reads like a flat list, no pagination logic visible!</span></span>
+<span class="line"><span class="ck">async</span> <span class="ck">function</span> <span class="cf">findFirstAdmin</span>() {</span>
+<span class="line">  <span class="ck">for</span> <span class="ck">await</span> (<span class="ck">const</span> user <span class="ck">of</span> <span class="cf">fetchAllPages</span>(<span class="cs">"/api/users?page=1"</span>)) {</span>
+<span class="line">    <span class="ck">if</span> (user.role === <span class="cs">"admin"</span>) {</span>
+<span class="line">      <span class="ck">return</span> user; <span class="cm">// stops fetching further pages immediately!</span></span>
+<span class="line">    }</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">null</span>;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// If the admin is on page 1, pages 2+ are NEVER fetched — true laziness!</span></span>
+      </div>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-title">Cursor-based pagination (common with REST/GraphQL APIs)</div>
+      <div class="code-block">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span>* <span class="cf">paginate</span>(fetchPage) {</span>
+<span class="line">  <span class="ck">let</span> cursor = <span class="ck">null</span>;</span>
+<span class="line">  <span class="ck">let</span> hasMore = <span class="ck">true</span>;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">while</span> (hasMore) {</span>
+<span class="line">    <span class="ck">const</span> { items, nextCursor, hasNextPage } = <span class="ck">await</span> <span class="cf">fetchPage</span>(cursor);</span>
+<span class="line">    <span class="ck">yield</span>* items;</span>
+<span class="line">    cursor = nextCursor;</span>
+<span class="line">    hasMore = hasNextPage;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — pass in an API-specific fetch function, generator handles the loop</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">fetchGithubRepos</span> = (cursor) => fetch(</span>
+<span class="line">  `/api/repos?cursor=${cursor || <span class="cs">""</span>}`</span>
+<span class="line">).then(r => r.json());</span>
+<span class="line"></span>
+<span class="line"><span class="ck">for</span> <span class="ck">await</span> (<span class="ck">const</span> repo <span class="ck">of</span> <span class="cf">paginate</span>(<span class="cf">fetchGithubRepos</span>)) {</span>
+<span class="line">  console.log(repo.name);</span>
+<span class="line">  <span class="ck">if</span> (enoughReposLoaded()) <span class="ck">break</span>; <span class="cm">// stop early — remaining pages never fetched</span></span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Why this beats a plain array-returning approach:</strong> loading ALL pages into memory upfront wastes bandwidth/memory when the consumer might only need the first few items (e.g. "find the first match" or "show 10 items, load more on scroll"). The generator pattern fetches pages on-demand, exactly when the consumer's loop asks for more.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Calling a generator function does NOT run its body</strong> — it only creates a generator object. The body starts running (up to the first <code>yield</code>) only on the FIRST call to <code>.next()</code>. This trips people up in traces/output-prediction questions.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Generators are single-use / one-directional</strong> — once exhausted (done: true), calling <code>.next()</code> again just keeps returning <code>{ value: undefined, done: true }</code>. You cannot "reset" a generator; you must call the generator function again to get a fresh one.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>for...of and spread ignore the generator's final return() value</strong> — only values from <code>yield</code> are collected; a trailing <code>return "something"</code> is silently dropped by these consumption methods (though accessible via manual <code>.next()</code> calls).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The value passed to the first .next(value) call is discarded</strong> — there's no paused <code>yield</code> expression yet to receive it on the very first call; it only starts mattering from the second <code>.next()</code> call onward.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Arrow functions cannot be generators</strong> — there is no <code>() =>* {}</code> syntax. Only <code>function*</code> declarations, expressions, and generator methods in object/class literals support <code>yield</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An infinite generator with no break/take-limit will hang your program</strong> if consumed with a plain <code>for...of</code> or spread — always pair infinite generators with an explicit limit (like a <code>take(n)</code> helper or a <code>break</code> condition).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Async generators require for await...of, not a plain for...of</strong> — using a regular <code>for...of</code> on an async generator gives you Promise objects instead of resolved values, since each <code>.next()</code> call returns a Promise.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>yield inside .forEach() or other synchronous callbacks doesn't work</strong> — <code>yield</code> can only appear directly inside the generator function's own body, not inside a nested regular function passed as a callback. Use a plain <code>for</code>/<code>for...of</code> loop instead of <code>.forEach()</code> when you need to <code>yield</code> per iteration.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Generator .throw() only works if the generator is paused at a yield</strong> — calling <code>.throw()</code> before the first <code>.next()</code>, or after the generator has already completed, throws the error at the CALL SITE instead of being catchable inside the generator's own try/catch.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Breaking out of a for...of loop early triggers an implicit .return()</strong> on the generator, running any <code>finally</code> blocks — useful for cleanup, but can surprise you if you didn't expect the generator's cleanup code to run on an early break.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What is a generator function, and how is it different from a regular function?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A generator function (<code>function*</code>) can be <strong>paused and resumed</strong>, unlike a regular function that always runs to completion once called. Calling a generator function doesn't execute its body immediately — it returns a <strong>generator object</strong> that implements the iterator protocol. Each call to <code>.next()</code> runs the function body until the next <code>yield</code> statement, returns that value wrapped in <code>{ value, done }</code>, and pauses execution there until <code>.next()</code> is called again.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: What is lazy evaluation, and why are generators well-suited for it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Lazy evaluation means computing a value only at the moment it's actually needed, rather than eagerly computing everything upfront. Generators naturally support this because each <code>yield</code> pauses execution — no further work happens until the consumer explicitly calls <code>.next()</code> again. This makes it possible to represent infinite sequences (like all Fibonacci numbers) or expensive computations, and only pay the cost for the values you actually consume, potentially saving significant memory and CPU time compared to building a full array upfront.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: How would you implement an infinite sequence generator, and safely consume a limited number of values from it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">function</span>* <span class="cf">naturals</span>() {</span>
+<span class="line">  <span class="ck">let</span> n = <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">while</span> (<span class="ck">true</span>) <span class="ck">yield</span> n++;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">take</span>(gen, n) {</span>
+<span class="line">  <span class="ck">const</span> out = [];</span>
+<span class="line">  <span class="ck">for</span> (<span class="ck">const</span> val <span class="ck">of</span> gen) {</span>
+<span class="line">    <span class="ck">if</span> (out.length >= n) <span class="ck">break</span>; <span class="cm">// stop pulling — avoids infinite loop</span></span>
+<span class="line">    out.push(val);</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> out;</span>
+<span class="line">}</span>
+<span class="line"><span class="cf">take</span>(<span class="cf">naturals</span>(), <span class="cn">5</span>); <span class="cm">// → [1, 2, 3, 4, 5]</span></span>
+          </div>
+          The key is NEVER consuming an infinite generator with something that tries to exhaust it fully (like spread <code>[...gen]</code> or an unconditional <code>for...of</code>) — always pair it with an explicit stopping condition.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What's the difference between a sync generator and an async generator?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A sync generator (<code>function*</code>) yields plain values immediately and is consumed with <code>for...of</code>. An async generator (<code>async function*</code>) can <code>await</code> inside its body before yielding, and each <code>.next()</code> call returns a <strong>Promise</strong> that resolves to <code>{ value, done }</code> — so it must be consumed with <code>for await...of</code> instead of a plain <code>for...of</code>. Async generators are ideal for streaming data that arrives asynchronously, like paginated API results or chunked network responses.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: How would you use an async generator to handle API pagination cleanly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Write an async generator that internally loops through pages, fetching the next page only when the previous one's items have all been yielded, and using <code>yield*</code> to flatten each page's items into a single stream:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">async</span> <span class="ck">function</span>* <span class="cf">fetchAllPages</span>(url) {</span>
+<span class="line">  <span class="ck">while</span> (url) {</span>
+<span class="line">    <span class="ck">const</span> page = <span class="ck">await</span> fetch(url).then(r => r.json());</span>
+<span class="line">    <span class="ck">yield</span>* page.items;</span>
+<span class="line">    url = page.nextPageUrl;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+          </div>
+          The consumer then just writes <code>for await (const item of fetchAllPages(url))</code> and treats the whole paginated resource as one flat, lazy stream — pagination details are completely hidden, and if the consumer breaks early (e.g. found what it needed), later pages are never even fetched.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: What does yield* do, and how is it different from a regular yield?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A regular <code>yield value</code> produces exactly ONE value from the generator. <code>yield* iterable</code> delegates to another iterable (often another generator), yielding EACH of ITS values one at a time, as if they were written inline in the outer generator. It's commonly used to compose generators (call one generator from another) or to flatten/recursively traverse nested structures without manually looping and re-yielding each value.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: Why can't you use .forEach() to yield values inside a generator?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>yield</code> can only be used directly inside the body of the generator function itself — it cannot cross into a nested regular function, including a callback passed to <code>.forEach()</code>, because that callback is its own separate (non-generator) function scope where <code>yield</code> is simply not valid syntax. Using a plain <code>for</code> or <code>for...of</code> loop directly inside the generator body works fine, since that stays within the generator's own function scope.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: What happens when you break out of a for...of loop early while iterating a generator?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The engine automatically calls the generator's <code>.return()</code> method behind the scenes — this causes the generator to terminate as if it had hit a <code>return</code> statement at its current paused position, which means any <code>finally</code> block inside the generator DOES run (useful for cleanup like closing a file handle or database connection), but any code AFTER the currently-paused <code>yield</code> that isn't inside a <code>finally</code> block is skipped.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Generators &amp; Async Iterators · Lazy Evaluation · yield* · for await...of · Pagination
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

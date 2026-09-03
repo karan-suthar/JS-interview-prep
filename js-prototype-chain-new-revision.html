@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype Chain, Object.create &amp; new — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(106,176,255,0.1); color: var(--accent); border: 1px solid rgba(106,176,255,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(106,176,255,0.12); color: #a8d4ff; border-color: rgba(106,176,255,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Prototype chain visual ── */
+  .chain-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .chain-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .chain-track { display: flex; flex-direction: column; gap: 0; min-width: 260px; max-width: 340px; }
+  .chain-box {
+    border: 1.5px solid var(--border2); border-radius: var(--radius);
+    padding: 0.7rem 1rem; background: var(--bg3); position: relative;
+  }
+  .chain-box-label { font-family: var(--font-mono); font-size: 12px; color: var(--text); font-weight: 500; }
+  .chain-box-sub { font-size: 10.5px; color: var(--text3); margin-top: 2px; }
+  .chain-box.obj { border-color: rgba(92,255,176,0.35); background: rgba(92,255,176,0.05); }
+  .chain-box.obj .chain-box-label { color: var(--teal); }
+  .chain-box.proto { border-color: rgba(106,176,255,0.35); background: rgba(106,176,255,0.05); }
+  .chain-box.proto .chain-box-label { color: var(--accent); }
+  .chain-box.objproto { border-color: rgba(189,147,249,0.35); background: rgba(189,147,249,0.05); }
+  .chain-box.objproto .chain-box-label { color: var(--purple); }
+  .chain-box.nullbox { border-color: rgba(255,107,107,0.35); background: rgba(255,107,107,0.05); }
+  .chain-box.nullbox .chain-box-label { color: var(--red); }
+  .chain-arrow-down { display: flex; justify-content: center; padding: 4px 0; color: var(--text3); font-family: var(--font-mono); font-size: 11px; }
+  .chain-arrow-down .arrow-text { font-size: 9.5px; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Step cards (for the `new` breakdown) ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; display: flex; gap: 14px; align-items: flex-start;
+  }
+  .step-num-circle {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent2), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700; color: #0d0f14;
+  }
+  .step-content { flex: 1; min-width: 0; }
+  .step-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; margin-bottom: 8px; }
+  .step-content .code-block { margin: 0; font-size: 11.5px; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Prototypes</div>
+    <h1>Prototype Chain, Object.create &amp; new</h1>
+    <p>Prototype Chain Traversal · Object.create() · What "new" Does, Step by Step</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Prototype Basics</a>
+    <a class="topic-pill" href="#s2">2. Chain Traversal</a>
+    <a class="topic-pill" href="#s3">3. Object.create</a>
+    <a class="topic-pill" href="#s4">4. The new Keyword</a>
+    <a class="topic-pill" href="#s5">5. new vs Object.create</a>
+    <a class="topic-pill" href="#s6">6. Classes = Sugar</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Prototype Basics
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Prototype Basics</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Every JS object has an internal, hidden link to another object called its <strong>prototype</strong> — accessible via <ic>Object.getPrototypeOf(obj)</ic> or the (non-standard but widely supported) <ic>obj.__proto__</ic>. When you access a property that doesn't exist directly on an object, JS automatically looks it up on the prototype, then the prototype's prototype, and so on.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Every object has a hidden [[Prototype]] link</span></span>
+<span class="line"><span class="ck">const</span> animal = {</span>
+<span class="line">  eats: <span class="ck">true</span>,</span>
+<span class="line">  walk() { console.log(<span class="cs">"Animal walks"</span>); }</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> rabbit = {</span>
+<span class="line">  jumps: <span class="ck">true</span></span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line">Object.setPrototypeOf(rabbit, animal); <span class="cm">// rabbit's prototype is now "animal"</span></span>
+<span class="line"></span>
+<span class="line">console.log(rabbit.jumps); <span class="cm">// → true   (own property)</span></span>
+<span class="line">console.log(rabbit.eats);  <span class="cm">// → true   (found on prototype "animal"!)</span></span>
+<span class="line">rabbit.walk();              <span class="cm">// → "Animal walks"  (method found via prototype)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Confirm the link</span></span>
+<span class="line">Object.getPrototypeOf(rabbit) === animal; <span class="cm">// → true</span></span>
+<span class="line">rabbit.__proto__ === animal;              <span class="cm">// → true (same thing, older syntax)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// hasOwnProperty distinguishes OWN vs INHERITED properties</span></span>
+<span class="line">rabbit.hasOwnProperty(<span class="cs">"jumps"</span>); <span class="cm">// → true  (own property)</span></span>
+<span class="line">rabbit.hasOwnProperty(<span class="cs">"eats"</span>);  <span class="cm">// → false (inherited, not own)</span></span>
+<span class="line"><span class="cs">"eats"</span> <span class="ck">in</span> rabbit;             <span class="cm">// → true  (in checks the WHOLE chain)</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>[[Prototype]]</td><td>Internal slot — the hidden link every object has to another object (or null)</td></tr>
+        <tr><td>__proto__</td><td>Legacy getter/setter exposing [[Prototype]] — works everywhere but discouraged in new code</td></tr>
+        <tr><td>Object.getPrototypeOf(obj)</td><td>Modern, standard way to READ an object's prototype</td></tr>
+        <tr><td>Object.setPrototypeOf(obj, proto)</td><td>Modern way to CHANGE an object's prototype (slow — avoid in hot code paths)</td></tr>
+        <tr><td>Function.prototype</td><td>A property EVERY function has — becomes the prototype of objects created via <code style="font-family:var(--font-mono)">new Fn()</code></td></tr>
+        <tr><td>prototype chain</td><td>The full lookup path: object → its prototype → that prototype's prototype → ... → null</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Don't confuse <ic>obj.__proto__</ic> (the LINK to the prototype object) with <ic>Fn.prototype</ic> (a regular property ON a function, used as the template for objects created via <ic>new Fn()</ic>). This naming is one of the most confusing parts of JS — the diagram in the next section clarifies it.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Chain Traversal
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Prototype Chain Traversal — Visualized</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">🔗</span>
+      <span>Property lookup walks UP the chain until it finds a match, or hits <ic>null</ic> (the end of every chain). Property WRITES, by contrast, never walk the chain — <ic>obj.x = 5</ic> always creates/overwrites an OWN property on <ic>obj</ic>, even if <ic>x</ic> exists further up the chain.</span>
+    </div>
+
+    <div class="chain-diagram">
+      <div class="chain-title">Lookup path for rabbit.toString() — walks all the way to Object.prototype</div>
+      <div class="chain-track">
+        <div class="chain-box obj">
+          <div class="chain-box-label">rabbit</div>
+          <div class="chain-box-sub">{ jumps: true }</div>
+        </div>
+        <div class="chain-arrow-down">↓ <span class="arrow-text">[[Prototype]]</span></div>
+        <div class="chain-box proto">
+          <div class="chain-box-label">animal</div>
+          <div class="chain-box-sub">{ eats: true, walk() {...} }</div>
+        </div>
+        <div class="chain-arrow-down">↓ <span class="arrow-text">[[Prototype]]</span></div>
+        <div class="chain-box objproto">
+          <div class="chain-box-label">Object.prototype</div>
+          <div class="chain-box-sub">toString(), hasOwnProperty(), valueOf()...</div>
+        </div>
+        <div class="chain-arrow-down">↓ <span class="arrow-text">[[Prototype]]</span></div>
+        <div class="chain-box nullbox">
+          <div class="chain-box-label">null</div>
+          <div class="chain-box-sub">end of every prototype chain</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Tracing the lookup for rabbit.toString()</span></span>
+<span class="line"><span class="cm">// 1. Is "toString" an OWN property of rabbit? No.</span></span>
+<span class="line"><span class="cm">// 2. Check rabbit's prototype (animal) — own property? No.</span></span>
+<span class="line"><span class="cm">// 3. Check animal's prototype (Object.prototype) — own property? YES! Found it.</span></span>
+<span class="line">rabbit.toString(); <span class="cm">// → "[object Object]"  (from Object.prototype)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Object.prototype's own prototype is null — the chain terminates here</span></span>
+<span class="line">Object.getPrototypeOf(Object.prototype); <span class="cm">// → null</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Writing NEVER walks the chain — it always creates an OWN property</span></span>
+<span class="line">rabbit.eats = <span class="ck">false</span>; <span class="cm">// creates a NEW own property on rabbit, doesn't touch "animal"</span></span>
+<span class="line">rabbit.hasOwnProperty(<span class="cs">"eats"</span>); <span class="cm">// → true now (shadows animal's "eats")</span></span>
+<span class="line">animal.eats; <span class="cm">// → true  (animal's own "eats" property is untouched)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Shadowing: rabbit.eats now "hides" animal.eats for THIS object only</span></span>
+<span class="line"><span class="ck">const</span> otherRabbit = Object.create(animal);</span>
+<span class="line">otherRabbit.eats; <span class="cm">// → true  (still finds animal's original, unaffected by the first rabbit)</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Performance note:</strong> longer prototype chains mean slower property lookups in the worst case (property not found anywhere), since the engine must check every link. In practice, JS engines heavily optimize this with inline caches, but it's worth knowing that chain depth isn't "free."</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Object.create
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Object.create()</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>Object.create(proto)</ic> creates a brand-new, empty object whose <ic>[[Prototype]]</ic> is set DIRECTLY to <ic>proto</ic> — the most explicit, direct way to set up prototypal inheritance, without involving constructor functions or classes at all.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Basic usage — inherit directly from an object</span></span>
+<span class="line"><span class="ck">const</span> animal = {</span>
+<span class="line">  eats: <span class="ck">true</span>,</span>
+<span class="line">  walk() { console.log(<span class="cs">"walking..."</span>); }</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> rabbit = Object.create(animal); <span class="cm">// rabbit's prototype IS animal, directly</span></span>
+<span class="line">rabbit.jumps = <span class="ck">true</span>; <span class="cm">// add its own property</span></span>
+<span class="line"></span>
+<span class="line">rabbit.eats;  <span class="cm">// → true  (inherited)</span></span>
+<span class="line">rabbit.jumps; <span class="cm">// → true  (own)</span></span>
+<span class="line">Object.getPrototypeOf(rabbit) === animal; <span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Object.create(null) — a TRULY empty object, no prototype chain at all!</span></span>
+<span class="line"><span class="ck">const</span> dict = Object.create(<span class="ck">null</span>);</span>
+<span class="line">dict.toString; <span class="cm">// → undefined (no Object.prototype in the chain — useful as a pure map!)</span></span>
+<span class="line">dict.hasOwnProperty; <span class="cm">// → undefined too</span></span>
+<span class="line"><span class="cm">// Safer than {} as a dictionary — no risk of key collisions with</span></span>
+<span class="line"><span class="cm">// built-in Object.prototype members like "toString" or "constructor"</span></span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'oc-second')">2nd argument (property descriptors)</button>
+      <button class="tab-btn" onclick="showTab(event,'oc-inherit')">Classical inheritance without classes</button>
+    </div>
+
+    <div id="tab-oc-second" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// Object.create's optional 2nd argument defines OWN properties</span></span>
+<span class="line"><span class="cm">// using the same descriptor format as Object.defineProperty</span></span>
+<span class="line"><span class="ck">const</span> rabbit = Object.create(animal, {</span>
+<span class="line">  jumps: {</span>
+<span class="line">    value: <span class="ck">true</span>,</span>
+<span class="line">    writable: <span class="ck">true</span>,</span>
+<span class="line">    enumerable: <span class="ck">true</span>,</span>
+<span class="line">    configurable: <span class="ck">true</span></span>
+<span class="line">  }</span>
+<span class="line">});</span>
+<span class="line">rabbit.jumps; <span class="cm">// → true</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// This is more verbose than plain assignment but gives full control</span></span>
+<span class="line"><span class="cm">// over enumerability, writability, and configurability of each property</span></span>
+      </div>
+    </div>
+
+    <div id="tab-oc-inherit" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Object.create is the cleanest way to link one object's prototype</span></span>
+<span class="line"><span class="cm">// to another's .prototype — the "textbook" pre-ES6 inheritance setup</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Animal</span>(name) { <span class="ck">this</span>.name = name; }</span>
+<span class="line">Animal.prototype.walk = <span class="ck">function</span>() { console.log(`${<span class="ck">this</span>.name} walks`); };</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Rabbit</span>(name) { Animal.call(<span class="ck">this</span>, name); } <span class="cm">// call parent constructor</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// THIS is the classic pattern — link prototypes with Object.create</span></span>
+<span class="line">Rabbit.prototype = Object.create(Animal.prototype);</span>
+<span class="line">Rabbit.prototype.constructor = Rabbit; <span class="cm">// fix constructor reference (see gotchas)</span></span>
+<span class="line"></span>
+<span class="line">Rabbit.prototype.jump = <span class="ck">function</span>() { console.log(`${<span class="ck">this</span>.name} jumps`); };</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> bugs = <span class="ck">new</span> Rabbit(<span class="cs">"Bugs"</span>);</span>
+<span class="line">bugs.walk(); <span class="cm">// → "Bugs walks"   (inherited from Animal.prototype)</span></span>
+<span class="line">bugs.jump(); <span class="cm">// → "Bugs jumps"   (own to Rabbit.prototype)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Why Object.create(Animal.prototype), NOT "new Animal()"?</span></span>
+<span class="line"><span class="cm">// "new Animal()" would actually RUN the Animal constructor unnecessarily</span></span>
+<span class="line"><span class="cm">// (with no arguments!) just to get an object to use as a prototype.</span></span>
+<span class="line"><span class="cm">// Object.create only sets up the LINK, without executing any constructor.</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — What `new` Does, Step by Step
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>What "new" Does — Step by Step</h2>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span>One of the most classic interview questions: <strong>"What happens when you call <ic>new Fn()</ic>?"</strong> There are exactly 4 steps. Memorize them — and better, know how to write a function that reimplements <ic>new</ic> manually.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Person</span>(name) {</span>
+<span class="line">  <span class="ck">this</span>.name = name;</span>
+<span class="line">}</span>
+<span class="line">Person.prototype.greet = <span class="ck">function</span>() {</span>
+<span class="line">  <span class="ck">return</span> `Hi, I'm ${<span class="ck">this</span>.name}`;</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> alice = <span class="ck">new</span> <span class="cf">Person</span>(<span class="cs">"Alice"</span>);</span>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle">1</div>
+      <div class="step-content">
+        <div class="step-title">Create a brand-new, empty object</div>
+        <div class="step-desc">A new plain object <ic>{}</ic> is created in memory. At this point it has no properties of its own.</div>
+        <div class="code-block">const newObj = {};</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle">2</div>
+      <div class="step-content">
+        <div class="step-title">Link the new object's prototype to the constructor's .prototype</div>
+        <div class="step-desc">The new object's internal <ic>[[Prototype]]</ic> is set to the constructor function's <ic>.prototype</ic> property — this is how the new object gains access to methods defined on <ic>Person.prototype</ic>.</div>
+        <div class="code-block">Object.setPrototypeOf(newObj, Person.prototype);
+<span class="cm">// equivalently: newObj.__proto__ = Person.prototype;</span></div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle">3</div>
+      <div class="step-content">
+        <div class="step-title">Call the constructor function with "this" bound to the new object</div>
+        <div class="step-desc">The constructor function body runs, with <ic>this</ic> pointing to the newly created object — so any <ic>this.property = value</ic> assignments inside the constructor attach properties to <ic>newObj</ic>.</div>
+        <div class="code-block">const result = Person.call(newObj, "Alice");
+<span class="cm">// inside Person: this.name = "Alice" → sets newObj.name</span></div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-circle">4</div>
+      <div class="step-content">
+        <div class="step-title">Return the new object (unless the constructor explicitly returns its own object)</div>
+        <div class="step-desc">If the constructor function returns an OBJECT explicitly, THAT object is used instead of the newly created one. If it returns a primitive (or nothing), the new object from step 1 is returned instead — the primitive return value is ignored entirely.</div>
+        <div class="code-block">if (typeof result === "object" && result !== null) {
+  return result; <span class="cm">// rare — explicit object override</span>
+}
+return newObj; <span class="cm">// the normal case</span></div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Full manual reimplementation of the "new" keyword</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">myNew</span>(Constructor, ...args) {</span>
+<span class="line">  <span class="ck">const</span> newObj = {};                                      <span class="cm">// step 1</span></span>
+<span class="line">  Object.setPrototypeOf(newObj, Constructor.prototype);      <span class="cm">// step 2</span></span>
+<span class="line">  <span class="ck">const</span> result = Constructor.apply(newObj, args);          <span class="cm">// step 3</span></span>
+<span class="line">  <span class="ck">return</span> (<span class="ck">typeof</span> result === <span class="cs">"object"</span> && result !== <span class="ck">null</span>)</span>
+<span class="line">    ? result</span>
+<span class="line">    : newObj;                                                <span class="cm">// step 4</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> alice = <span class="cf">myNew</span>(Person, <span class="cs">"Alice"</span>);</span>
+<span class="line">alice.greet(); <span class="cm">// → "Hi, I'm Alice"   — works identically to "new Person('Alice')"!</span></span>
+<span class="line">alice <span class="ck">instanceof</span> Person; <span class="cm">// → true</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span>Being able to write this <ic>myNew</ic> function from memory is one of the strongest signals of deep JS understanding you can show in an interview — it proves you understand prototypes, <ic>this</ic> binding, and object creation all at once.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — new vs Object.create
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>new Fn() vs Object.create() — Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Feature</th><th>new Fn()</th><th>Object.create(proto)</th></tr></thead>
+      <tbody>
+        <tr><td>Runs a constructor function</td><td class="yes">✓ Yes, always</td><td class="no">✗ No — no function is called</td></tr>
+        <tr><td>Sets [[Prototype]] to</td><td>Fn.prototype</td><td>Whatever object you pass in directly</td></tr>
+        <tr><td>Can create object with NO prototype</td><td class="no">✗ Not directly</td><td class="yes">✓ Yes — Object.create(null)</td></tr>
+        <tr><td>Initializes own properties automatically</td><td class="yes">✓ Via constructor's "this.x = ..."</td><td class="partial" style="color:var(--amber)">Only via optional 2nd arg (descriptors)</td></tr>
+        <tr><td>Typical use case</td><td>Instantiating "classes" / constructor-based OOP</td><td>Direct prototypal inheritance, pure dictionaries</td></tr>
+        <tr><td>instanceof works naturally afterward</td><td class="yes">✓ Yes</td><td class="partial" style="color:var(--amber)">Only if proto happens to be Fn.prototype</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Both can achieve the same end state — different paths</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Person</span>(name) { <span class="ck">this</span>.name = name; }</span>
+<span class="line">Person.prototype.greet = <span class="ck">function</span>() { <span class="ck">return</span> `Hi ${<span class="ck">this</span>.name}`; };</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Path A: new (runs constructor, sets prototype, does it all in one step)</span></span>
+<span class="line"><span class="ck">const</span> a = <span class="ck">new</span> <span class="cf">Person</span>(<span class="cs">"Alice"</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Path B: Object.create + manual property setting (equivalent result)</span></span>
+<span class="line"><span class="ck">const</span> b = Object.create(Person.prototype);</span>
+<span class="line">Person.call(b, <span class="cs">"Alice"</span>); <span class="cm">// manually invoke the "constructor" logic with the right `this`</span></span>
+<span class="line"></span>
+<span class="line">a.greet(); <span class="cm">// → "Hi Alice"</span></span>
+<span class="line">b.greet(); <span class="cm">// → "Hi Alice"   — same result!</span></span>
+<span class="line">a <span class="ck">instanceof</span> Person; <span class="cm">// → true</span></span>
+<span class="line">b <span class="ck">instanceof</span> Person; <span class="cm">// → true  (prototype chain matches, so instanceof works too)</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Classes are Syntactic Sugar
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>ES6 Classes = Syntactic Sugar Over Prototypes</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The <ic>class</ic> keyword doesn't introduce a new object model — under the hood, it's still constructor functions and prototype chains. Knowing this equivalence is a strong interview signal.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">Pre-ES6 — constructor function + prototype</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Animal</span>(name) {</span>
+<span class="line">  <span class="ck">this</span>.name = name;</span>
+<span class="line">}</span>
+<span class="line">Animal.prototype.speak = <span class="ck">function</span>() {</span>
+<span class="line">  <span class="ck">return</span> `${<span class="ck">this</span>.name} makes a sound`;</span>
+<span class="line">};</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Dog</span>(name) {</span>
+<span class="line">  Animal.call(<span class="ck">this</span>, name);</span>
+<span class="line">}</span>
+<span class="line">Dog.prototype = Object.create(Animal.prototype);</span>
+<span class="line">Dog.prototype.constructor = Dog;</span>
+<span class="line">Dog.prototype.bark = <span class="ck">function</span>() { <span class="ck">return</span> <span class="cs">"Woof!"</span>; };</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">ES6 — class syntax (same result)</div>
+        <div class="code-block">
+<span class="line"><span class="ck">class</span> Animal {</span>
+<span class="line">  <span class="cf">constructor</span>(name) {</span>
+<span class="line">    <span class="ck">this</span>.name = name;</span>
+<span class="line">  }</span>
+<span class="line">  speak() {</span>
+<span class="line">    <span class="ck">return</span> `${<span class="ck">this</span>.name} makes a sound`;</span>
+<span class="line">  }</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">class</span> Dog <span class="ck">extends</span> Animal {</span>
+<span class="line">  bark() { <span class="ck">return</span> <span class="cs">"Woof!"</span>; }</span>
+<span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Proof they compile to the same underlying structure</span></span>
+<span class="line"><span class="ck">typeof</span> Animal; <span class="cm">// → "function"   (a class IS a function under the hood)</span></span>
+<span class="line"><span class="ck">const</span> rex = <span class="ck">new</span> Dog(<span class="cs">"Rex"</span>);</span>
+<span class="line">Object.getPrototypeOf(rex) === Dog.prototype;               <span class="cm">// → true</span></span>
+<span class="line">Object.getPrototypeOf(Dog.prototype) === Animal.prototype;  <span class="cm">// → true</span></span>
+<span class="line">rex.speak(); <span class="cm">// → "Rex makes a sound"   (found via the SAME chain traversal)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Key differences class syntax DOES add (not just sugar):</span></span>
+<span class="line"><span class="cm">// 1. Class bodies are ALWAYS in strict mode</span></span>
+<span class="line"><span class="cm">// 2. Class declarations are NOT hoisted the same way (TDZ applies)</span></span>
+<span class="line"><span class="cm">// 3. Calling a class WITHOUT "new" throws a TypeError (constructor functions don't)</span></span>
+<span class="line"><span class="cm">// 4. Methods defined in a class body are non-enumerable by default</span></span>
+<span class="line">Animal(); <span class="cm">// ✗ TypeError: Class constructor Animal cannot be invoked without 'new'</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Forgetting `new` calls the function normally</strong> — for old-style constructor functions, calling <code>Person("Alice")</code> without <code>new</code> runs the function with <code>this</code> bound to the global object (or <code>undefined</code> in strict mode) instead of a new object, silently creating global properties or throwing a confusing error. ES6 classes fix this by throwing a TypeError when called without <code>new</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Object.create(proto) doesn't call any constructor</strong> — if you need to also run initialization logic (like a constructor's <code>this.x = ...</code> assignments), you must call that logic manually afterward, e.g. <code>ParentFn.call(newObj, args)</code>.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Resetting Rrototype.prototype breaks the .constructor reference</strong> — after <code>Dog.prototype = Object.create(Animal.prototype)</code>, `Dog.prototype.constructor` now incorrectly points to <code>Animal</code> unless you manually fix it: <code>Dog.prototype.constructor = Dog;</code></span></li>
+      <li><span class="gi">⚠️</span><span><strong>Returning a primitive from a constructor is silently ignored</strong> — <code>function Foo() { return 5; }</code> — calling <code>new Foo()</code> still returns the newly created object, NOT the number 5. Only returning an actual object overrides the default.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Modifying Object.prototype affects EVERY object</strong> — since all plain objects ultimately inherit from <code>Object.prototype</code>, adding a property there (e.g. <code>Object.prototype.foo = 1</code>) makes <code>foo</code> appear to exist on literally every object in your program. This is almost always a bad idea in real code.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>for...in loops over INHERITED enumerable properties too</strong> — not just own properties, unlike <code>Object.keys()</code>. Always pair <code>for...in</code> with a <code>hasOwnProperty</code> check if you only want own properties, or just use <code>Object.keys()</code>/<code>Object.entries()</code> instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Setting obj.__proto__ directly, or via Object.setPrototypeOf, is a slow operation</strong> that de-optimizes property access in most JS engines — prefer setting the prototype at creation time (via <code>Object.create</code> or a class's <code>extends</code>) rather than mutating it afterward.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Arrow functions cannot be used as constructors</strong> — they have no internal [[Construct]] method and no own <code>prototype</code> property, so <code>new ArrowFn()</code> throws a TypeError immediately.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Class methods are non-enumerable, but constructor-function-assigned prototype methods are enumerable by default</strong> — this affects whether they show up in a <code>for...in</code> loop or <code>Object.keys()</code> on the prototype, a subtle but real difference between the two patterns.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>instanceof checks the prototype CHAIN, not the constructor name</strong> — it works by checking if <code>Fn.prototype</code> appears anywhere in the object's prototype chain, which means it can give unexpected results if you manually reassign <code>Fn.prototype</code> AFTER objects were already created from it.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What happens, step by step, when you call `new Fn()`?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Four steps: <strong>(1)</strong> a brand-new empty object is created; <strong>(2)</strong> that object's internal <code>[[Prototype]]</code> is set to <code>Fn.prototype</code>; <strong>(3)</strong> the constructor function <code>Fn</code> is called with <code>this</code> bound to the new object, running any initialization logic inside it; <strong>(4)</strong> if the constructor explicitly returns an object, THAT object is used instead — otherwise the newly created object from step 1 is returned automatically.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: What's the difference between Object.getPrototypeOf(obj) and Fn.prototype?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>Object.getPrototypeOf(obj)</code> reads an OBJECT'S internal <code>[[Prototype]]</code> link — the object it inherits from. <code>Fn.prototype</code> is a regular, visible PROPERTY that exists on every FUNCTION — it's the object that becomes the new [[Prototype]] for any object created via <code>new Fn()</code>. They're related but distinct: <code>Fn.prototype</code> is a template; <code>Object.getPrototypeOf(instance)</code> tells you what that instance actually inherited from (which, after `new Fn()`, will equal `Fn.prototype`).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: How would you implement inheritance using Object.create, without ES6 classes?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Animal</span>(name) { <span class="ck">this</span>.name = name; }</span>
+<span class="line">Animal.prototype.speak = <span class="ck">function</span>() { <span class="ck">return</span> `${<span class="ck">this</span>.name} makes a sound`; };</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Dog</span>(name) {</span>
+<span class="line">  Animal.call(<span class="ck">this</span>, name); <span class="cm">// call parent's constructor logic</span></span>
+<span class="line">}</span>
+<span class="line">Dog.prototype = Object.create(Animal.prototype); <span class="cm">// link prototypes</span></span>
+<span class="line">Dog.prototype.constructor = Dog; <span class="cm">// fix constructor reference</span></span>
+<span class="line">Dog.prototype.bark = <span class="ck">function</span>() { <span class="ck">return</span> <span class="cs">"Woof!"</span>; };</span>
+          </div>
+          Using <code>Object.create(Animal.prototype)</code> instead of <code>new Animal()</code> avoids unnecessarily running the parent constructor just to set up the prototype link.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: Why would you use Object.create(null) instead of {} for a dictionary/map-like object?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>{}</code> still inherits from <code>Object.prototype</code>, which means it has built-in members like <code>toString</code>, <code>hasOwnProperty</code>, and <code>constructor</code> already present. If your dictionary needs a key that happens to collide with one of these (e.g. a user-supplied key literally named <code>"toString"</code> or <code>"__proto__"</code>), you can get confusing bugs. <code>Object.create(null)</code> creates an object with NO prototype at all — a truly "bare" object safe to use as a pure key-value store, with zero risk of prototype pollution or accidental built-in method collisions.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: Are ES6 classes just syntactic sugar? What (if anything) do they add beyond prototypes?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Mostly yes — under the hood, a <code>class</code> is still a function, and methods are still placed on its <code>.prototype</code>, using the exact same prototype chain mechanism. However, classes DO add some real behavioral differences beyond pure syntax: class bodies always run in strict mode; class declarations are NOT hoisted the same way (they're subject to the Temporal Dead Zone); calling a class without <code>new</code> throws a TypeError (a plain constructor function doesn't); and methods defined in a class body are non-enumerable by default (unlike prototype methods manually assigned via <code>Fn.prototype.method = ...</code>, which ARE enumerable).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: What happens if a constructor function explicitly returns an object?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          That returned object REPLACES the newly created object that <code>new</code> would have normally returned. This is step 4 of the <code>new</code> algorithm — if the constructor's return value is an object (not a primitive), <code>new Fn()</code> evaluates to that returned object instead of the freshly created <code>this</code>-bound one. If the constructor returns a primitive (or nothing), that return value is ignored, and the normally-created object is returned as usual.
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">function</span> <span class="cf">Weird</span>() {</span>
+<span class="line">  <span class="ck">this</span>.a = <span class="cn">1</span>;</span>
+<span class="line">  <span class="ck">return</span> { b: <span class="cn">2</span> }; <span class="cm">// explicit object return</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">new</span> <span class="cf">Weird</span>(); <span class="cm">// → { b: 2 }   (NOT { a: 1 }!)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What's the difference between hasOwnProperty and the `in` operator?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <code>obj.hasOwnProperty(key)</code> only checks the object's OWN properties, ignoring anything inherited via the prototype chain. The <code>in</code> operator (<code>key in obj</code>) checks the ENTIRE prototype chain — it returns true even if the property is only found on some ancestor prototype, not directly on <code>obj</code> itself.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Why does calling a regular (non-class) constructor function WITHOUT `new` often cause subtle bugs instead of an obvious error?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Without <code>new</code>, the function just runs as a normal function call — <code>this</code> inside it is NOT bound to a newly created object. In non-strict mode, <code>this</code> defaults to the global object (<code>window</code> in browsers), so any <code>this.property = value</code> assignments silently create/overwrite GLOBAL variables instead of properties on a new instance — a hard-to-trace bug. In strict mode, <code>this</code> is <code>undefined</code> instead, so the assignment throws a clear TypeError. This exact footgun is why ES6 classes were designed to throw immediately if called without <code>new</code>.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · Prototype Chain · Object.create() · The "new" Keyword, Step by Step
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debounce, Throttle, Memoize &amp; Curry — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff79c6;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,121,198,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,121,198,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,121,198,0.1); color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff79c6 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,121,198,0.1); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4d9e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(255,121,198,0.1); color: var(--accent); border: 1px solid rgba(255,121,198,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(255,121,198,0.12); color: #ffb3e0; border-color: rgba(255,121,198,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Timeline visual (debounce/throttle) ── */
+  .timeline-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .timeline-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .timeline-row { display: flex; align-items: center; gap: 3px; margin-bottom: 10px; min-width: 500px; }
+  .timeline-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--text2); width: 100px; flex-shrink: 0; }
+  .tl-tick {
+    width: 26px; height: 26px; border-radius: 5px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text3);
+    background: var(--bg3); border: 1px solid var(--border2);
+  }
+  .tl-tick.call { background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent2); }
+  .tl-tick.fire { background: rgba(92,255,176,0.15); border-color: rgba(92,255,176,0.4); color: var(--teal); font-weight: 700; }
+  .tl-tick.skip { opacity: 0.3; }
+  .tl-gap { width: 10px; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Step build cards ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .step-num-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    background: rgba(255,121,198,0.1); border: 1px solid rgba(255,121,198,0.25);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .step-card .code-block { margin: 8px 0 0; }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,121,198,0.12); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">JS Interview Prep · Function Utilities</div>
+    <h1>Debounce, Throttle, Memoize &amp; Curry</h1>
+    <p>Classic "implement from scratch" interview problems — full solutions, visuals, and edge cases</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Debounce</a>
+    <a class="topic-pill" href="#s2">2. Throttle</a>
+    <a class="topic-pill" href="#s3">3. Debounce vs Throttle</a>
+    <a class="topic-pill" href="#s4">4. Memoize</a>
+    <a class="topic-pill" href="#s5">5. Curry</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Utility</th><th>Purpose</th><th>Core mechanism</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>debounce</td><td>Delay execution until calls STOP for a period</td><td>Reset a single timer on every call</td></tr>
+      <tr><td>throttle</td><td>Limit execution to at most once per interval</td><td>A boolean/timestamp "cooldown" flag</td></tr>
+      <tr><td>memoize</td><td>Cache results of expensive pure function calls</td><td>A closure-held cache keyed by arguments</td></tr>
+      <tr><td>curry</td><td>Transform f(a,b,c) into f(a)(b)(c)</td><td>Recursively return functions until enough args collected</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Debounce
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>debounce()</h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Delays invoking a function until <strong>after a period of inactivity</strong> — if called again before the delay expires, the timer resets. Only the LAST call in a rapid burst actually executes.</p>
+
+    <div class="timeline-diagram">
+      <div class="timeline-title">Visual — rapid calls (e.g. keystrokes), only the last one fires</div>
+      <div class="timeline-row">
+        <div class="timeline-label">calls</div>
+        <div class="tl-tick call">c</div><div class="tl-gap"></div>
+        <div class="tl-tick call">c</div><div class="tl-gap"></div>
+        <div class="tl-tick call">c</div><div class="tl-gap"></div>
+        <div class="tl-tick call">c</div>
+        <div style="width:60px"></div>
+        <div class="tl-tick fire">FIRE</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">4 rapid calls each RESET the timer. Only after the delay passes with no new calls does the function finally execute — once, with the LAST call's arguments.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay) {</span>
+<span class="line">  <span class="ck">let</span> timerId; <span class="cm">// held in closure — persists across calls</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> context = <span class="ck">this</span>; <span class="cm">// preserve caller's "this" (e.g. if used as an event handler)</span></span>
+<span class="line"></span>
+<span class="line">    clearTimeout(timerId); <span class="cm">// cancel any PREVIOUSLY scheduled call</span></span>
+<span class="line"></span>
+<span class="line">    timerId = setTimeout(() => {</span>
+<span class="line">      fn.apply(context, args); <span class="cm">// finally runs, using the MOST RECENT call's args</span></span>
+<span class="line">    }, delay);</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — classic search-input example</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">handleSearch</span> = (query) => console.log(<span class="cs">"Searching for:"</span>, query);</span>
+<span class="line"><span class="ck">const</span> debouncedSearch = <span class="cf">debounce</span>(<span class="cf">handleSearch</span>, <span class="cn">300</span>);</span>
+<span class="line"></span>
+<span class="line">searchInput.addEventListener(<span class="cs">"input"</span>, (e) => debouncedSearch(e.target.value));</span>
+<span class="line"><span class="cm">// User types "hello" fast → 5 keystrokes fire the listener 5 times,</span></span>
+<span class="line"><span class="cm">// but handleSearch() only actually runs ONCE, 300ms after the LAST keystroke</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design points:</strong> the timer ID must live in a closure OUTSIDE the returned function so it persists between calls. Using <ic>fn.apply(context, args)</ic> instead of a bare <ic>fn()</ic> preserves both the original <ic>this</ic> and all arguments from the triggering call.
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'deb-leading')">+ leading edge option</button>
+      <button class="tab-btn" onclick="showTab(event,'deb-cancel')">+ cancel method</button>
+    </div>
+
+    <div id="tab-deb-leading" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>By default debounce fires on the <strong>trailing</strong> edge (after calls stop). Some use cases (like preventing double-submit) want it to fire immediately on the <strong>first</strong> call instead, then ignore subsequent calls until the cooldown passes.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay, { leading = <span class="ck">false</span> } = {}) {</span>
+<span class="line">  <span class="ck">let</span> timerId;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> context = <span class="ck">this</span>;</span>
+<span class="line">    <span class="ck">const</span> callNow = leading && !timerId; <span class="cm">// fire immediately only if leading AND no pending timer</span></span>
+<span class="line"></span>
+<span class="line">    clearTimeout(timerId);</span>
+<span class="line">    timerId = setTimeout(() => {</span>
+<span class="line">      timerId = <span class="ck">null</span>;</span>
+<span class="line">      <span class="ck">if</span> (!leading) fn.apply(context, args); <span class="cm">// trailing-edge call</span></span>
+<span class="line">    }, delay);</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (callNow) fn.apply(context, args); <span class="cm">// leading-edge call</span></span>
+<span class="line">  };</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-deb-cancel" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Adding a .cancel() method — useful for cleanup (e.g. component unmount)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay) {</span>
+<span class="line">  <span class="ck">let</span> timerId;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">function</span> <span class="cf">debounced</span>(...args) {</span>
+<span class="line">    <span class="ck">const</span> context = <span class="ck">this</span>;</span>
+<span class="line">    clearTimeout(timerId);</span>
+<span class="line">    timerId = setTimeout(() => fn.apply(context, args), delay);</span>
+<span class="line">  }</span>
+<span class="line"></span>
+<span class="line">  debounced.cancel = () => clearTimeout(timerId); <span class="cm">// attach cancel as a property of the returned function</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> debounced;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> debouncedFn = <span class="cf">debounce</span>(doSomething, <span class="cn">500</span>);</span>
+<span class="line">debouncedFn();</span>
+<span class="line">debouncedFn.cancel(); <span class="cm">// prevents the pending call from ever firing</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Throttle
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>throttle()</h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Ensures a function runs <strong>at most once every N milliseconds</strong>, no matter how often it's called. Unlike debounce, it guarantees regular, predictable execution during continuous activity.</p>
+
+    <div class="timeline-diagram">
+      <div class="timeline-title">Visual — continuous calls (e.g. scroll events), fires at a fixed rate</div>
+      <div class="timeline-row">
+        <div class="timeline-label">calls</div>
+        <div class="tl-tick fire">c</div>
+        <div class="tl-tick skip">c</div>
+        <div class="tl-tick skip">c</div>
+        <div class="tl-tick skip">c</div>
+        <div class="tl-tick fire">c</div>
+        <div class="tl-tick skip">c</div>
+        <div class="tl-tick skip">c</div>
+        <div class="tl-tick fire">c</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">Calls keep coming in rapidly, but the function only actually EXECUTES at fixed intervals — the rest are dropped (basic version) or deferred (trailing-edge version).</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation (timestamp-based)</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">throttle</span>(fn, interval) {</span>
+<span class="line">  <span class="ck">let</span> lastCallTime = <span class="cn">0</span>; <span class="cm">// timestamp of the last ALLOWED call</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> now = Date.now();</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (now - lastCallTime >= interval) {</span>
+<span class="line">      lastCallTime = now;</span>
+<span class="line">      fn.apply(<span class="ck">this</span>, args); <span class="cm">// enough time has passed — allow this call through</span></span>
+<span class="line">    }</span>
+<span class="line">    <span class="cm">// else: silently ignore this call — still within the cooldown window</span></span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — classic scroll-position tracking example</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">handleScroll</span> = () => console.log(<span class="cs">"Scroll Y:"</span>, window.scrollY);</span>
+<span class="line"><span class="ck">const</span> throttledScroll = <span class="cf">throttle</span>(<span class="cf">handleScroll</span>, <span class="cn">200</span>);</span>
+<span class="line"></span>
+<span class="line">window.addEventListener(<span class="cs">"scroll"</span>, throttledScroll);</span>
+<span class="line"><span class="cm">// Scroll events can fire dozens of times per second, but handleScroll()</span></span>
+<span class="line"><span class="cm">// only actually runs at most once every 200ms — much lighter on performance</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design point:</strong> unlike debounce, throttle NEVER resets a timer on new calls — it just checks "has enough time passed since the last ALLOWED execution?" This guarantees regular execution even during continuous activity, rather than waiting for activity to fully stop.
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'thr-trailing')">+ trailing call guarantee</button>
+      <button class="tab-btn" onclick="showTab(event,'thr-timer')">Timer-based alternative</button>
+    </div>
+
+    <div id="tab-thr-trailing" class="tab-panel active">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>The basic version above can DROP the very last call in a burst if it doesn't land exactly on an interval boundary. A more complete implementation schedules a trailing call to guarantee the final state is never missed.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">throttle</span>(fn, interval) {</span>
+<span class="line">  <span class="ck">let</span> lastCallTime = <span class="cn">0</span>;</span>
+<span class="line">  <span class="ck">let</span> timerId = <span class="ck">null</span>;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> context = <span class="ck">this</span>;</span>
+<span class="line">    <span class="ck">const</span> now = Date.now();</span>
+<span class="line">    <span class="ck">const</span> remaining = interval - (now - lastCallTime);</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (remaining &lt;= <span class="cn">0</span>) {</span>
+<span class="line">      clearTimeout(timerId);</span>
+<span class="line">      timerId = <span class="ck">null</span>;</span>
+<span class="line">      lastCallTime = now;</span>
+<span class="line">      fn.apply(context, args); <span class="cm">// enough time passed — run immediately</span></span>
+<span class="line">    } <span class="ck">else</span> <span class="ck">if</span> (!timerId) {</span>
+<span class="line">      <span class="cm">// schedule ONE trailing call for when the cooldown finally ends</span></span>
+<span class="line">      timerId = setTimeout(() => {</span>
+<span class="line">        lastCallTime = Date.now();</span>
+<span class="line">        timerId = <span class="ck">null</span>;</span>
+<span class="line">        fn.apply(context, args);</span>
+<span class="line">      }, remaining);</span>
+<span class="line">    }</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Now guarantees: fires immediately on first call, AND fires one final</span></span>
+<span class="line"><span class="cm">// time with the LATEST args even if calls stop mid-cooldown</span></span>
+      </div>
+    </div>
+
+    <div id="tab-thr-timer" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Alternative: boolean-flag + setTimeout style (simpler, slightly different semantics)</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">throttle</span>(fn, interval) {</span>
+<span class="line">  <span class="ck">let</span> isThrottled = <span class="ck">false</span>;</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">if</span> (isThrottled) <span class="ck">return</span>; <span class="cm">// still in cooldown — ignore this call entirely</span></span>
+<span class="line"></span>
+<span class="line">    fn.apply(<span class="ck">this</span>, args); <span class="cm">// run immediately on the FIRST call of a burst</span></span>
+<span class="line">    isThrottled = <span class="ck">true</span>;</span>
+<span class="line"></span>
+<span class="line">    setTimeout(() => { isThrottled = <span class="ck">false</span>; }, interval); <span class="cm">// re-open the gate after "interval"</span></span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Simpler to reason about, but drops ALL calls made during the cooldown —</span></span>
+<span class="line"><span class="cm">// no trailing-call guarantee like the timestamp-based version above</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Debounce vs Throttle
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Debounce vs Throttle — Side by Side</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>debounce</th><th>throttle</th></tr></thead>
+      <tbody>
+        <tr><td>Fires when</td><td>Activity STOPS for a period</td><td>At a regular, fixed rate DURING activity</td></tr>
+        <tr><td>Rapid repeated calls</td><td>Only the LAST call (eventually) runs</td><td>Runs periodically throughout, not just at the end</td></tr>
+        <tr><td>Guarantees regular execution</td><td class="no">✗ No — could wait indefinitely if calls never stop</td><td class="yes">✓ Yes — executes on a predictable cadence</td></tr>
+        <tr><td>Typical use case</td><td>Search-as-you-type, resize-then-recalculate, form validation</td><td>Scroll position tracking, mouse-move drag, rate-limited API calls</td></tr>
+        <tr><td>Mental model</td><td>"Wait until they're done, THEN act"</td><td>"Act regularly, but not too often"</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Quick way to remember:</strong> debounce is like an elevator door — it waits until people STOP entering before closing. Throttle is like a nightclub bouncer — lets people in at a steady, capped rate no matter how big the crowd outside gets.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Memoize
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>memoize()</h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Wraps a <strong>pure function</strong> to cache its results — if called again with the same arguments, the cached result is returned instantly instead of re-computing.</p>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">memoize</span>(fn) {</span>
+<span class="line">  <span class="ck">const</span> cache = <span class="ck">new</span> Map(); <span class="cm">// held in closure — persists across calls to the wrapped function</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> key = JSON.stringify(args); <span class="cm">// serialize args into a single, comparable cache key</span></span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (cache.has(key)) {</span>
+<span class="line">      <span class="ck">return</span> cache.get(key); <span class="cm">// cache hit — skip computation entirely</span></span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">const</span> result = fn.apply(<span class="ck">this</span>, args); <span class="cm">// cache miss — actually compute it</span></span>
+<span class="line">    cache.set(key, result);</span>
+<span class="line">    <span class="ck">return</span> result;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Usage — expensive recursive Fibonacci, memoized</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">slowFib</span> = (n) => n &lt;= <span class="cn">1</span> ? n : <span class="cf">slowFib</span>(n - <span class="cn">1</span>) + <span class="cf">slowFib</span>(n - <span class="cn">2</span>);</span>
+<span class="line"><span class="ck">const</span> fastFib = <span class="cf">memoize</span>(slowFib);</span>
+<span class="line"></span>
+<span class="line">fastFib(<span class="cn">30</span>); <span class="cm">// computed the slow way once, then cached</span></span>
+<span class="line">fastFib(<span class="cn">30</span>); <span class="cm">// instant — read straight from cache, no recomputation</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design points:</strong> only works correctly for <strong>pure functions</strong> — same input must always produce the same output, with no side effects. <ic>JSON.stringify</ic> is a simple, common way to build a cache key from multiple arguments, but has real limitations (see gotchas below).
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'memo-single')">Single-argument (Map key) variant</button>
+      <button class="tab-btn" onclick="showTab(event,'memo-limit')">+ Cache size limit (LRU-ish)</button>
+    </div>
+
+    <div id="tab-memo-single" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>When the function takes exactly ONE argument, you can use that argument directly as the Map key — this avoids <ic>JSON.stringify</ic> entirely, and works correctly even for object arguments (compared by reference, which is often what you want).</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">memoizeSingleArg</span>(fn) {</span>
+<span class="line">  <span class="ck">const</span> cache = <span class="ck">new</span> Map();</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (arg) {</span>
+<span class="line">    <span class="ck">if</span> (cache.has(arg)) <span class="ck">return</span> cache.get(arg); <span class="cm">// works for primitives AND object references</span></span>
+<span class="line">    <span class="ck">const</span> result = fn.call(<span class="ck">this</span>, arg);</span>
+<span class="line">    cache.set(arg, result);</span>
+<span class="line">    <span class="ck">return</span> result;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> square = <span class="cf">memoizeSingleArg</span>(n => n * n);</span>
+<span class="line">square(<span class="cn">5</span>); <span class="cm">// → 25 (computed)</span></span>
+<span class="line">square(<span class="cn">5</span>); <span class="cm">// → 25 (cached)</span></span>
+      </div>
+    </div>
+
+    <div id="tab-memo-limit" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>An unbounded cache can grow forever and leak memory in a long-running app (e.g. server-side memoization of unique per-request inputs). A max-size cache with eviction addresses this.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">memoizeWithLimit</span>(fn, maxSize = <span class="cn">100</span>) {</span>
+<span class="line">  <span class="ck">const</span> cache = <span class="ck">new</span> Map();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> key = JSON.stringify(args);</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (cache.has(key)) {</span>
+<span class="line">      <span class="cm">// Move to "most recently used" position (Map preserves insertion order)</span></span>
+<span class="line">      <span class="ck">const</span> val = cache.get(key);</span>
+<span class="line">      cache.delete(key);</span>
+<span class="line">      cache.set(key, val);</span>
+<span class="line">      <span class="ck">return</span> val;</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">const</span> result = fn.apply(<span class="ck">this</span>, args);</span>
+<span class="line"></span>
+<span class="line">    <span class="ck">if</span> (cache.size >= maxSize) {</span>
+<span class="line">      <span class="ck">const</span> oldestKey = cache.keys().next().value; <span class="cm">// first key = least recently used</span></span>
+<span class="line">      cache.delete(oldestKey);</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    cache.set(key, result);</span>
+<span class="line">    <span class="ck">return</span> result;</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Curry
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>curry()</h2>
+    </div>
+
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1rem;">Transforms a function <ic>f(a, b, c)</ic> into a chain of single-argument (or partial-argument) calls: <ic>f(a)(b)(c)</ic>. Enables partial application — "locking in" some arguments now, supplying the rest later.</p>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Full implementation — generic curry (works for any arity)</span></div>
+      <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">curry</span>(fn) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> curried(...args) {</span>
+<span class="line">    <span class="cm">// If enough arguments have been collected, call the original function</span></span>
+<span class="line">    <span class="ck">if</span> (args.length >= fn.length) {</span>
+<span class="line">      <span class="ck">return</span> fn.apply(<span class="ck">this</span>, args);</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    <span class="cm">// Not enough args yet — return a NEW function that collects more</span></span>
+<span class="line">    <span class="ck">return</span> <span class="ck">function</span> (...moreArgs) {</span>
+<span class="line">      <span class="ck">return</span> curried.apply(<span class="ck">this</span>, [...args, ...moreArgs]);</span>
+<span class="line">    };</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// fn.length = number of DECLARED (non-rest, non-default) parameters</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">sum3</span>(a, b, c) { <span class="ck">return</span> a + b + c; }</span>
+<span class="line">sum3.length; <span class="cm">// → 3</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> curriedSum = <span class="cf">curry</span>(sum3);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ALL of these are valid ways to call it — full flexibility!</span></span>
+<span class="line">curriedSum(<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>);     <span class="cm">// → 6   (all at once)</span></span>
+<span class="line">curriedSum(<span class="cn">1</span>)(<span class="cn">2</span>, <span class="cn">3</span>);     <span class="cm">// → 6   (1, then 2 more)</span></span>
+<span class="line">curriedSum(<span class="cn">1</span>)(<span class="cn">2</span>)(<span class="cn">3</span>);     <span class="cm">// → 6   (one at a time)</span></span>
+<span class="line">curriedSum(<span class="cn">1</span>, <span class="cn">2</span>)(<span class="cn">3</span>);     <span class="cm">// → 6   (2, then 1 more)</span></span>
+      </div>
+      <div class="step-desc">
+        <strong>Key design points:</strong> <ic>fn.length</ic> gives you the number of parameters the original function EXPECTS, letting the wrapper know when "enough" arguments have accumulated. Each intermediate call returns a NEW closure holding all args collected SO FAR, spreading in any newly provided ones on the next call.
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'curry-manual')">Manual 3-step curry (simpler, fixed arity)</button>
+      <button class="tab-btn" onclick="showTab(event,'curry-practical')">Practical use — partial application</button>
+    </div>
+
+    <div id="tab-curry-manual" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>If an interviewer specifically wants a curry function for a KNOWN fixed number of arguments (e.g. exactly 3), this simpler, explicit version is often easier to write correctly under pressure than the generic version above.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Fixed-arity curry (exactly 3 arguments), one nested function per argument</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">curry3</span>(fn) {</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (a) {</span>
+<span class="line">    <span class="ck">return</span> <span class="ck">function</span> (b) {</span>
+<span class="line">      <span class="ck">return</span> <span class="ck">function</span> (c) {</span>
+<span class="line">        <span class="ck">return</span> fn(a, b, c);</span>
+<span class="line">      };</span>
+<span class="line">    };</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Arrow function version — much more concise</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">curry3Arrow</span> = fn => a => b => c => fn(a, b, c);</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> <span class="cf">add3</span> = (a, b, c) => a + b + c;</span>
+<span class="line"><span class="ck">const</span> curriedAdd = <span class="cf">curry3Arrow</span>(<span class="cf">add3</span>);</span>
+<span class="line">curriedAdd(<span class="cn">1</span>)(<span class="cn">2</span>)(<span class="cn">3</span>); <span class="cm">// → 6</span></span>
+<span class="line"><span class="cm">// ⚠️ Note: this simple version does NOT support curriedAdd(1, 2)(3) —</span></span>
+<span class="line"><span class="cm">// each level accepts exactly ONE argument, unlike the generic version</span></span>
+      </div>
+    </div>
+
+    <div id="tab-curry-practical" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Practical: building reusable, specialized functions via partial application</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">curry</span> = fn => (...args) =></span>
+<span class="line">  args.length >= fn.length</span>
+<span class="line">    ? fn(...args)</span>
+<span class="line">    : (...more) => <span class="cf">curry</span>(fn)(...args, ...more);</span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> <span class="cf">multiply</span> = (a, b) => a * b;</span>
+<span class="line"><span class="ck">const</span> curriedMultiply = <span class="cf">curry</span>(<span class="cf">multiply</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// "Lock in" one argument to create specialized, reusable functions</span></span>
+<span class="line"><span class="ck">const</span> double = curriedMultiply(<span class="cn">2</span>);</span>
+<span class="line"><span class="ck">const</span> triple = curriedMultiply(<span class="cn">3</span>);</span>
+<span class="line">double(<span class="cn">5</span>);  <span class="cm">// → 10</span></span>
+<span class="line">triple(<span class="cn">5</span>);  <span class="cm">// → 15</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Practical: building configuration/validation function families</span></span>
+<span class="line"><span class="ck">const</span> <span class="cf">checkAge</span> = (min, age) => age >= min;</span>
+<span class="line"><span class="ck">const</span> curriedCheckAge = <span class="cf">curry</span>(<span class="cf">checkAge</span>);</span>
+<span class="line"><span class="ck">const</span> isAdult = curriedCheckAge(<span class="cn">18</span>);  <span class="cm">// "min" locked to 18</span></span>
+<span class="line">isAdult(<span class="cn">20</span>); <span class="cm">// → true</span></span>
+<span class="line">isAdult(<span class="cn">15</span>); <span class="cm">// → false</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Forgetting to preserve `this`</strong> — calling <code>fn(...args)</code> instead of <code>fn.apply(context, args)</code> loses the original `this` binding, breaking usage as an object method or event handler. Always capture and pass through `this`.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Debounce's timer variable must live in the OUTER closure</strong>, not be re-declared inside the returned function — otherwise every call gets its own fresh `timerId` and `clearTimeout` never actually cancels the previous pending call.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Confusing debounce and throttle in conversation is an instant red flag</strong> — be precise: debounce delays until calls STOP; throttle limits the RATE while calls continue. Practice explaining the difference out loud.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>JSON.stringify as a cache key fails for functions, undefined values, Symbols, and circular references</strong> — it silently drops or mishandles these. It also doesn't reliably distinguish objects with the SAME keys in DIFFERENT order in older engines (modern engines preserve insertion order for string keys, making this less of an issue now, but worth mentioning).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Memoizing an impure function produces WRONG results</strong> — if the function depends on external mutable state, has side effects, or returns different results for the same input over time (e.g. `Date.now()`, random values, network calls), memoization will incorrectly return stale cached data.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>curry() relies on fn.length, which breaks with default parameters or rest parameters</strong> — `function f(a, b = 1, ...rest) {}` has `f.length === 1` (only counts parameters BEFORE the first default/rest), which would break the generic curry implementation's "enough args" check for such functions.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Arrow functions have no "arguments" object</strong> — if writing debounce/throttle/memoize as arrow functions, you must use rest parameters (`...args`) instead of the `arguments` keyword, since arrows don't have their own.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not clearing timers on component unmount (React) or page navigation</strong> — a debounced/throttled function's pending `setTimeout` can fire AFTER the relevant UI is gone, causing "can't update state on unmounted component" warnings or stale updates. Expose and call a `.cancel()` method in cleanup.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Basic throttle implementations can silently DROP the final call in a burst</strong> — if the interviewer asks for "the last event to always be respected," you need the trailing-edge-guaranteed version, not the simplest boolean-flag version.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An unbounded memoize cache is a memory leak waiting to happen</strong> — for functions called with many unique arguments over a long-running process (e.g. a server handling many different requests), always consider a cache size limit or a WeakMap for object keys (which allows garbage collection).</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4d9e);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What's the fundamental difference between debounce and throttle? Give a real-world example of each.</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Debounce</strong> delays execution until a burst of calls has fully STOPPED — it resets its timer on every new call, so if calls keep coming, the function never fires until there's a pause. Real-world example: a search-as-you-type box, where you want to wait until the user finishes typing before firing an API request.<br><br>
+          <strong>Throttle</strong> guarantees execution happens at a regular, capped RATE even during continuous activity — it does NOT reset on every call, it just enforces a minimum gap between executions. Real-world example: tracking scroll position to trigger a "load more" action, where you want updates periodically during scrolling, not just once at the very end.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: Why is it important to use fn.apply(this, args) instead of just calling fn(...args) inside these utilities?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because these utility wrappers are often used as object methods or event handlers, where the ORIGINAL function relies on a specific `this` context (e.g. `this.value` inside an event handler referring to the DOM element, or `this` referring to a class instance). If you just call `fn(...args)` directly, `this` inside the wrapped function defaults to `undefined` (strict mode) or the global object — breaking any code inside that depends on `this`. Using `fn.apply(this, args)` (where the outer `this` is captured from the wrapper's own call site) correctly forwards the caller's context through to the original function.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: Why must the timer/cache variable be declared OUTSIDE the returned function in debounce/throttle/memoize?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          This is a direct application of <strong>closures</strong> — the returned function needs to remember state (a timer ID, a cache Map, a last-call timestamp) ACROSS multiple separate invocations. If that state were declared INSIDE the returned function, it would be reset to a fresh value on every single call, making it impossible to track "was there a previous pending call?" or "have we seen these arguments before?" By declaring it in the enclosing (outer) function's scope, the returned inner function closes over that single, shared variable, and every call to the wrapped function reads/writes the SAME persistent state.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: How does the generic curry() implementation know when it has "enough" arguments to actually call the original function?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It uses <code>fn.length</code> — a built-in property on every function that reports the number of formal parameters DECLARED before the first default value or rest parameter. The curried wrapper accumulates arguments across calls (in an array via closure), and after each call checks if the accumulated count has reached <code>fn.length</code>. If yes, it calls the original function with all the collected arguments; if not, it returns another function to collect more.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: What are the limitations of using JSON.stringify(args) as a memoization cache key?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It doesn't handle every value type correctly: <code>undefined</code>, functions, and Symbols are dropped/omitted from the resulting JSON string rather than represented distinctly, which can cause different-looking argument lists to accidentally produce the SAME cache key. Circular references throw an error entirely. It also can't reasonably distinguish some special values like <code>NaN</code> vs <code>null</code> in all cases, or handle complex object graphs efficiently for very large arguments. For single-argument functions where the argument is an object, using the object itself as a Map key (compared by reference) is often better and avoids these issues entirely.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: Why would memoizing a function that calls Math.random() or Date.now() internally be a bug?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Memoization assumes the wrapped function is <strong>pure</strong> — that calling it again with the SAME arguments will always produce the SAME result. Functions relying on <code>Math.random()</code>, <code>Date.now()</code>, external mutable state, or network responses violate this assumption; they can return DIFFERENT results on each call even with identical arguments. Memoizing such a function would incorrectly return a STALE, cached result from the first call, silently hiding whatever new value the function would have actually computed on subsequent calls — a subtle and dangerous bug if not accounted for.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: How would you add a "leading edge" option to debounce, so it fires immediately on the first call instead of waiting?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Track whether there's currently a pending timer. If there ISN'T one when a call comes in (meaning this is the start of a new burst) AND leading mode is enabled, call the function immediately. Then set the timer as usual for cooldown tracking, but on the trailing edge, only invoke the function again if NOT in leading mode (to avoid double-firing).
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay, leading = <span class="ck">false</span>) {</span>
+<span class="line">  <span class="ck">let</span> timerId;</span>
+<span class="line">  <span class="ck">return</span> <span class="ck">function</span> (...args) {</span>
+<span class="line">    <span class="ck">const</span> callNow = leading && !timerId;</span>
+<span class="line">    clearTimeout(timerId);</span>
+<span class="line">    timerId = setTimeout(() => {</span>
+<span class="line">      timerId = <span class="ck">null</span>;</span>
+<span class="line">      <span class="ck">if</span> (!leading) fn.apply(<span class="ck">this</span>, args);</span>
+<span class="line">    }, delay);</span>
+<span class="line">    <span class="ck">if</span> (callNow) fn.apply(<span class="ck">this</span>, args);</span>
+<span class="line">  };</span>
+<span class="line">}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: What real problem does currying solve, beyond just being an interesting academic exercise?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Currying enables <strong>partial application</strong> — creating specialized, reusable functions by "locking in" some arguments ahead of time, while leaving others to be supplied later. This is powerful for building configuration-driven utilities (e.g. a generic <code>request(method, url, data)</code> function curried into <code>get = request("GET")</code>, then <code>get(url)</code>), composing pipelines of single-argument functions (which is common in functional programming, e.g. with `.map()`/`.filter()`/`.reduce()` chains), and reducing repetition when the same "fixed" arguments would otherwise need to be passed on every call.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    JS Interview Prep · debounce · throttle · memoize · curry — implemented from scratch
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
