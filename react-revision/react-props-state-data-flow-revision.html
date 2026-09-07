@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Props vs State &amp; Data Flow — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(189,147,249,0.1); color: var(--accent); border: 1px solid rgba(189,147,249,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(189,147,249,0.12); color: #d9c0ff; border-color: rgba(189,147,249,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 560px; height: auto; display: block; }
+
+  /* ── Question-type badges (why/what/when/how) ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Data Flow</div>
+    <h1>Props vs State &amp; Data Flow</h1>
+    <p>Props vs State · Lifting State Up · Unidirectional Data Flow · Prop Drilling — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Props vs State</a>
+    <a class="topic-pill" href="#s2">2. Unidirectional Flow</a>
+    <a class="topic-pill" href="#s3">3. Lifting State Up</a>
+    <a class="topic-pill" href="#s4">4. Prop Drilling</a>
+    <a class="topic-pill" href="#s5">5. Fixing Prop Drilling</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Props vs State
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Props vs State — The Core Distinction</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Props</strong> are data passed INTO a component from its parent — read-only from the receiving component's perspective. <strong>State</strong> is data a component OWNS and manages internally — it can change over time and triggers a re-render when updated.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Props flow in from outside · State lives inside</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Parent box -->
+        <rect x="30" y="20" width="160" height="60" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Parent</text>
+        <text x="110" y="62" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">passes data down</text>
+
+        <!-- Arrow parent -> child labeled props -->
+        <path d="M190 50 L340 50" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue)"/>
+        <text x="265" y="40" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">props</text>
+        <text x="265" y="68" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="8.5">(read-only in child)</text>
+
+        <!-- Child box -->
+        <rect x="340" y="20" width="160" height="60" rx="8" fill="#131b28" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="420" y="45" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Child</text>
+        <text x="420" y="62" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">receives props</text>
+
+        <!-- State loop on Parent -->
+        <path d="M65 20 C 40 -5, 10 -5, 15 20" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+        <rect x="30" y="105" width="160" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="110" y="128" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">useState()</text>
+        <text x="110" y="145" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">owned internally</text>
+        <path d="M110 105 L110 82" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+
+        <!-- State loop on Child -->
+        <rect x="340" y="105" width="160" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="420" y="128" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">useState()</text>
+        <text x="420" y="145" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">owned internally</text>
+        <path d="M420 105 L420 82" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+
+        <!-- Callback arrow child -> parent -->
+        <path d="M340 65 L190 65" stroke="#ff79c6" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arrowPink)"/>
+        <text x="265" y="90" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="9.5">onChange callback (to request updates)</text>
+
+        <text x="350" y="195" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Each component's OWN state never flows to the other directly —</text>
+        <text x="350" y="210" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">only via props down, and callback functions back up.</text>
+
+        <defs>
+          <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#bd93f9"/></marker>
+          <marker id="arrowPink" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff79c6"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// PROPS — passed in, read-only from the child's perspective</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Greeting</span>({ name }) {  <span class="cm">// "name" is a PROP</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">h1</span>&gt;Hello, {name}!&lt;/<span class="ct">h1</span>&gt;;</span>
+<span class="line">}</span>
+<span class="line">&lt;<span class="ct">Greeting</span> <span class="ca">name</span>=<span class="cs">"Alice"</span> /&gt;  <span class="cm">// parent controls the value</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// STATE — owned and managed internally, can change over time</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>); <span class="cm">// "count" is STATE</span></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() => setCount(count + <span class="cn">1</span>)}&gt;</span>
+<span class="line">      Clicked {count} times</span>
+<span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Counter fully owns "count" — no parent needs to know or supply it</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Props</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Owned by</td><td>The PARENT component (passed down)</td><td>The component ITSELF</td></tr>
+        <tr><td>Mutable by the receiving component?</td><td class="no">✗ No — read-only</td><td class="yes">✓ Yes — via its setter function</td></tr>
+        <tr><td>Can change over time?</td><td>Only if the PARENT re-renders it with new values</td><td class="yes">✓ Yes, whenever the component wants</td></tr>
+        <tr><td>Triggers re-render when changed?</td><td class="yes">✓ Yes (when parent passes new values)</td><td class="yes">✓ Yes (on every setter call)</td></tr>
+        <tr><td>Analogy</td><td>Function ARGUMENTS</td><td>Function's own LOCAL variables</td></tr>
+        <tr><td>Who can initiate a change</td><td>Only the parent, by re-rendering with new prop values</td><td>The component itself, via its state setter</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Mental model:</strong> think of a component as a function. <strong>Props</strong> are its parameters — supplied by the caller. <strong>State</strong> is like a <code style="font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;">useRef</code>/local variable that persists across calls and that the function itself is allowed to update.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Unidirectional Data Flow
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Unidirectional Data Flow</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>React data flows in <strong>ONE direction only</strong>: from parent to child, via props. A child can never directly modify a prop or reach "up" to change its parent's state — it can only ask the parent to change it, by calling a function the parent passed down.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The one-way cycle: state down as props → events up as callbacks</div>
+      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <!-- App (top) -->
+        <rect x="270" y="20" width="160" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="43" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">App</text>
+        <text x="350" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">owns state: items</text>
+
+        <!-- Left child -->
+        <rect x="80" y="140" width="160" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="160" y="163" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">ItemList</text>
+        <text x="160" y="180" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">receives items as props</text>
+
+        <!-- Right child -->
+        <rect x="460" y="140" width="160" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="540" y="163" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">AddItemForm</text>
+        <text x="540" y="180" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">receives onAdd as prop</text>
+
+        <!-- App -> ItemList (props down) -->
+        <path d="M300 75 L180 140" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue2)"/>
+        <text x="205" y="100" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">items (props)</text>
+
+        <!-- App -> AddItemForm (props down) -->
+        <path d="M400 75 L520 140" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue2)"/>
+        <text x="500" y="100" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">onAdd (props)</text>
+
+        <!-- AddItemForm -> App (event up) -->
+        <path d="M480 140 C 440 100, 420 90, 380 76" stroke="#ff79c6" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arrowPink2)"/>
+        <text x="460" y="118" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="9.5">onAdd(newItem)</text>
+
+        <text x="350" y="235" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">AddItemForm CANNOT change "items" directly — it calls onAdd(),</text>
+        <text x="350" y="250" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">which runs App's setItems(), which re-renders BOTH children with fresh props.</text>
+
+        <defs>
+          <marker id="arrowBlue2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowPink2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff79c6"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+<span class="line">  <span class="ck">const</span> [items, setItems] = useState([<span class="cs">"Apple"</span>, <span class="cs">"Banana"</span>]);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleAdd</span> = (newItem) => {</span>
+<span class="line">    setItems([...items, newItem]); <span class="cm">// ONLY App can update its own state</span></span>
+<span class="line">  };</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;&gt;</span>
+<span class="line">      &lt;<span class="ct">ItemList</span> <span class="ca">items</span>={items} /&gt;              <span class="cm">// data flows DOWN</span></span>
+<span class="line">      &lt;<span class="ct">AddItemForm</span> <span class="ca">onAdd</span>={handleAdd} /&gt;   <span class="cm">// a CALLBACK flows down too</span></span>
+<span class="line">    &lt;/&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">AddItemForm</span>({ onAdd }) {</span>
+<span class="line">  <span class="ck">const</span> [text, setText] = useState(<span class="cs">""</span>);</span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() => onAdd(text)}&gt;</span>
+<span class="line">      Add Item</span>
+<span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// AddItemForm never touches "items" directly — it just CALLS the function</span></span>
+<span class="line"><span class="cm">// App gave it. This keeps the data flow predictable and traceable.</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why this design matters:</strong> because data only flows one way, you can always answer "where did this value come from?" by tracing UP the component tree — there's no hidden two-way binding magic to reverse-engineer. This makes React apps significantly easier to debug than frameworks with implicit two-way data binding.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Lifting State Up
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Lifting State Up</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>When two or more sibling components need to share/stay in sync with the SAME piece of state, you move ("lift") that state to their <strong>closest common ancestor</strong> — the ancestor then owns the state and passes it down to both siblings as props.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Before — state trapped in one sibling</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">TemperatureInput</span>() {</span>
+<span class="line">  <span class="ck">const</span> [celsius, setCelsius] = useState(<span class="cn">0</span>);</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">value</span>={celsius} .../&gt;;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">TemperatureDisplay</span>() {</span>
+<span class="line">  <span class="cm">// ✗ has NO WAY to know celsius's value —</span></span>
+<span class="line">  <span class="cm">// it's trapped inside TemperatureInput!</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">p</span>&gt;??? °F&lt;/<span class="ct">p</span>&gt;;</span>
+<span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ After — lifted to the common parent</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Converter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [celsius, setCelsius] = useState(<span class="cn">0</span>); <span class="cm">// lifted here</span></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;&gt;</span>
+<span class="line">      &lt;<span class="ct">TemperatureInput</span> <span class="ca">value</span>={celsius} <span class="ca">onChange</span>={setCelsius} /&gt;</span>
+<span class="line">      &lt;<span class="ct">TemperatureDisplay</span> <span class="ca">celsius</span>={celsius} /&gt;</span>
+<span class="line">    &lt;/&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Both siblings now stay perfectly in sync — single source of truth</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Where state lives before vs after lifting</div>
+      <svg class="diagram-svg" viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- BEFORE -->
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">BEFORE</text>
+        <rect x="95" y="35" width="160" height="45" rx="8" fill="#131b28" stroke="#555a6e" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="175" y="61" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10">Converter (empty)</text>
+
+        <rect x="20" y="120" width="150" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="95" y="143" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">TemperatureInput</text>
+        <text x="95" y="160" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">state: celsius ✓</text>
+
+        <rect x="185" y="120" width="150" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="260" y="143" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">TemperatureDisplay</text>
+        <text x="260" y="160" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">✗ no access!</text>
+
+        <path d="M95 80 L95 120" stroke="#555a6e" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+        <path d="M255 80 L260 120" stroke="#555a6e" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+
+        <!-- AFTER -->
+        <text x="525" y="20" text-anchor="middle" fill="#9affd4" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">AFTER</text>
+        <rect x="445" y="35" width="160" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="525" y="61" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Converter — state: celsius ✓</text>
+
+        <rect x="370" y="120" width="150" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="445" y="143" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">TemperatureInput</text>
+        <text x="445" y="160" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">props: value, onChange</text>
+
+        <rect x="535" y="120" width="150" height="55" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="610" y="143" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">TemperatureDisplay</text>
+        <text x="610" y="160" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">props: celsius ✓</text>
+
+        <path d="M480 80 L455 120" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue3)"/>
+        <path d="M540 80 L600 120" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue3)"/>
+
+        <text x="525" y="215" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Single source of truth — both children reflect the SAME state, always in sync</text>
+
+        <defs>
+          <marker id="arrowBlue3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Rule of thumb for WHERE to put state:</strong> place it in the <strong>lowest common ancestor</strong> of all components that need it — not higher (unnecessarily forces unrelated parts of the tree to re-render) and not lower (some components that need it won't have access).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Prop Drilling
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Prop Drilling — The Problem</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Prop drilling</strong> happens when you pass a prop through MULTIPLE layers of components that don't actually use it themselves — they only forward it along to some deeply nested descendant that finally needs it.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">theme has to pass through 3 components that never use it, just to reach Avatar</div>
+      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="120" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="80" y="42" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">App</text>
+        <text x="80" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">owns theme</text>
+
+        <rect x="180" y="20" width="120" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="240" y="42" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Page</text>
+        <text x="240" y="58" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">just forwards it</text>
+
+        <rect x="340" y="20" width="120" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="400" y="42" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Sidebar</text>
+        <text x="400" y="58" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">just forwards it</text>
+
+        <rect x="500" y="20" width="120" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="560" y="42" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">UserPanel</text>
+        <text x="560" y="58" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">just forwards it</text>
+
+        <rect x="580" y="120" width="120" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="640" y="142" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Avatar</text>
+        <text x="640" y="158" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8.5">✓ finally uses theme!</text>
+
+        <path d="M140 45 L180 45" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+        <path d="M300 45 L340 45" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+        <path d="M460 45 L500 45" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed)"/>
+        <path d="M580 60 L620 120" stroke="#5cffb0" stroke-width="1.5" fill="none" marker-end="url(#arrowGreen3)"/>
+        <text x="350" y="14" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">theme →</text>
+
+        <text x="350" y="220" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Page, Sidebar, and UserPanel don't care about "theme" at all —</text>
+        <text x="350" y="235" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">they're forced to accept and re-forward it purely as middlemen.</text>
+
+        <defs>
+          <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+          <marker id="arrowGreen3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Prop drilling in code — "theme" passes through 3 components that never use it</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+<span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Page</span> <span class="ca">theme</span>={theme} /&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Page</span>({ theme }) {</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Sidebar</span> <span class="ca">theme</span>={theme} /&gt;; <span class="cm">// Page doesn't use theme itself</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Sidebar</span>({ theme }) {</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">UserPanel</span> <span class="ca">theme</span>={theme} /&gt;; <span class="cm">// neither does Sidebar</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">UserPanel</span>({ theme }) {</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Avatar</span> <span class="ca">theme</span>={theme} /&gt;; <span class="cm">// nor UserPanel</span></span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Avatar</span>({ theme }) {</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">img</span> <span class="ca">className</span>={theme} /&gt;; <span class="cm">// ✓ FINALLY used, 4 levels down!</span></span>
+<span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Why it becomes a real problem at scale:</strong> every intermediate component becomes tightly coupled to a prop it doesn't care about. Renaming, adding, or removing that prop means editing EVERY component along the chain. It also hurts readability (you can't tell what a component actually needs just by reading its own code) and can cause unnecessary re-renders of middle components.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Fixing Prop Drilling
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Solutions to Prop Drilling</h2>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'fix-context')">Context API</button>
+      <button class="tab-btn" onclick="showTab(event,'fix-composition')">Component Composition</button>
+      <button class="tab-btn" onclick="showTab(event,'fix-state-lib')">State Management Library</button>
+    </div>
+
+    <div id="tab-fix-context" class="tab-panel active">
+      <div class="callout callout-blue">
+        <span class="callout-icon">💡</span>
+        <span>React's built-in <strong>Context API</strong> lets a value be read directly by ANY descendant component, no matter how deeply nested — skipping all the intermediate "middlemen" components entirely.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="ck">const</span> ThemeContext = createContext(<span class="cs">"light"</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+<span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">ThemeContext.Provider</span> <span class="ca">value</span>={theme}&gt;</span>
+<span class="line">      &lt;<span class="ct">Page</span> /&gt;  <span class="cm">// no "theme" prop needed anywhere below!</span></span>
+<span class="line">    &lt;/<span class="ct">ThemeContext.Provider</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Page</span>() { <span class="ck">return</span> &lt;<span class="ct">Sidebar</span> /&gt;; }        <span class="cm">// clean — no theme prop</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Sidebar</span>() { <span class="ck">return</span> &lt;<span class="ct">UserPanel</span> /&gt;; }  <span class="cm">// clean — no theme prop</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">UserPanel</span>() { <span class="ck">return</span> &lt;<span class="ct">Avatar</span> /&gt;; }   <span class="cm">// clean — no theme prop</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Avatar</span>() {</span>
+<span class="line">  <span class="ck">const</span> theme = useContext(ThemeContext); <span class="cm">// reads DIRECTLY, skipping all middlemen</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">img</span> <span class="ca">className</span>={theme} /&gt;;</span>
+<span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-fix-composition" class="tab-panel">
+      <div class="callout callout-purple">
+        <span class="callout-icon">🧩</span>
+        <span>Instead of passing DATA down through props, pass already-built JSX (via <ic>children</ic> or other element-valued props) — the parent that has the data renders the deep component directly, no forwarding required.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Instead of drilling "theme" through Page and Sidebar to reach UserPanel...</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+<span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+<span class="line">  <span class="cm">// ...build the deep component HERE, where the data already lives...</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Page</span> <span class="ca">sidebar</span>={&lt;<span class="ct">Sidebar</span> <span class="ca">userPanel</span>={&lt;<span class="ct">UserPanel</span> theme={theme} /&gt;} /&gt;} /&gt;;</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ...and pass it through as "children" or a slot prop — Page/Sidebar</span></span>
+<span class="line"><span class="cm">// never need to know "theme" exists at all, they just render what they're given</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Page</span>({ sidebar }) { <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{sidebar}&lt;/<span class="ct">div</span>&gt;; }</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Sidebar</span>({ userPanel }) { <span class="ck">return</span> &lt;<span class="ct">aside</span>&gt;{userPanel}&lt;/<span class="ct">aside</span>&gt;; }</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Simpler common case — just "children"</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Layout</span>({ children }) { <span class="ck">return</span> &lt;<span class="ct">div</span> <span class="ca">className</span>=<span class="cs">"layout"</span>&gt;{children}&lt;/<span class="ct">div</span>&gt;; }</span>
+<span class="line">&lt;<span class="ct">Layout</span>&gt;&lt;<span class="ct">Avatar</span> theme={theme} /&gt;&lt;/<span class="ct">Layout</span>&gt; <span class="cm">// Layout never touches "theme"</span></span>
+      </div>
+    </div>
+
+    <div id="tab-fix-state-lib" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>For LARGE, complex apps with lots of shared/global state accessed from many unrelated parts of the tree, a dedicated state management library can be a better fit than Context (which can cause broad re-renders and gets unwieldy with many separate values).</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Example shape — using a library like Zustand or Redux (conceptual, not exact API)</span></span>
+<span class="line"><span class="ck">const</span> useThemeStore = create((set) => ({</span>
+<span class="line">  theme: <span class="cs">"dark"</span>,</span>
+<span class="line">  setTheme: (theme) => set({ theme }),</span>
+<span class="line">}));</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ANY component, at ANY depth, can subscribe directly — no drilling, no Context wrapper</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Avatar</span>() {</span>
+<span class="line">  <span class="ck">const</span> theme = useThemeStore(state => state.theme);</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">img</span> <span class="ca">className</span>={theme} /&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Trade-off: adds an external dependency and some architectural overhead —</span></span>
+<span class="line"><span class="cm">// usually only worth it once Context alone becomes hard to manage</span></span>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Solution</th><th>Best for</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Context API</td><td>App-wide, relatively stable values (theme, auth user, locale)</td><td>Can cause broad re-renders if not split carefully; not ideal for high-frequency updates</td></tr>
+        <tr><td>Component composition</td><td>Layout-style components that just arrange other components</td><td>Requires restructuring how components are composed; not a fit for every case</td></tr>
+        <tr><td>State management library</td><td>Large apps with complex, frequently-updated shared state</td><td>External dependency, added learning curve/boilerplate</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Mutating props directly is a bug, not just bad style</strong> — `props.value = "x"` inside a child does NOT propagate back to the parent's state and can cause confusing, inconsistent rendering. Props must be treated as read-only.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Controlled" vs "uncontrolled" components hinges on this exact distinction</strong> — a controlled input's value comes from STATE (owned by a parent, passed as a prop) with changes reported via a callback; an uncontrolled input manages its own value internally via the DOM, only read via a ref when needed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Lifting state up too far hurts performance</strong> — putting state in a very high-level ancestor when only two nearby siblings need it forces a much larger part of the tree to re-render on every update than necessary.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Context is not a full replacement for well-structured props</strong> — overusing Context for values only needed by ONE or TWO levels of nesting can make component dependencies less explicit and harder to trace than simply passing a prop directly.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Every consumer of a Context re-renders when its value changes</strong> — even if the consuming component only cares about ONE field of a larger context object. Splitting a large context into several smaller, more focused ones can prevent unnecessary re-renders.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Prop drilling isn't ALWAYS bad</strong> — for shallow trees (2-3 levels) it's often simpler and more explicit than introducing Context or a state library. Reach for a fix only once drilling actually becomes painful (many levels, or the same props threading through many different branches).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Passing a new inline function/object as a prop on every render can cause unnecessary re-renders</strong> of memoized children (`React.memo`), since a new reference is created each time even if the logical content is the same — relevant when discussing performance alongside prop passing.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Single source of truth" doesn't mean only ONE state variable in the whole app</strong> — it means for any GIVEN piece of data, there should be exactly one component that owns/controls it, with everyone else reading a derived/passed-down copy, rather than multiple components independently tracking their own out-of-sync copies of the same logical value.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Derived state duplicated into a separate useState is a common anti-pattern</strong> — if a value can be COMPUTED from existing props/state, just compute it during render rather than syncing it into its own state variable with a useEffect, which risks it becoming stale/out of sync.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Callback props passed down for "lifting state up" must be stable in identity when performance matters</strong> — wrap them in `useCallback` if they're passed to memoized children, to avoid defeating the memoization.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Why / What / When / How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Interviewers often frame questions around these 4 angles. Practice answering each type for this topic — it shows depth beyond just reciting definitions.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What exactly is the difference between props and state?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Props are data passed INTO a component by its parent — immutable from the receiving component's own perspective, like function arguments. State is data a component manages INTERNALLY and can change over time via its own setter function, triggering a re-render. Both cause re-renders when they change, but only the component itself can change its own state, while props can only be changed by whichever parent is supplying them.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does React enforce unidirectional data flow instead of allowing two-way binding?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Two-way data binding (where a child can directly mutate a parent's state) makes it hard to trace WHERE a change originated from, especially as an app grows — any component anywhere could be silently modifying shared data. Unidirectional flow means data always moves down via props, and changes always move up via explicit callback functions — so at any point you can trace a value's origin by walking UP the component tree, making apps significantly easier to reason about, debug, and predict.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you lift state up vs keep it local to a single component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Keep state LOCAL when only one component (and its own descendants) needs it — e.g. whether a single dropdown is open. LIFT state up as soon as TWO OR MORE sibling components need to read or stay synchronized with the same value — e.g. a shopping cart total that both a cart icon in the header and a checkout summary need to reflect. The state should live in the closest common ancestor of everyone who needs it — no higher, no lower.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you refactor two sibling components that each keep their own separate copy of the same logical value?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Step 1:</strong> identify the closest common ancestor of both siblings.<br>
+          <strong>Step 2:</strong> move the `useState` call from wherever it currently lives up into that ancestor.<br>
+          <strong>Step 3:</strong> pass the state value down to both siblings as a prop.<br>
+          <strong>Step 4:</strong> pass a callback function (e.g. the setter, or a wrapper around it) down to whichever sibling needs to trigger updates.<br>
+          <strong>Step 5:</strong> remove the now-redundant local state from both siblings, having them read/update via the passed-down prop and callback instead.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is prop drilling, precisely?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Prop drilling is the pattern where a piece of data is passed as a prop through one or more INTERMEDIATE components that don't actually use that data themselves — they only accept it and immediately forward it further down to some descendant that does need it. The intermediate components become unwilling "pass-through" middlemen for data they have no real interest in.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is prop drilling considered a problem worth solving, rather than just "how React works"?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It creates tight, unnecessary COUPLING — every intermediate component's prop signature depends on something it doesn't actually care about, purely because of where it sits in the tree. This makes refactoring painful (renaming or restructuring the drilled prop means touching every component along the chain), makes components harder to understand in isolation (you can't tell what a component truly needs just by reading it — some props are "pass-through noise"), and makes components less reusable elsewhere, since they now carry an irrelevant dependency.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is prop drilling actually FINE, and you shouldn't reach for Context or a state library?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the tree is SHALLOW — passing a prop through just one or two intermediate levels is often more explicit and easier to trace than introducing Context, which adds its own indirection (you have to go find the Provider to understand where a value comes from). Prop drilling becomes worth fixing once you're threading the SAME prop through many (4+) levels, or through MANY different branches of a large, deeply-nested tree — that's when the coupling and maintenance cost actually starts to outweigh the simplicity of plain props.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How does the Context API solve prop drilling, mechanically?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          You create a Context object with `createContext()`, wrap the part of the tree that needs access in a `&lt;Context.Provider value={...}&gt;`, and then any descendant component — no matter how deeply nested — can call `useContext(Context)` to read that value DIRECTLY, without it being explicitly passed as a prop through every component in between. This effectively creates a "wormhole" that skips the intermediate layers, so components that don't care about the value never need to mention it in their props at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between "component composition" and Context as solutions to prop drilling?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Context lets a deeply nested component pull a value directly from a Provider higher up, bypassing intermediate components entirely — the DATA travels invisibly through the tree. Component composition instead restructures HOW components are nested: instead of passing raw data down through props, you pass already-constructed JSX elements (often via `children` or a similarly-named prop) — the component that has the data builds the deeply nested element directly, and the components "in between" just render whatever element they're handed, without ever needing to know or care what data it contains.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't a child component simply modify a prop value to communicate a change back to its parent?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Props are treated as immutable/read-only by convention AND by React's rendering model — a prop is really just a reference to a value the PARENT owns and controls via ITS OWN state. If a child directly mutated a prop, the parent's actual state (the true source of truth) would remain unchanged, and React wouldn't know to trigger a re-render, leading to an inconsistent UI. The correct pattern is for the parent to pass a CALLBACK function as a prop; the child calls that function to REQUEST a change, and the parent decides how (and whether) to update its own state in response — keeping the parent in full control of its own data.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you reach for a state management library (like Redux or Zustand) instead of just using Context?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the app has LARGE amounts of shared state accessed and updated FREQUENTLY from many unrelated parts of the component tree, and Context's "every consumer re-renders on any value change" behavior starts causing real performance problems, or when you need advanced features Context doesn't provide out of the box — like time-travel debugging, middleware for side effects, or fine-grained subscriptions to just one slice of a larger state object without over-rendering. For small-to-medium apps, or state that's mostly read-only/rarely-changing (like theme or logged-in user), plain Context is usually sufficient and simpler.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you decide, step by step, whether a given piece of data should be props, local state, lifted state, or Context?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Does this component receive the value from somewhere else, and never change it itself? → It's a PROP.<br>
+          <strong>2.</strong> Does only this ONE component (and its descendants) need this value, and does it change over time based on user interaction? → It's LOCAL STATE.<br>
+          <strong>3.</strong> Do two or more SIBLING components need to read or affect the same value? → LIFT the state to their closest common ancestor, pass down as props/callbacks.<br>
+          <strong>4.</strong> Is the value needed by MANY components scattered at DIFFERENT, deeply nested points across the tree, such that lifting would mean drilling through many uninterested layers? → Consider CONTEXT (or a state library, if updates are frequent and performance-sensitive).
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Props vs State · Unidirectional Data Flow · Lifting State Up · Prop Drilling
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

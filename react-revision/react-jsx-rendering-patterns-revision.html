@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSX, createElement &amp; Rendering Patterns — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #5cffb0;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --pink: #ff79c6;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #5cffb0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(106,176,255,0.1); color: var(--accent); border: 1px solid rgba(106,176,255,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; } /* jsx tag */
+  .ca  { color: #5cffb0; } /* jsx attribute */
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(106,176,255,0.12); color: #a8d4ff; border-color: rgba(106,176,255,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Compile visual (JSX -> createElement -> tree) ── */
+  .compile-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .compile-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .compile-cols { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+  @media (max-width: 620px) { .compile-cols { grid-template-columns: 1fr; } }
+  .compile-arrow-mid { display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 20px; }
+  .compile-col-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+
+  /* ── Tree diagram (createElement output) ── */
+  .tree-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .tree-node {
+    font-family: var(--font-mono); font-size: 11.5px;
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px;
+    padding: 6px 10px; display: inline-block; margin-bottom: 6px; color: var(--text);
+  }
+  .tree-node.type-el { border-color: rgba(106,176,255,0.35); color: var(--accent); }
+  .tree-node.type-props { border-color: rgba(92,255,176,0.35); color: var(--teal); }
+  .tree-indent-1 { margin-left: 20px; }
+  .tree-indent-2 { margin-left: 40px; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Reconciliation visual (key prop) ── */
+  .recon-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .recon-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .recon-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: nowrap; }
+  .recon-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--text3); width: 90px; flex-shrink: 0; }
+  .recon-item {
+    font-family: var(--font-mono); font-size: 11px; padding: 6px 12px; border-radius: 6px;
+    background: var(--bg3); border: 1px solid var(--border2); color: var(--text); flex-shrink: 0;
+  }
+  .recon-item.hi { border-color: rgba(255,107,107,0.4); background: rgba(255,107,107,0.08); color: #ff9a9a; }
+  .recon-item.ok { border-color: rgba(92,255,176,0.35); background: rgba(92,255,176,0.06); color: var(--teal); }
+  .recon-arrow-h { color: var(--text3); font-size: 14px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Cheat grid ── */
+  .cheat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .cheat-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.85rem 1rem; border-left: 3px solid transparent; transition: border-color 0.2s, transform 0.2s;
+  }
+  .cheat-card:hover { transform: translateY(-2px); border-left-color: var(--accent); }
+  .cheat-title { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: 6px; font-weight: 500; }
+  .cheat-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+  .cheat-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · JSX</div>
+    <h1>JSX &amp; Rendering Patterns</h1>
+    <p>How JSX compiles to React.createElement · Why "key" matters · Fragments · Conditional Rendering</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. JSX → createElement</a>
+    <a class="topic-pill" href="#s2">2. Element Tree</a>
+    <a class="topic-pill" href="#s3">3. Why "key" Matters</a>
+    <a class="topic-pill" href="#s4">4. Fragments</a>
+    <a class="topic-pill" href="#s5">5. Conditional Rendering</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — JSX compiles to React.createElement
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>JSX Compiles to React.createElement()</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>JSX is not HTML and not part of JavaScript</strong> — it's syntactic sugar. A build tool (Babel, or the TypeScript compiler) transforms every JSX expression into a plain JavaScript function call BEFORE it ever reaches the browser. React itself never sees JSX — only the function calls it compiles down to.</span>
+    </div>
+
+    <div class="compile-diagram">
+      <div class="compile-title">What you write vs what actually runs</div>
+      <div class="compile-cols">
+        <div>
+          <div class="compile-col-label">You write (JSX)</div>
+          <div class="code-block" style="margin:0">
+<span class="line">&lt;<span class="ct">h1</span> <span class="ca">className</span>=<span class="cs">"title"</span>&gt;</span>
+<span class="line">  Hello, {name}!</span>
+<span class="line">&lt;/<span class="ct">h1</span>&gt;</span>
+          </div>
+        </div>
+        <div class="compile-arrow-mid">→</div>
+        <div>
+          <div class="compile-col-label">Babel compiles to</div>
+          <div class="code-block" style="margin:0">
+<span class="line">React.<span class="cf">createElement</span>(</span>
+<span class="line">  <span class="cs">"h1"</span>,</span>
+<span class="line">  { className: <span class="cs">"title"</span> },</span>
+<span class="line">  <span class="cs">"Hello, "</span>, name, <span class="cs">"!"</span></span>
+<span class="line">)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// React.createElement's signature</span></span>
+<span class="line">React.<span class="cf">createElement</span>(</span>
+<span class="line">  type,       <span class="cm">// string ("div", "h1"...) OR a component function/class</span></span>
+<span class="line">  props,      <span class="cm">// object of attributes/props, or null if none</span></span>
+<span class="line">  ...children <span class="cm">// any number of child elements/text/expressions</span></span>
+<span class="line">);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// A component (capitalized) compiles the same way — just a different "type"</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Welcome</span>({ name }) { <span class="ck">return</span> &lt;<span class="ct">h1</span>&gt;Hello, {name}&lt;/<span class="ct">h1</span>&gt;; }</span>
+<span class="line"></span>
+<span class="line">&lt;<span class="ct">Welcome</span> <span class="ca">name</span>=<span class="cs">"Alice"</span> /&gt;</span>
+<span class="line"><span class="cm">// compiles to:</span></span>
+<span class="line">React.<span class="cf">createElement</span>(Welcome, { name: <span class="cs">"Alice"</span> })</span>
+<span class="line"><span class="cm">// Note: "Welcome" is passed as the ACTUAL FUNCTION REFERENCE, not a string —</span></span>
+<span class="line"><span class="cm">// this is EXACTLY why components must start with a capital letter: lowercase</span></span>
+<span class="line"><span class="cm">// tags compile to STRINGS ("div"), capitalized tags compile to VARIABLE lookups</span></span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'jsx-nested')">Nested elements</button>
+      <button class="tab-btn" onclick="showTab(event,'jsx-newtransform')">Modern JSX transform</button>
+    </div>
+
+    <div id="tab-jsx-nested" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// Nested JSX — each level becomes a nested createElement call</span></span>
+<span class="line">&lt;<span class="ct">div</span> <span class="ca">className</span>=<span class="cs">"card"</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">h2</span>&gt;Title&lt;/<span class="ct">h2</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">p</span>&gt;Some text&lt;/<span class="ct">p</span>&gt;</span>
+<span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// compiles to:</span></span>
+<span class="line">React.<span class="cf">createElement</span>(</span>
+<span class="line">  <span class="cs">"div"</span>,</span>
+<span class="line">  { className: <span class="cs">"card"</span> },</span>
+<span class="line">  React.<span class="cf">createElement</span>(<span class="cs">"h2"</span>, <span class="ck">null</span>, <span class="cs">"Title"</span>),</span>
+<span class="line">  React.<span class="cf">createElement</span>(<span class="cs">"p"</span>, <span class="ck">null</span>, <span class="cs">"Some text"</span>)</span>
+<span class="line">)</span>
+      </div>
+    </div>
+
+    <div id="tab-jsx-newtransform" class="tab-panel">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>Since React 17, a NEW JSX transform exists that compiles differently (importing special <ic>jsx</ic>/<ic>jsxs</ic> functions from <ic>react/jsx-runtime</ic> instead of calling <ic>React.createElement</ic> directly) — this is why modern React files no longer need <ic>import React from 'react'</ic> just to use JSX. The underlying CONCEPT (JSX → function calls → element objects) is unchanged; only the specific function names differ.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// Old transform (React ≤16, or explicitly configured)</span></span>
+<span class="line"><span class="ck">import</span> React <span class="ck">from</span> <span class="cs">"react"</span>; <span class="cm">// REQUIRED — JSX secretly needs "React" in scope</span></span>
+<span class="line">&lt;<span class="ct">div</span> /&gt; <span class="cm">// → React.createElement("div", null)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// New transform (React 17+, default in modern tooling)</span></span>
+<span class="line"><span class="cm">// No import needed — the compiler auto-injects its own import</span></span>
+<span class="line">&lt;<span class="ct">div</span> /&gt;</span>
+<span class="line"><span class="cm">// → _jsx("div", {})   (from "react/jsx-runtime", auto-imported by the compiler)</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Key interview takeaway:</strong> since JSX is just function calls under the hood, you can write plain JavaScript ANYWHERE you'd write JSX — including conditionals, loops, and variables holding elements — because it's not special template syntax, it's regular expressions that happen to return objects.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Element Tree (what createElement returns)
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>What createElement() Actually Returns</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>React.createElement()</ic> does NOT create a real DOM node — it returns a lightweight, <strong>plain JavaScript object</strong> describing what should be rendered (a "React element"). This is the foundation of the Virtual DOM.</span>
+    </div>
+
+    <div class="tree-diagram">
+      <div class="compile-title">The object React.createElement("h1", {className:"title"}, "Hi") returns (simplified)</div>
+      <div class="tree-node type-el">{</div>
+      <div class="tree-node tree-indent-1">$$typeof: Symbol(react.element),</div>
+      <div class="tree-node type-el tree-indent-1">type: "h1",</div>
+      <div class="tree-node type-props tree-indent-1">props: { className: "title", children: "Hi" },</div>
+      <div class="tree-node tree-indent-1">key: null,</div>
+      <div class="tree-node tree-indent-1">ref: null</div>
+      <div class="tree-node type-el">}</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// This is why you can store JSX in a variable, pass it around, return it conditionally —</span></span>
+<span class="line"><span class="cm">// it's just a plain object, like any other JS value</span></span>
+<span class="line"><span class="ck">const</span> element = &lt;<span class="ct">h1</span>&gt;Hello&lt;/<span class="ct">h1</span>&gt;;</span>
+<span class="line"><span class="ck">typeof</span> element; <span class="cm">// → "object"</span></span>
+<span class="line">element.type;         <span class="cm">// → "h1"</span></span>
+<span class="line">element.props.children; <span class="cm">// → "Hello"</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// React then takes this object TREE and turns it into REAL DOM nodes</span></span>
+<span class="line"><span class="cm">// (or diffs it against the previous tree, in the case of updates)</span></span>
+<span class="line">ReactDOM.createRoot(rootEl).render(element);</span>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🌳</span>
+      <span><strong>Virtual DOM in one sentence:</strong> React builds a tree of these lightweight element objects on every render, compares ("diffs") it to the tree from the previous render, and only applies the MINIMAL set of real DOM mutations needed to catch the actual DOM up to the new tree.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Why the key Prop Matters
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Why the "key" Prop Matters</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>key</ic> is a special prop that helps React's <strong>reconciliation algorithm</strong> identify which items in a list have changed, been added, or been removed — across re-renders. Without stable keys, React falls back to comparing items by POSITION (index), which can cause it to mismatch elements and their internal state.</span>
+    </div>
+
+    <div class="recon-diagram">
+      <div class="recon-title">The classic bug — inserting an item at the FRONT of a list, without stable keys</div>
+      <div class="recon-row">
+        <div class="recon-label">Before</div>
+        <div class="recon-item">index 0: 🍎 Apple</div>
+        <div class="recon-item">index 1: 🍌 Banana</div>
+        <div class="recon-item">index 2: 🍊 Orange</div>
+      </div>
+      <div class="recon-row">
+        <div class="recon-label">After (added 🍇 Grape at front)</div>
+        <div class="recon-item hi">index 0: 🍇 Grape</div>
+        <div class="recon-item hi">index 1: 🍎 Apple</div>
+        <div class="recon-item hi">index 2: 🍌 Banana</div>
+        <div class="recon-item hi">index 3: 🍊 Orange</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">Using array INDEX as key: React thinks "index 0 changed from Apple→Grape, index 1 changed from Banana→Apple..." — it mutates EVERY row's content instead of recognizing that 3 items just shifted down and 1 was inserted. Any internal state per-row (like an input's typed text) ends up attached to the WRONG item.</div>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Using array index as key</div>
+        <div class="code-block">
+<span class="line">{items.map((item, index) => (</span>
+<span class="line">  &lt;<span class="ct">Item</span> <span class="ca">key</span>={index} data={item} /&gt;</span>
+<span class="line">))}</span>
+<span class="line"><span class="cm">// Works fine for STATIC lists that</span></span>
+<span class="line"><span class="cm">// never reorder/insert/delete — but</span></span>
+<span class="line"><span class="cm">// breaks for dynamic lists</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Using a stable, unique ID as key</div>
+        <div class="code-block">
+<span class="line">{items.map((item) => (</span>
+<span class="line">  &lt;<span class="ct">Item</span> <span class="ca">key</span>={item.id} data={item} /&gt;</span>
+<span class="line">))}</span>
+<span class="line"><span class="cm">// React correctly tracks each item</span></span>
+<span class="line"><span class="cm">// by its STABLE identity, regardless</span></span>
+<span class="line"><span class="cm">// of position changes</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Concrete bug demonstration: state gets attached to the WRONG row</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">TodoList</span>({ todos }) {</span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">ul</span>&gt;</span>
+<span class="line">      {todos.map((todo, index) => (</span>
+<span class="line">        <span class="cm">// ✗ using index — if todos are reordered/filtered, each &lt;TodoItem&gt;</span></span>
+<span class="line">        <span class="cm">// keeps its OWN internal useState (e.g. "isEditing") tied to its</span></span>
+<span class="line">        <span class="cm">// POSITION, not the actual todo — editing state can jump to the</span></span>
+<span class="line">        <span class="cm">// WRONG todo after the list changes!</span></span>
+<span class="line">        &lt;<span class="ct">TodoItem</span> <span class="ca">key</span>={index} todo={todo} /&gt;</span>
+<span class="line">      ))}</span>
+<span class="line">    &lt;/<span class="ct">ul</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Fix: use todo.id (a stable identifier from your data), not the array index</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Situation</th><th>Index as key OK?</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Static list, never reorders/filters/inserts</td><td class="yes">✓ Acceptable</td><td>Index always maps to the same logical item</td></tr>
+        <tr><td>List can be reordered, filtered, or items inserted/removed</td><td class="no">✗ Avoid</td><td>Index no longer maps to a stable identity — causes state/DOM mismatches</td></tr>
+        <tr><td>List items have their own internal state (inputs, toggles)</td><td class="no">✗ Avoid</td><td>State can attach to the wrong visual row after reordering</td></tr>
+        <tr><td>Data has a natural unique ID (database id, UUID)</td><td class="yes">✓ Use the ID instead</td><td>Stable regardless of position — the correct default choice</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><ic>key</ic> is NOT accessible as a regular prop inside the component (<ic>props.key</ic> is always <ic>undefined</ic>) — it's consumed internally by React for reconciliation only. If you need the same value inside the component, pass it again under a different prop name.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Fragments
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Fragments <ic style="font-size:14px">&lt;&gt;...&lt;/&gt;</ic></h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A component must return a <strong>single root element</strong> — JSX can't return two sibling elements directly. <strong>Fragments</strong> let you group multiple children WITHOUT adding an extra wrapper <ic>&lt;div&gt;</ic> to the actual DOM output.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Invalid — two root elements</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">List</span>() {</span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">li</span>&gt;First&lt;/<span class="ct">li</span>&gt;</span>
+<span class="line">    &lt;<span class="ct">li</span>&gt;Second&lt;/<span class="ct">li</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// ✗ SyntaxError: Adjacent JSX</span></span>
+<span class="line"><span class="cm">// elements must be wrapped</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Fragment shorthand — no extra DOM node</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">List</span>() {</span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;&gt;</span>
+<span class="line">      &lt;<span class="ct">li</span>&gt;First&lt;/<span class="ct">li</span>&gt;</span>
+<span class="line">      &lt;<span class="ct">li</span>&gt;Second&lt;/<span class="ct">li</span>&gt;</span>
+<span class="line">    &lt;/&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// renders exactly: &lt;li&gt;First&lt;/li&gt;&lt;li&gt;Second&lt;/li&gt;</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Two equivalent syntaxes</span></span>
+<span class="line">&lt;&gt;                          <span class="cm">// shorthand — most common</span></span>
+<span class="line">  &lt;<span class="ct">Header</span> /&gt;</span>
+<span class="line">  &lt;<span class="ct">Body</span> /&gt;</span>
+<span class="line">&lt;/&gt;</span>
+<span class="line"></span>
+<span class="line">&lt;<span class="ct">React.Fragment</span>&gt;             <span class="cm">// explicit form — REQUIRED when you need a "key"</span></span>
+<span class="line">  &lt;<span class="ct">Header</span> /&gt;</span>
+<span class="line">  &lt;<span class="ct">Body</span> /&gt;</span>
+<span class="line">&lt;/<span class="ct">React.Fragment</span>&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fragments CAN take a "key" — but ONLY the explicit &lt;React.Fragment&gt; form</span></span>
+<span class="line"><span class="cm">// supports props; the &lt;&gt;&lt;/&gt; shorthand does NOT accept any attributes at all</span></span>
+<span class="line">{items.map(item => (</span>
+<span class="line">  &lt;<span class="ct">React.Fragment</span> <span class="ca">key</span>={item.id}&gt;</span>
+<span class="line">    &lt;<span class="ct">dt</span>&gt;{item.term}&lt;/<span class="ct">dt</span>&gt;</span>
+<span class="line">    &lt;<span class="ct">dd</span>&gt;{item.definition}&lt;/<span class="ct">dd</span>&gt;</span>
+<span class="line">  &lt;/<span class="ct">React.Fragment</span>&gt;</span>
+<span class="line">))}</span>
+<span class="line"><span class="cm">// Useful when you need multiple sibling elements per list item</span></span>
+<span class="line"><span class="cm">// (e.g. a &lt;dt&gt;/&lt;dd&gt; pair) WITHOUT an unwanted wrapping &lt;div&gt;</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why avoid unnecessary wrapper divs:</strong> extra nesting can break CSS layouts relying on direct parent-child relationships (like CSS Grid/Flexbox children, or <ic>&lt;table&gt;</ic>/<ic>&lt;tr&gt;</ic>/<ic>&lt;td&gt;</ic> structure, which is strict about valid HTML nesting). Fragments solve this by grouping elements in React's virtual tree without adding anything to the real DOM.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Conditional Rendering Patterns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Conditional Rendering Patterns</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Because JSX is just JavaScript expressions, you use REGULAR JS control flow to decide what to render — there's no special "if" template directive. Different patterns fit different situations.</span>
+    </div>
+
+    <div class="cheat-grid">
+
+      <div class="cheat-card">
+        <div class="cheat-title">&amp;&amp; short-circuit</div>
+        <div class="cheat-desc">Render something ONLY if a condition is true; render nothing otherwise.</div>
+        <div class="code-block">
+<span class="line">{isLoggedIn && (</span>
+<span class="line">  &lt;<span class="ct">WelcomeBanner</span> /&gt;</span>
+<span class="line">)}</span>
+<span class="line"><span class="cm">// if isLoggedIn is false, renders</span></span>
+<span class="line"><span class="cm">// "false" — React knows to skip</span></span>
+<span class="line"><span class="cm">// rendering booleans, so nothing</span></span>
+<span class="line"><span class="cm">// visible appears</span></span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Ternary operator</div>
+        <div class="cheat-desc">Choose between TWO different things to render.</div>
+        <div class="code-block">
+<span class="line">{isLoading</span>
+<span class="line">  ? &lt;<span class="ct">Spinner</span> /&gt;</span>
+<span class="line">  : &lt;<span class="ct">Content</span> data={data} /&gt;}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Good for exactly 2 branches;</span></span>
+<span class="line"><span class="cm">// nesting ternaries gets unreadable fast</span></span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Early return</div>
+        <div class="cheat-desc">Return a completely different tree BEFORE the main render logic.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Profile</span>({ user }) {</span>
+<span class="line">  <span class="ck">if</span> (!user) {</span>
+<span class="line">    <span class="ck">return</span> &lt;<span class="ct">LoginPrompt</span> /&gt;;</span>
+<span class="line">  }</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">UserCard</span> user={user} /&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Cleanest for "guard clause" style checks</span></span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Variable assignment</div>
+        <div class="cheat-desc">Build up JSX in a variable before the return, for complex branching.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Status</span>({ state }) {</span>
+<span class="line">  <span class="ck">let</span> content;</span>
+<span class="line">  <span class="ck">if</span> (state === <span class="cs">"loading"</span>) content = &lt;<span class="ct">Spinner</span> /&gt;;</span>
+<span class="line">  <span class="ck">else</span> <span class="ck">if</span> (state === <span class="cs">"error"</span>) content = &lt;<span class="ct">Error</span> /&gt;;</span>
+<span class="line">  <span class="ck">else</span> content = &lt;<span class="ct">Data</span> /&gt;;</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{content}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Switch / object lookup map</div>
+        <div class="cheat-desc">Cleaner than long if/else chains for MANY possible states.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> statusViews = {</span>
+<span class="line">  loading: &lt;<span class="ct">Spinner</span> /&gt;,</span>
+<span class="line">  error:   &lt;<span class="ct">ErrorMsg</span> /&gt;,</span>
+<span class="line">  success: &lt;<span class="ct">Data</span> /&gt;,</span>
+<span class="line">};</span>
+<span class="line">{statusViews[status] ?? &lt;<span class="ct">Idle</span> /&gt;}</span>
+<span class="line"><span class="cm">// scales much better than 5+ chained ternaries</span></span>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-title">Returning null</div>
+        <div class="cheat-desc">Render "nothing at all" — a valid, explicit choice.</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Banner</span>({ show }) {</span>
+<span class="line">  <span class="ck">if</span> (!show) <span class="ck">return</span> <span class="ck">null</span>;</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span> <span class="ca">className</span>=<span class="cs">"banner"</span>&gt;...&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// React renders NOTHING for null,</span></span>
+<span class="line"><span class="cm">// undefined, true, or false</span></span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The classic <ic>&&</ic> footgun:</strong> <ic>{count && &lt;Badge count={count} /&gt;}</ic> — if <ic>count</ic> is <ic>0</ic>, React renders the LITERAL number <ic>0</ic> on screen (since <ic>0</ic> is falsy but React DOES render numbers, unlike booleans). Fix: <ic>{count > 0 && ...}</ic> or <ic>{Boolean(count) && ...}</ic>.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>The {count && ...} zero-rendering bug</strong> — when `count` is `0`, React actually renders the literal `0` on screen, because `0` is a valid renderable value (unlike `false`/`null`/`undefined`, which render as nothing). Convert to an explicit boolean first: `count > 0 && ...`.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Array index as key breaks state association</strong> on reorder/insert/delete — components can end up rendering with the WRONG internal state attached, since React matches by position rather than actual item identity.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Using Math.random() or Date.now() as key</strong> generates a NEW key on every render, which defeats the entire purpose of keys — React thinks every item is brand new every time, destroying and recreating all DOM nodes (and losing any component state) unnecessarily on every re-render.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>key must be set on the OUTERMOST element returned inside a `.map()`</strong>, not on some element nested deeper inside it — React only looks at the immediate children of the array for keys.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The `<>...</>` fragment shorthand cannot accept a `key` prop</strong> (or any other prop) — if you need a fragment with a key (common inside `.map()`), you MUST use the explicit `<React.Fragment key={...}>` form instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Components must start with a capital letter</strong> — `<welcome />` is treated as an unknown HTML tag (compiles to the STRING `"welcome"`), while `<Welcome />` compiles to a variable reference to your component function. This is a compiler rule, not just a style convention.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>JSX attributes use camelCase, not the HTML attribute names</strong> — `class` becomes `className`, `for` becomes `htmlFor`, `onclick` becomes `onClick` — because these compile to JS object property names, and some (like `class`/`for`) are reserved words in JavaScript.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Returning multiple top-level elements without a Fragment or array wrapper throws a compile error</strong> — `return <div /><div />;` is invalid; you need `<>...</>`, an array `[<div key="a"/>, <div key="b"/>]`, or a single wrapping element.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Deeply nested ternaries for conditional rendering become unreadable fast</strong> — beyond 2 branches, prefer early returns, a lookup object/map, or extracting a helper function/component instead of chaining `? :` operators.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>key is stripped before props reach your component</strong> — `props.key` is always `undefined` inside the component function; if you need that same value available INSIDE the component's logic, pass it again as a separate, differently-named prop.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — click to reveal</h2>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q1: What does JSX compile to, and why does that matter for how you write React code?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          JSX compiles to <code>React.createElement(type, props, ...children)</code> calls (or the equivalent <code>jsx()</code>/<code>jsxs()</code> functions in the modern transform), which return plain JavaScript OBJECTS describing the UI — NOT real DOM nodes. This matters because it means JSX has no special runtime magic: you can use ordinary JavaScript expressions, variables, functions, and control flow (if/else, ternaries, .map(), etc.) anywhere you'd use JSX, since it's just function calls that happen to look like markup.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q2: Why must component names start with a capital letter?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because of how the JSX-to-createElement compilation works: the compiler checks whether a tag name starts with a lowercase letter (compiled to a STRING, e.g. `"div"`, treated as a built-in HTML element) or an uppercase letter (compiled to an IDENTIFIER/variable lookup, e.g. the actual `Welcome` function reference in scope, treated as a custom component). If you name a component lowercase, React would try to render it as an (unknown, invalid) HTML tag instead of calling your function.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q3: Why is using array index as a key problematic, specifically?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          React's reconciliation algorithm uses `key` to match elements between renders and determine whether to UPDATE an existing DOM node/component instance or CREATE/DESTROY one. When using array index, the key is tied purely to POSITION, not to the actual data item's identity. If the list is reordered, filtered, or has items inserted/removed anywhere except the very end, the index-to-item mapping shifts — React ends up matching the WRONG previous element to each new position, which can cause internal component state (like form input values or open/closed toggles) to appear attached to the wrong visual row after the update.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q4: What problem do Fragments solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A component can only return ONE root element from JSX (since it compiles to a single function call/object). Fragments (`<>...</>` or `<React.Fragment>`) let you group multiple sibling elements to satisfy that requirement WITHOUT introducing an extra wrapper DOM node (like an unnecessary `<div>`) into the actual rendered output. This avoids breaking CSS layouts that depend on direct parent-child relationships (Flexbox/Grid children, or strict HTML nesting rules like `<table>`/`<tr>`/`<td>`).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q5: What's the bug in `{count && <Badge count={count} />}` and how do you fix it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When `count` is `0`, the `&&` expression short-circuits and evaluates to `0` itself (since `0` is falsy) — but unlike `false`, `null`, or `undefined`, React DOES render the number `0` as visible text on the page. So instead of rendering "nothing" when the count is zero, you get a stray "0" showing up in the UI. Fix: make sure the left side of `&&` is an actual boolean, e.g. `{count > 0 && <Badge count={count} />}` or `{Boolean(count) && <Badge count={count} />}`.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q6: Can you access the "key" prop inside your component's own logic?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          No — `key` is a special prop that React strips out and uses purely for its own internal reconciliation bookkeeping; it is never passed through to `props` inside your component. `props.key` is always `undefined`. If you need the same value available inside your component's logic, you must pass it again explicitly under a different prop name, e.g. `<Item key={item.id} itemId={item.id} />`.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q7: What's the difference between conditionally rendering with && vs a ternary, and when would you choose each?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `condition && <Component />` renders the component if the condition is truthy, or renders NOTHING (well-behaved for `false`/`null`/`undefined`, but watch out for `0`) if falsy — it's for an "all or nothing" single-branch decision. A ternary `condition ? <A /> : <B />` is for choosing between TWO different things to render, always rendering ONE or the OTHER (never "nothing" unless one branch is explicitly `null`). Use `&&` for optional/conditional pieces of UI; use a ternary when there are genuinely two meaningful states to display.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text">Q8: Why can't you use the `<>...</>` fragment shorthand when rendering a list with keys?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The shorthand `<>...</>` syntax does not support ANY attributes/props at all — it's a purely minimal syntax with no way to pass `key` (or anything else) to it. When you need multiple sibling elements per list item (avoiding an unwanted wrapper `<div>`) AND need to supply a `key` for each group (required since it's the outermost element inside `.map()`), you must use the explicit, longer `<React.Fragment key={...}>...</React.Fragment>` form instead, since only that form accepts props.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · JSX · React.createElement · key prop · Fragments · Conditional Rendering
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
