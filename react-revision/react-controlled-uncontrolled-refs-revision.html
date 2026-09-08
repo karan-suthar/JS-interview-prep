@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controlled vs Uncontrolled Components &amp; Refs — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #ff79c6;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(92,255,176,0.1); color: var(--accent); border: 1px solid rgba(92,255,176,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(92,255,176,0.12); color: #7affc4; border-color: rgba(92,255,176,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 560px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 220px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(92,255,176,0.08); border: 1px solid rgba(92,255,176,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Forms &amp; Refs</div>
+    <h1>Controlled vs Uncontrolled &amp; Refs</h1>
+    <p>Controlled vs Uncontrolled Components · When to Use Refs · forwardRef · When NOT to Use Them</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Controlled Components</a>
+    <a class="topic-pill" href="#s2">2. Uncontrolled Components</a>
+    <a class="topic-pill" href="#s3">3. Side-by-Side + Decision Tree</a>
+    <a class="topic-pill" href="#s4">4. Refs — When to Use</a>
+    <a class="topic-pill" href="#s5">5. forwardRef</a>
+    <a class="topic-pill" href="#s6">6. When NOT to Use Refs</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Controlled Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Controlled Components</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A <strong>controlled component</strong> has its value driven entirely by React STATE — the input's <ic>value</ic> comes from state, and every keystroke fires an <ic>onChange</ic> that updates that state, which then re-renders the input with the new value. React is the "single source of truth."</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The controlled input loop — value flows THROUGH React on every keystroke</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="270" y="20" width="160" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="43" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">React state</text>
+        <text x="350" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">const [value, setValue]</text>
+
+        <rect x="270" y="140" width="160" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="163" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">&lt;input&gt;</text>
+        <text x="350" y="180" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">displays value prop</text>
+
+        <path d="M310 75 C 260 100, 260 120, 310 140" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue5)"/>
+        <text x="230" y="110" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">value={value}</text>
+
+        <path d="M390 140 C 440 120, 440 100, 390 75" stroke="#ff79c6" stroke-width="1.5" fill="none" stroke-dasharray="4 3" marker-end="url(#arrowPink3)"/>
+        <text x="475" y="110" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="9.5">onChange(e)</text>
+
+        <text x="350" y="30" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="0"></text>
+        <text x="350" y="235" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="0"></text>
+
+        <text x="580" y="105" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">Every keystroke round-trips</text>
+        <text x="580" y="120" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">through React state before</text>
+        <text x="580" y="135" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">the input visually updates</text>
+
+        <defs>
+          <marker id="arrowBlue5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowPink3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff79c6"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">ControlledInput</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [value, setValue] = useState(<span class="cs">""</span>); <span class="cm">// React state IS the source of truth</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">input</span></span>
+  <span class="line">      <span class="ca">value</span>={value}                          <span class="cm">// input DISPLAYS whatever state says</span></span>
+  <span class="line">      <span class="ca">onChange</span>={(e) => setValue(e.target.value)} <span class="cm">// every keystroke updates state</span></span>
+  <span class="line">    /&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// The DOM input never "owns" its own value — React re-renders it with</span></span>
+  <span class="line"><span class="cm">// whatever "value" currently is, on every single keystroke</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Benefits this unlocks — instant, synchronous access to the current value:</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchBox</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleChange</span> = (e) => {</span>
+  <span class="line">    <span class="ck">const</span> newValue = e.target.value;</span>
+  <span class="line">    setQuery(newValue.toUpperCase()); <span class="cm">// ✓ transform/validate on EVERY keystroke</span></span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">value</span>={query} <span class="ca">onChange</span>={handleChange} /&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// e.g. force-uppercase as the user types, live-validate, live-format, etc.</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Use controlled components when</strong> you need to validate/transform input as the user types, conditionally disable a submit button based on live input, sync the value with other UI elements, or enforce a specific input format in real time.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Uncontrolled Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Uncontrolled Components</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>An <strong>uncontrolled component</strong> manages its own value internally, in the DOM itself — just like a normal HTML form field. React does NOT track every keystroke; you read the current value only when you actually need it, using a <ic>ref</ic>.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Uncontrolled — the DOM owns the value; React just reaches in when needed</div>
+      <svg class="diagram-svg" viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+        <rect x="270" y="20" width="160" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="43" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">&lt;input ref={inputRef}&gt;</text>
+        <text x="350" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">DOM owns its own value internally</text>
+
+        <path d="M350 75 L350 115" stroke="#555a6e" stroke-width="1.5" fill="none" stroke-dasharray="3 3"/>
+        <text x="420" y="100" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="9">no round-trip per keystroke</text>
+
+        <rect x="270" y="115" width="160" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="137" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">inputRef.current.value</text>
+        <text x="350" y="153" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">read ONLY when needed (e.g. submit)</text>
+
+        <text x="580" y="45" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">User types freely —</text>
+        <text x="580" y="60" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">no React re-render per key</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">UncontrolledInput</span>() {</span>
+  <span class="line">  <span class="ck">const</span> inputRef = useRef(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleSubmit</span> = (e) => {</span>
+  <span class="line">    e.preventDefault();</span>
+  <span class="line">    console.log(inputRef.current.value); <span class="cm">// read the value ONLY when needed</span></span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">form</span> <span class="ca">onSubmit</span>={handleSubmit}&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">ref</span>={inputRef} <span class="ca">defaultValue</span>=<span class="cs">"initial text"</span> /&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">type</span>=<span class="cs">"submit"</span>&gt;Submit&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">form</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// No onChange handler, no state, no re-render per keystroke —</span></span>
+  <span class="line"><span class="cm">// React only reaches in to READ the value when the form is submitted</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Note: use "defaultValue"/"defaultChecked" for INITIAL value on uncontrolled</span></span>
+  <span class="line"><span class="cm">// inputs — NOT "value", which would make React think it's controlled and</span></span>
+  <span class="line"><span class="cm">// throw a warning about switching between controlled/uncontrolled</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Use uncontrolled components when</strong> you only need the value at a specific moment (like form submission), you're integrating with a non-React library that manages its own DOM state, or you want to avoid the performance cost of a re-render on every keystroke in a very large/complex form.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Side by Side + Decision Tree
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Side-by-Side Comparison &amp; Decision Tree</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Controlled</th><th>Uncontrolled</th></tr></thead>
+      <tbody>
+        <tr><td>Source of truth</td><td>React state</td><td>The DOM itself</td></tr>
+        <tr><td>Value prop</td><td><code style="font-family:var(--font-mono)">value</code> (React-managed)</td><td><code style="font-family:var(--font-mono)">defaultValue</code> (initial only)</td></tr>
+        <tr><td>Re-renders on every keystroke?</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Live validation/transformation</td><td class="yes">✓ Easy — just check in onChange</td><td class="no">✗ Harder — value not tracked live</td></tr>
+        <tr><td>Reading the value</td><td>Already in state — instantly available</td><td>Must access via a <code style="font-family:var(--font-mono)">ref</code> when needed</td></tr>
+        <tr><td>Performance on huge forms</td><td>More re-renders (usually still fine, but a factor at scale)</td><td>No extra re-renders — can be faster for many/complex fields</td></tr>
+        <tr><td>Integrating with non-React widgets</td><td>Harder — you must sync the widget's internal value with React</td><td>Easier — the widget just owns its DOM value, read via ref</td></tr>
+        <tr><td>React team's general recommendation</td><td class="yes">✓ Preferred default for most forms</td><td>Reach for it in specific cases</td></tr>
+      </tbody>
+    </table>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Quick decision tree</div>
+      <div class="decision-step">
+        <div class="decision-q">Do you need to validate/transform/react to EVERY keystroke?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Controlled</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Do you only need the value at ONE moment (e.g. on submit)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Uncontrolled is fine</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are you wrapping a non-React widget (e.g. a jQuery plugin, file input)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Uncontrolled (often required)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Unsure, or building a typical form?</div>
+        <div class="decision-yes">→</div>
+        <div class="decision-result">Default to Controlled</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Refs, When to Use Them
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Refs — What They Are &amp; When to Use Them</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useRef()</ic> creates a mutable "box" (<ic>{ current: ... }</ic>) that PERSISTS across re-renders WITHOUT causing a re-render when it changes — unlike state. Attached to a JSX element via the <ic>ref</ic> attribute, it gives you direct access to the underlying DOM node.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'ref-dom')">Direct DOM access</button>
+      <button class="tab-btn" onclick="showTab(event,'ref-mutable')">Mutable value across renders</button>
+      <button class="tab-btn" onclick="showTab(event,'ref-previous')">Tracking previous values</button>
+    </div>
+
+    <div id="tab-ref-dom" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="cm">// Focus management — can't be done declaratively via props alone</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchBox</span>() {</span>
+  <span class="line">  <span class="ck">const</span> inputRef = useRef(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    inputRef.current.focus(); <span class="cm">// imperatively focus on mount</span></span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">ref</span>={inputRef} /&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Other common imperative DOM needs refs are good for:</span></span>
+  <span class="line"><span class="cm">// - .scrollIntoView(), .play()/.pause() on video/audio elements</span></span>
+  <span class="line"><span class="cm">// - measuring an element's size/position (getBoundingClientRect)</span></span>
+  <span class="line"><span class="cm">// - integrating a non-React library that needs a real DOM node (e.g. a chart library)</span></span>
+      </div>
+    </div>
+
+    <div id="tab-ref-mutable" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="cm">// A ref for data that needs to PERSIST across renders but should NOT trigger a re-render</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">StopWatch</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [running, setRunning] = useState(<span class="ck">false</span>);</span>
+  <span class="line">  <span class="ck">const</span> intervalRef = useRef(<span class="ck">null</span>); <span class="cm">// holds the interval ID</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">start</span> = () => {</span>
+  <span class="line">    intervalRef.current = setInterval(() => console.log(<span class="cs">"tick"</span>), <span class="cn">1000</span>);</span>
+  <span class="line">    setRunning(<span class="ck">true</span>);</span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">stop</span> = () => {</span>
+  <span class="line">    clearInterval(intervalRef.current); <span class="cm">// read it back later — persisted correctly</span></span>
+  <span class="line">    setRunning(<span class="ck">false</span>);</span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="cm">// Storing the interval ID in STATE instead would cause an unnecessary</span></span>
+  <span class="line">  <span class="cm">// re-render every time it's set — a ref avoids that entirely</span></span>
+  <span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-ref-previous" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="cm">// Tracking the PREVIOUS value of a prop/state across renders</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">usePrevious</span>(value) {</span>
+  <span class="line">  <span class="ck">const</span> ref = useRef();</span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    ref.current = value; <span class="cm">// updates AFTER the render commits, so it lags by one render</span></span>
+  <span class="line">  });</span>
+  <span class="line">  <span class="ck">return</span> ref.current; <span class="cm">// during THIS render, still holds the value from last time</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Counter</span>({ count }) {</span>
+  <span class="line">  <span class="ck">const</span> prevCount = <span class="cf">usePrevious</span>(count);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">p</span>&gt;Now: {count}, before: {prevCount}&lt;/<span class="ct">p</span>&gt;;</span>
+  <span class="line">}</span>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Feature</th><th>useState</th><th>useRef</th></tr></thead>
+      <tbody>
+        <tr><td>Persists across renders</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>Changing it causes a re-render</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Update is synchronous/immediate</td><td class="no">✗ No — scheduled, async</td><td class="yes">✓ Yes — .current updates instantly</td></tr>
+        <tr><td>Typical use</td><td>Anything the UI needs to visually reflect</td><td>DOM access, or data the render logic doesn't depend on</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — forwardRef
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>forwardRef</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>By default, <ic>ref</ic> is NOT a regular prop — you can't pass a ref to a custom function component and have it "just work" the way it does on a plain DOM element like <ic>&lt;input&gt;</ic>. <ic>forwardRef</ic> is the API that lets a component RECEIVE a ref from its parent and attach it to something inside (usually a DOM node).</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Without forwardRef, a ref on a custom component does nothing</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="180" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="53" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Parent</text>
+        <text x="110" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">&lt;FancyInput ref={r} /&gt;</text>
+
+        <path d="M200 57 L260 57" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed2)" stroke-dasharray="4 3"/>
+        <text x="230" y="45" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">ref ✗ swallowed</text>
+
+        <rect x="260" y="30" width="200" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="360" y="53" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">function FancyInput(props)</text>
+        <text x="360" y="70" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">props.ref does NOT exist!</text>
+
+        <text x="360" y="120" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="11">— vs —</text>
+
+        <rect x="20" y="140" width="180" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="163" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Parent</text>
+        <text x="110" y="180" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">&lt;FancyInput ref={r} /&gt;</text>
+
+        <path d="M200 167 L260 167" stroke="#5cffb0" stroke-width="1.5" fill="none" marker-end="url(#arrowGreen5)"/>
+        <text x="230" y="155" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">ref ✓ forwarded</text>
+
+        <rect x="260" y="140" width="200" height="55" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="360" y="160" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">forwardRef((props, ref) =&gt;</text>
+        <text x="360" y="175" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">...&lt;input ref={ref} /&gt;)</text>
+
+        <defs>
+          <marker id="arrowRed2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+          <marker id="arrowGreen5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Without forwardRef — ref is ignored</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">FancyInput</span>(props) {</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">className</span>=<span class="cs">"fancy"</span> {...props} /&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> ref = useRef();</span>
+  <span class="line">&lt;<span class="ct">FancyInput</span> <span class="ca">ref</span>={ref} /&gt;;</span>
+  <span class="line">ref.current; <span class="cm">// → null! "ref" was never</span></span>
+  <span class="line"><span class="cm">// passed through — it's a special</span></span>
+  <span class="line"><span class="cm">// prop React strips out automatically</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ With forwardRef — ref reaches the DOM node</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">const</span> FancyInput = forwardRef((props, ref) => {</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">className</span>=<span class="cs">"fancy"</span> <span class="ca">ref</span>={ref} {...props} /&gt;;</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> ref = useRef();</span>
+  <span class="line">&lt;<span class="ct">FancyInput</span> <span class="ca">ref</span>={ref} /&gt;;</span>
+  <span class="line">ref.current; <span class="cm">// → the actual &lt;input&gt; DOM node! ✓</span></span>
+  <span class="line">ref.current.focus(); <span class="cm">// now works from the parent</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Newer React versions (19+) allow passing <ic>ref</ic> as a regular prop on function components directly</strong>, removing the need for <ic>forwardRef</ic> in many cases — but understanding WHY <ic>forwardRef</ic> exists (and how it works) is still core interview knowledge, since most existing codebases and older React versions still rely on it.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// useImperativeHandle — customize exactly what the forwarded ref exposes</span></span>
+  <span class="line"><span class="ck">const</span> FancyInput = forwardRef((props, ref) => {</span>
+  <span class="line">  <span class="ck">const</span> inputRef = useRef();</span>
+  <span class="line"></span>
+  <span class="line">  useImperativeHandle(ref, () => ({</span>
+  <span class="line">    <span class="cm">// only THESE methods are exposed to the parent — not the whole DOM node</span></span>
+  <span class="line">    focus: () => inputRef.current.focus(),</span>
+  <span class="line">    clear: () => { inputRef.current.value = <span class="cs">""</span>; }</span>
+  <span class="line">  }));</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">ref</span>={inputRef} {...props} /&gt;;</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Parent can now ONLY call ref.current.focus() or ref.current.clear() —</span></span>
+  <span class="line"><span class="cm">// not arbitrary DOM methods, giving the child full control over its own API</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — When NOT to Use Refs
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>When NOT to Use Refs</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>Refs are an <strong>escape hatch</strong> for imperative code, deliberately positioned OUTSIDE React's normal declarative rendering flow. Reaching for them to solve problems React's own state/props system already solves is a common anti-pattern.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Anti-pattern — ref for UI that should be state</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Toggle</span>() {</span>
+  <span class="line">  <span class="ck">const</span> isOnRef = useRef(<span class="ck">false</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () => {</span>
+  <span class="line">    isOnRef.current = !isOnRef.current;</span>
+  <span class="line">    <span class="cm">// ✗ UI never updates! Changing a ref</span></span>
+  <span class="line">    <span class="cm">// does NOT trigger a re-render — the</span></span>
+  <span class="line">    <span class="cm">// displayed text stays stuck forever</span></span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleClick}&gt;</span>
+  <span class="line">      {isOnRef.current ? <span class="cs">"ON"</span> : <span class="cs">"OFF"</span>}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Correct — this belongs in state</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Toggle</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [isOn, setIsOn] = useState(<span class="ck">false</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() => setIsOn(!isOn)}&gt;</span>
+  <span class="line">      {isOn ? <span class="cs">"ON"</span> : <span class="cs">"OFF"</span>}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// setIsOn correctly triggers a re-render,</span></span>
+  <span class="line"><span class="cm">// so the button label actually updates</span></span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Situation</th><th>Use state</th><th>Use a ref</th></tr></thead>
+      <tbody>
+        <tr><td>Value is displayed in the rendered UI</td><td class="yes">✓ Yes</td><td class="no">✗ No — ref changes are invisible to the UI</td></tr>
+        <tr><td>Value determines what JSX to render</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Value should trigger effects/derived calculations</td><td class="yes">✓ Yes</td><td class="no">✗ No — effects with refs in deps won't "see" changes</td></tr>
+        <tr><td>Directly manipulating a DOM node (focus, scroll, measuring)</td><td class="no">✗ Overkill</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>Storing a mutable value the render logic doesn't use (timer ID, previous value for comparison)</td><td class="no">✗ Wasteful re-renders</td><td class="yes">✓ Yes</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Directly mutating the DOM via a ref while ALSO letting React manage that same element</strong> can cause conflicts — e.g. manually setting <ic>inputRef.current.value = "x"</ic> on a CONTROLLED input fights against React's own re-renders, leading to inconsistent, hard-to-debug behavior. Pick one owner (React state, OR the ref/DOM) per piece of UI, not both.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Switching between controlled and uncontrolled at runtime triggers a React warning</strong> — e.g. an input that starts with `value={undefined}` (uncontrolled) and later gets a real string value (controlled) mid-lifecycle. Always initialize state to a defined value (like `""`) from the start to keep it consistently controlled.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Using both `value` and `defaultValue` on the same input is a common mistake</strong> — `value` makes it controlled (React owns it); `defaultValue` is only for the INITIAL value of an uncontrolled input. Mixing them causes confusing warnings and unpredictable behavior.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Changing a ref's `.current` value does NOT trigger a re-render</strong> — if you need the UI to visually reflect a changing value, that value MUST live in state, not a ref, no matter how tempting it is to "just mutate the ref" to avoid a re-render.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>`ref` is not a real prop — it doesn't show up in `props`</strong> inside a function component, and passing it directly to a custom component without `forwardRef` (in React &lt;19) silently does nothing; there's no error, just `ref.current` staying `null`.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Reading `ref.current` during the render phase (not inside an effect or event handler) can give you stale or null values</strong> — refs attached to DOM elements are only guaranteed to be set AFTER the render commits (i.e., inside `useEffect` or later), not during the render function's own execution.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Overusing refs to avoid "unnecessary re-renders" often backfires</strong> — if the value needs to affect what's rendered, using a ref just means the UI silently goes stale instead of updating, which is a worse bug than an extra re-render would have been.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useImperativeHandle should be used sparingly</strong> — exposing a large, ad-hoc imperative API from a component undermines React's declarative model; prefer normal props/state whenever the parent's need can be expressed declaratively instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>forwardRef adds an extra layer that can complicate TypeScript typing and testing</strong> — components wrapped in `forwardRef` sometimes need extra generic type parameters, and some testing utilities historically had friction with ref-forwarding wrapper components.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A callback ref (a function passed to `ref` instead of a ref object) runs on EVERY render if defined inline</strong> — `ref={node => doSomething(node)}` creates a NEW function each render, causing React to call it with `null` then the new node on every re-render; wrap it in `useCallback` if this matters for your use case.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>File inputs (`&lt;input type="file"&gt;`) can ONLY be uncontrolled</strong> — for security reasons, browsers do not allow JavaScript to programmatically SET a file input's value, so `value` on a file input is not supported; you must read the selected file(s) via a ref instead.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Answering from multiple angles (why does it exist, what is it exactly, when do you reach for it, how do you implement it) demonstrates depth beyond a memorized definition.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental difference between a controlled and an uncontrolled component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          In a CONTROLLED component, the form element's value is driven by React state — you pass `value` and update it via `onChange`, making React the single source of truth. In an UNCONTROLLED component, the DOM element manages its own value internally (like a plain HTML form), and React only reaches in to read the current value via a `ref` when it's actually needed, rather than tracking it on every keystroke.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does React generally recommend controlled components as the default choice?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Controlled components keep form data consistent with React's single-source-of-truth philosophy — the current value is always available in state, ready to be validated, transformed, conditionally used to enable/disable other UI, or submitted, all without needing to imperatively reach into the DOM. This fits naturally with React's declarative rendering model: the UI is always a direct reflection of state, with no separate, hidden "DOM state" that could drift out of sync with what your component logic believes to be true.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you deliberately choose an uncontrolled component over a controlled one?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you only need the value at a specific moment rather than on every keystroke (e.g. a simple form only read on submit), when integrating a third-party/non-React widget that manages its own internal DOM state and doesn't expect to be controlled externally, when working with a file input (which technically CANNOT be controlled for security reasons), or in performance-sensitive scenarios with a very large number of fields where avoiding a re-render per keystroke provides a measurable benefit.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you read a form's values on submit using an uncontrolled approach, without individual refs for every field?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Attach a single ref to the `&lt;form&gt;` element itself, then use the native `FormData` API on submit to collect every field's value at once, keyed by each input's `name` attribute:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">function</span> <span class="cf">MyForm</span>() {</span>
+  <span class="line">  <span class="ck">const</span> formRef = useRef();</span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleSubmit</span> = (e) => {</span>
+  <span class="line">    e.preventDefault();</span>
+  <span class="line">    <span class="ck">const</span> data = <span class="ck">new</span> FormData(formRef.current);</span>
+  <span class="line">    console.log(data.get(<span class="cs">"email"</span>)); <span class="cm">// reads by input "name"</span></span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">form</span> <span class="ca">ref</span>={formRef} <span class="ca">onSubmit</span>={handleSubmit}&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">name</span>=<span class="cs">"email"</span> /&gt;</span>
+  <span class="line">    &lt;/<span class="ct">form</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a ref, and how is it different from state?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A ref (`useRef()`) is a mutable object (`{ current: value }`) that PERSISTS across re-renders, just like state — but unlike state, updating a ref's `.current` value does NOT trigger a re-render, and the update takes effect immediately/synchronously rather than being scheduled. Refs are used both for holding a reference to a real DOM node (via the `ref` JSX attribute) and for storing any mutable value that the component's rendering logic doesn't directly depend on.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why doesn't updating a ref cause a re-render, and why is that actually useful?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Refs are specifically designed as an ESCAPE HATCH for values that exist outside React's normal rendering/reactivity model — things like a timer ID, a DOM node reference, or a "previous value" you're tracking purely for comparison, none of which need to visually affect the UI when they change. Skipping the re-render is useful because it avoids the performance cost of running the whole render cycle for data changes that have no bearing on what should actually be displayed on screen.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you NOT use a ref, even though it might seem like the "simpler" choice?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whenever the value needs to be REFLECTED in the rendered UI, or needs to trigger downstream effects/derived calculations — a ref update is invisible to React's rendering system, so the screen will silently go stale rather than update. If you find yourself reading `someRef.current` inside JSX to decide what to display, that's a strong signal the value should be state instead. Reaching for a ref purely to "avoid a re-render" when the value genuinely affects the UI trades a correctness bug for a performance micro-optimization that usually isn't even necessary.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What problem does forwardRef solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          By default, `ref` is a special attribute that React intercepts and does NOT pass through to a component's `props` — this works fine for built-in DOM elements like `&lt;input&gt;` (React attaches the ref to the actual DOM node automatically), but for a CUSTOM function component, there's no automatic DOM node for the ref to attach to, so the ref is simply dropped/ignored. `forwardRef` solves this by explicitly giving a component access to the ref its parent passed, as a second function argument, so the component can manually attach it to whatever internal DOM node makes sense.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why would you use useImperativeHandle together with forwardRef, instead of just forwarding the raw DOM node?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Forwarding the raw DOM node gives the parent UNRESTRICTED access to everything the DOM element can do — every native method and property, which can make the component's internal implementation details part of its public "API" by accident, and makes future refactors of the internal markup riskier (anything a parent might have relied on could break). `useImperativeHandle` lets the component define a deliberate, minimal, custom set of methods/values to expose via the ref instead — the parent only sees exactly what the component author intended (e.g. `focus()` and `clear()`), keeping the internal DOM structure free to change without breaking consumers.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it appropriate to reach for forwardRef, versus solving the problem with props/callbacks instead?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Reach for `forwardRef` when the parent genuinely needs IMPERATIVE access to something inside the child — like triggering a focus, scroll, or animation on demand, or measuring a DOM node's size — actions that don't fit naturally into a "pass data down, receive events up" declarative flow. If the interaction can instead be expressed as "the parent passes a prop that controls the child's behavior/appearance," prefer that declarative approach; reaching for a ref-based imperative API when a simple prop would do adds unnecessary complexity and moves away from React's strengths.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement a custom input component that exposes only a focus() method to its parent, hiding everything else about its internals?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="ck">const</span> CustomInput = forwardRef((props, ref) => {</span>
+  <span class="line">  <span class="ck">const</span> internalRef = useRef(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useImperativeHandle(ref, () => ({</span>
+  <span class="line">    focus: () => internalRef.current.focus()</span>
+  <span class="line">    <span class="cm">// intentionally nothing else exposed — parent can't reach</span></span>
+  <span class="line">    <span class="cm">// internalRef.current.value, .style, or any other DOM detail</span></span>
+  <span class="line">  }));</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">ref</span>={internalRef} {...props} /&gt;;</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Parent usage</span></span>
+  <span class="line"><span class="ck">const</span> inputRef = useRef();</span>
+  <span class="line">&lt;<span class="ct">CustomInput</span> <span class="ca">ref</span>={inputRef} /&gt;;</span>
+  <span class="line">inputRef.current.focus(); <span class="cm">// ✓ works</span></span>
+  <span class="line">inputRef.current.value;   <span class="cm">// → undefined — NOT exposed, by design</span></span>
+          </div>
+          This pattern gives the child component full control over its public "imperative API," decoupled from its actual internal DOM structure.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is directly mutating a controlled input's DOM value via a ref (alongside its normal React state) a bad idea?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A controlled input's displayed value is meant to be entirely determined by React's `value` prop, re-rendered from state on every change. If you ALSO directly set `inputRef.current.value = "something"` imperatively, you're bypassing React's rendering pipeline — the actual DOM will temporarily show your imperatively-set value, but the next time React re-renders (for any reason), it will forcibly reset the DOM back to whatever its `value` prop/state says, potentially overwriting your manual change unexpectedly. This creates a genuine "who owns this value" conflict between React's declarative model and your imperative code, leading to inconsistent, hard-to-debug behavior. Pick ONE owner — either fully controlled via state, or fully uncontrolled via the DOM/ref — not both simultaneously for the same element.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Controlled vs Uncontrolled Components · Refs · forwardRef · useImperativeHandle
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

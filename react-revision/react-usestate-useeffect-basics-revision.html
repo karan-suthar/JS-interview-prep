@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>useState &amp; useEffect Basics — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ff79c6;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(106,176,255,0.1); color: var(--accent); border: 1px solid rgba(106,176,255,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(106,176,255,0.12); color: #a8d4ff; border-color: rgba(106,176,255,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 560px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Timeline / trace table ── */
+  .trace-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 10px 0; font-family: var(--font-mono); }
+  .trace-table th {
+    text-align: left; font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text3); padding: 6px 10px; border-bottom: 1px solid var(--border2);
+  }
+  .trace-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .trace-table tr:last-child td { border-bottom: none; }
+  .trace-step { color: var(--purple); }
+  .trace-output { color: var(--teal); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Hooks Basics</div>
+    <h1>useState &amp; useEffect Basics</h1>
+    <p>Async State Updates · Batching Behavior · Cleanup Functions — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. useState Basics</a>
+    <a class="topic-pill" href="#s2">2. State Updates Are Async</a>
+    <a class="topic-pill" href="#s3">3. Batching Behavior</a>
+    <a class="topic-pill" href="#s4">4. useEffect Basics</a>
+    <a class="topic-pill" href="#s5">5. Cleanup Functions</a>
+    <a class="topic-pill" href="#s6">6. Dependency Array</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — useState Basics
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>useState() Basics</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useState</ic> gives a function component a piece of state that PERSISTS across re-renders, plus a function to update it. Calling the updater schedules a re-render with the new value — it does not mutate anything in place.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>); <span class="cm">// [currentValue, updaterFunction]</span></span>
+<span class="line">  <span class="cm">// "0" is the INITIAL value — only used on the very first render</span></span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() => setCount(count + <span class="cn">1</span>)}&gt;</span>
+<span class="line">      Count: {count}</span>
+<span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Lazy initial state — the function only runs ONCE, on mount</span></span>
+<span class="line"><span class="cm">// (useful when computing the initial value is expensive)</span></span>
+<span class="line"><span class="ck">const</span> [data, setData] = useState(() => <span class="cf">expensiveComputation</span>());</span>
+<span class="line"><span class="cm">// If you instead wrote useState(expensiveComputation()), it would run on EVERY render!</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Concept</th><th>Explanation</th></tr></thead>
+      <tbody>
+        <tr><td>What it returns</td><td>An array: [currentValue, setterFunction] — destructured by convention</td></tr>
+        <tr><td>Initial value</td><td>Only used on the FIRST render; ignored on every subsequent re-render</td></tr>
+        <tr><td>Calling the setter</td><td>Schedules a re-render with the new value — does NOT update immediately/synchronously</td></tr>
+        <tr><td>Persists across renders?</td><td>Yes — React keeps it tied to that specific component instance, not reset each render</td></tr>
+        <tr><td>Replaces or merges?</td><td>REPLACES entirely (unlike class `this.setState`, which shallow-merges objects)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>useState REPLACES state, it does not merge it</strong> (a common trip-up for people coming from class components' <ic>this.setState</ic>). <ic>setUser({ name: "Bob" })</ic> completely REPLACES the previous user object — any other fields like <ic>age</ic> are LOST unless you spread them in manually: <ic>setUser(prev => ({ ...prev, name: "Bob" }))</ic>.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — State Updates Are Asynchronous
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>State Updates Are Asynchronous</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>Calling a state setter does NOT update the variable immediately — the CURRENT render's <ic>count</ic> variable stays exactly what it was for the rest of that render's code. React schedules the update and applies it on the NEXT render.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Why logging right after setCount() shows the OLD value</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="180" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="53" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Render #1</text>
+        <text x="110" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">count = 0 (const, fixed)</text>
+
+        <path d="M200 57 L250 57" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray)"/>
+
+        <rect x="250" y="30" width="200" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="350" y="50" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">setCount(1); console.log(count)</text>
+        <text x="350" y="68" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">logs "0" — still the OLD closure value!</text>
+
+        <path d="M450 57 L500 57" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray)"/>
+
+        <rect x="500" y="30" width="180" height="55" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="590" y="50" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">React schedules</text>
+        <text x="590" y="68" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">a re-render</text>
+
+        <path d="M590 85 L590 130" stroke="#5cffb0" stroke-width="1.5" fill="none" marker-end="url(#arrowGreen4)"/>
+
+        <rect x="490" y="130" width="200" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="590" y="153" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Render #2 (new call)</text>
+        <text x="590" y="170" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">count = 1 (fresh const)</text>
+
+        <text x="350" y="200" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">"count" is a CONST for the whole render — it never changes mid-render. Only a NEW function call (next render) sees the updated value.</text>
+
+        <defs>
+          <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+          <marker id="arrowGreen4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () => {</span>
+<span class="line">    setCount(count + <span class="cn">1</span>);</span>
+<span class="line">    console.log(count); <span class="cm">// → 0  (NOT 1! "count" is still the OLD value in this closure)</span></span>
+<span class="line">  };</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// ── Even calling setCount 3 times in a row doesn't "stack" 3 renders ──</span></span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleTripleClick</span> = () => {</span>
+<span class="line">    setCount(count + <span class="cn">1</span>); <span class="cm">// count is 0 → schedules "become 1"</span></span>
+<span class="line">    setCount(count + <span class="cn">1</span>); <span class="cm">// count is STILL 0 in this closure → schedules "become 1" AGAIN</span></span>
+<span class="line">    setCount(count + <span class="cn">1</span>); <span class="cm">// same thing — schedules "become 1" a third time</span></span>
+<span class="line">  };</span>
+<span class="line">  <span class="cm">// Result after handleTripleClick: count is 1, NOT 3! All three calls read</span></span>
+<span class="line">  <span class="cm">// the SAME stale "count" from this render's closure.</span></span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// FIX — use the FUNCTIONAL updater form to always get the LATEST value</span></span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleTripleClickFixed</span> = () => {</span>
+<span class="line">    setCount(prev => prev + <span class="cn">1</span>); <span class="cm">// prev is guaranteed up to date, even across queued updates</span></span>
+<span class="line">    setCount(prev => prev + <span class="cn">1</span>);</span>
+<span class="line">    setCount(prev => prev + <span class="cn">1</span>);</span>
+<span class="line">  };</span>
+<span class="line">  <span class="cm">// Result: count correctly becomes 3!</span></span>
+<span class="line">}</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Rule of thumb:</strong> whenever your new state depends on the PREVIOUS state, use the functional updater form <ic>setState(prev => ...)</ic> instead of referencing the outer variable directly. It's guaranteed to receive the most up-to-date value, even when multiple updates are queued back-to-back.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Batching Behavior
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Batching Behavior</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Batching</strong> means React groups multiple state updates that happen within the same event/tick into a SINGLE re-render, instead of re-rendering once per individual <ic>setState</ic> call. This avoids wasted, intermediate renders.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">3 state updates in one click handler → still just 1 re-render</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="70" width="140" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="90" y="99" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">setCount(c+1)</text>
+
+        <rect x="180" y="70" width="140" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="250" y="99" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">setFlag(true)</text>
+
+        <rect x="340" y="70" width="140" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="410" y="99" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">setName("x")</text>
+
+        <path d="M480 95 L540 95" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple4)"/>
+        <text x="510" y="83" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">batched</text>
+
+        <rect x="540" y="65" width="140" height="60" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="610" y="90" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">1 RE-RENDER</text>
+        <text x="610" y="107" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">all 3 applied together</text>
+
+        <text x="350" y="30" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10.5">Inside ONE event handler (click, input, etc.)</text>
+        <text x="350" y="160" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">React 18+: this batching happens EVERYWHERE — event handlers, promises,</text>
+        <text x="350" y="175" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">setTimeout, native event handlers. Pre-React 18: only inside React event handlers.</text>
+
+        <defs>
+          <marker id="arrowPurple4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#bd93f9"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Form</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+<span class="line">  <span class="ck">const</span> [flag, setFlag] = useState(<span class="ck">false</span>);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () => {</span>
+<span class="line">    setCount(c => c + <span class="cn">1</span>);</span>
+<span class="line">    setFlag(f => !f);</span>
+<span class="line">    <span class="cm">// Even though 2 setters were called, React only re-renders ONCE</span></span>
+<span class="line">    <span class="cm">// after handleClick finishes — both updates are applied TOGETHER</span></span>
+<span class="line">  };</span>
+<span class="line"></span>
+<span class="line">  console.log(<span class="cs">"rendered"</span>); <span class="cm">// logs ONCE per click, not twice</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleClick}&gt;Click&lt;/<span class="ct">button</span>&gt;;</span>
+<span class="line">}</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'batch-react17')">React ≤17 — limited batching</button>
+      <button class="tab-btn" onclick="showTab(event,'batch-react18')">React 18+ — automatic batching</button>
+    </div>
+
+    <div id="tab-batch-react17" class="tab-panel active">
+      <div class="callout callout-amber">
+        <span class="callout-icon">⚠</span>
+        <span>Before React 18, batching ONLY happened inside React-managed event handlers (onClick, onChange, etc.) — updates inside <ic>setTimeout</ic>, native DOM event listeners, or Promise callbacks were NOT batched, causing a separate re-render per setState call.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// React 17 and earlier</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">handleClick</span>() {</span>
+<span class="line">  setCount(c => c + <span class="cn">1</span>);</span>
+<span class="line">  setFlag(f => !f);</span>
+<span class="line">  <span class="cm">// ✓ batched — 1 re-render (this IS inside a React event handler)</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line">setTimeout(() => {</span>
+<span class="line">  setCount(c => c + <span class="cn">1</span>); <span class="cm">// ✗ NOT batched — causes its own re-render</span></span>
+<span class="line">  setFlag(f => !f);       <span class="cm">// ✗ ALSO causes a separate re-render</span></span>
+<span class="line">}, <span class="cn">1000</span>);</span>
+<span class="line"><span class="cm">// 2 re-renders total inside the setTimeout, since it's OUTSIDE React's</span></span>
+<span class="line"><span class="cm">// synthetic event system</span></span>
+      </div>
+    </div>
+
+    <div id="tab-batch-react18" class="tab-panel">
+      <div class="callout callout-green">
+        <span class="callout-icon">✓</span>
+        <span>React 18's <ic>createRoot</ic> API introduced <strong>automatic batching</strong> — ALL state updates are now batched by default, regardless of where they happen (timeouts, promises, native event listeners, etc.), not just inside React's own event handlers.</span>
+      </div>
+      <div class="code-block">
+<span class="line"><span class="cm">// React 18+ (using createRoot)</span></span>
+<span class="line">setTimeout(() => {</span>
+<span class="line">  setCount(c => c + <span class="cn">1</span>); <span class="cm">// ✓ NOW also batched!</span></span>
+<span class="line">  setFlag(f => !f);       <span class="cm">// ✓ same re-render as the line above</span></span>
+<span class="line">}, <span class="cn">1000</span>);</span>
+<span class="line"><span class="cm">// Only 1 re-render total — consistent batching everywhere</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Escape hatch — force a synchronous, IMMEDIATE update if truly needed</span></span>
+<span class="line"><span class="ck">import</span> { flushSync } <span class="ck">from</span> <span class="cs">"react-dom"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="cf">flushSync</span>(() => {</span>
+<span class="line">  setCount(c => c + <span class="cn">1</span>); <span class="cm">// this update is applied IMMEDIATELY, synchronously</span></span>
+<span class="line">});</span>
+<span class="line">setFlag(f => !f); <span class="cm">// this one is separately batched/applied afterward</span></span>
+<span class="line"><span class="cm">// Rarely needed — mainly for reading updated DOM measurements right after a state change</span></span>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Context</th><th>React 17 and earlier</th><th>React 18+</th></tr></thead>
+      <tbody>
+        <tr><td>Inside onClick/onChange (React events)</td><td class="yes">✓ Batched</td><td class="yes">✓ Batched</td></tr>
+        <tr><td>Inside setTimeout/setInterval</td><td class="no">✗ NOT batched</td><td class="yes">✓ Batched</td></tr>
+        <tr><td>Inside native addEventListener</td><td class="no">✗ NOT batched</td><td class="yes">✓ Batched</td></tr>
+        <tr><td>Inside Promise .then()/async-await</td><td class="no">✗ NOT batched</td><td class="yes">✓ Batched</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — useEffect Basics
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>useEffect() Basics</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useEffect</ic> lets you run <strong>side effects</strong> — code that reaches OUTSIDE the pure render process, like data fetching, subscriptions, timers, or manual DOM manipulation — AFTER React has committed changes to the screen.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="cm">// side-effect code runs AFTER the render is committed to the screen</span></span>
+<span class="line">  console.log(<span class="cs">"Component rendered or a dependency changed"</span>);</span>
+<span class="line">}, [dep1, dep2]); <span class="cm">// dependency array — controls WHEN this effect re-runs</span></span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'eff-mount')">No dependency array</button>
+      <button class="tab-btn" onclick="showTab(event,'eff-empty')">Empty array []</button>
+      <button class="tab-btn" onclick="showTab(event,'eff-deps')">With dependencies</button>
+    </div>
+
+    <div id="tab-eff-mount" class="tab-panel active">
+      <div class="code-block">
+<span class="line"><span class="cm">// No dependency array at all — runs after EVERY single render</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  console.log(<span class="cs">"Runs after every render, no exceptions"</span>);</span>
+<span class="line">}); <span class="cm">// ⚠️ rarely what you actually want — usually a mistake</span></span>
+      </div>
+    </div>
+
+    <div id="tab-eff-empty" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// Empty array [] — runs ONCE, only after the initial mount</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  console.log(<span class="cs">"Runs ONCE when the component first mounts"</span>);</span>
+<span class="line">  <span class="cm">// Classic use: initial data fetch, subscribing to an external event source</span></span>
+<span class="line">}, []); <span class="cm">// empty array = "no dependencies to watch" = never re-runs</span></span>
+      </div>
+    </div>
+
+    <div id="tab-eff-deps" class="tab-panel">
+      <div class="code-block">
+<span class="line"><span class="cm">// With dependencies — runs on mount, then again whenever any listed value changes</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  console.log(<span class="cs">`Fetching data for user ${userId}`</span>);</span>
+<span class="line">  <span class="cf">fetchUser</span>(userId);</span>
+<span class="line">}, [userId]); <span class="cm">// re-runs ONLY when "userId" changes between renders</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Multiple dependencies — re-runs if ANY of them change</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  console.log(<span class="cs">"page or filter changed"</span>);</span>
+<span class="line">}, [page, filter]);</span>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Dependency array form</th><th>When the effect runs</th></tr></thead>
+      <tbody>
+        <tr><td>(none at all)</td><td>After EVERY render — mount and every update</td></tr>
+        <tr><td>[]</td><td>Only ONCE, right after the initial mount</td></tr>
+        <tr><td>[a, b]</td><td>After mount, then again whenever "a" or "b" changes value between renders</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Cleanup Functions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Cleanup Functions</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>If the function passed to <ic>useEffect</ic> RETURNS another function, React treats that as a <strong>cleanup function</strong> — it runs right BEFORE the effect runs again (on dependency change) and when the component UNMOUNTS. Essential for preventing memory leaks.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Cleanup timing across the component lifecycle</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="150" height="55" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="95" y="53" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Mount</text>
+        <text x="95" y="70" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">effect runs</text>
+
+        <path d="M170 57 L230 57" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray2)"/>
+
+        <rect x="230" y="30" width="150" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="305" y="53" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Dep changes</text>
+        <text x="305" y="70" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">CLEANUP runs first</text>
+
+        <path d="M380 57 L440 57" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray2)"/>
+
+        <rect x="440" y="30" width="150" height="55" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="515" y="53" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Effect re-runs</text>
+        <text x="515" y="70" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">fresh setup</text>
+
+        <path d="M515 85 L515 130" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray2)"/>
+
+        <rect x="440" y="130" width="150" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="515" y="153" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Unmount</text>
+        <text x="515" y="170" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">CLEANUP runs one final time</text>
+
+        <text x="350" y="210" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Cleanup ALWAYS runs before the next setup — this prevents duplicate subscriptions/timers/listeners piling up.</text>
+
+        <defs>
+          <marker id="arrowGray2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Classic cleanup — remove an event listener / clear a timer / cancel a subscription</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="ck">const</span> <span class="cf">handleResize</span> = () => console.log(window.innerWidth);</span>
+<span class="line">  window.addEventListener(<span class="cs">"resize"</span>, handleResize);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> () => {</span>
+<span class="line">    window.removeEventListener(<span class="cs">"resize"</span>, handleResize); <span class="cm">// cleanup!</span></span>
+<span class="line">  };</span>
+<span class="line">}, []);</span>
+<span class="line"><span class="cm">// Without this cleanup, a NEW listener would stack up every time this effect</span></span>
+<span class="line"><span class="cm">// re-ran (if it had dependencies), and the OLD listener would leak forever</span></span>
+<span class="line"><span class="cm">// after unmount — a classic memory leak.</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Timer cleanup</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="ck">const</span> id = setInterval(() => console.log(<span class="cs">"tick"</span>), <span class="cn">1000</span>);</span>
+<span class="line">  <span class="ck">return</span> () => clearInterval(id); <span class="cm">// stop the interval on unmount/dep-change</span></span>
+<span class="line">}, []);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Preventing "setState after unmount" with AbortController</span></span>
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line">  fetch(`/users/${userId}`, { signal: controller.signal })</span>
+<span class="line">    .then(res => res.json())</span>
+<span class="line">    .then(data => setUser(data)); <span class="cm">// only runs if fetch wasn't aborted</span></span>
+<span class="line">  <span class="ck">return</span> () => controller.abort(); <span class="cm">// cancel if userId changes or component unmounts</span></span>
+<span class="line">}, [userId]);</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Cleanup runs BEFORE the NEXT effect, not just on unmount</strong> — a common misconception. If the dependency array changes, React runs the cleanup from the PREVIOUS effect execution first, THEN runs the new effect. This ensures each "cycle" of setup/teardown is properly paired, preventing duplicate subscriptions.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Dependency Array Deep Dive
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Dependency Array — Common Traps</h2>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Missing dependency — stale closure bug</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+<span class="line"></span>
+<span class="line">  useEffect(() => {</span>
+<span class="line">    <span class="ck">const</span> id = setInterval(() => {</span>
+<span class="line">      console.log(count); <span class="cm">// always logs 0!</span></span>
+<span class="line">    }, <span class="cn">1000</span>);</span>
+<span class="line">    <span class="ck">return</span> () => clearInterval(id);</span>
+<span class="line">  }, []); <span class="cm">// ✗ "count" used inside but missing from deps</span></span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// The effect closure captured "count" as 0</span></span>
+<span class="line"><span class="cm">// FOREVER, since it only ran once on mount</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Correct dependency, or functional update</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+<span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+<span class="line"></span>
+<span class="line">  useEffect(() => {</span>
+<span class="line">    <span class="ck">const</span> id = setInterval(() => {</span>
+<span class="line">      setCount(prev => prev + <span class="cn">1</span>); <span class="cm">// functional form</span></span>
+<span class="line">    }, <span class="cn">1000</span>); <span class="cm">// avoids needing "count" as a dep!</span></span>
+<span class="line">    <span class="ck">return</span> () => clearInterval(id);</span>
+<span class="line">  }, []); <span class="cm">// ✓ correctly empty — no external values used</span></span>
+<span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Object/array/function dependencies are compared by REFERENCE, not content!</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">Parent</span>() {</span>
+<span class="line">  <span class="ck">const</span> config = { limit: <span class="cn">10</span> }; <span class="cm">// ✗ NEW object created on EVERY render</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Child</span> <span class="ca">config</span>={config} /&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="ck">function</span> <span class="cf">Child</span>({ config }) {</span>
+<span class="line">  useEffect(() => {</span>
+<span class="line">    console.log(<span class="cs">"config changed"</span>);</span>
+<span class="line">  }, [config]); <span class="cm">// ✗ fires on EVERY Parent re-render — "config" is a NEW reference each time,</span></span>
+<span class="line">}                <span class="cm">// even though { limit: 10 } "looks" identical</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Fix: memoize the object/function so its REFERENCE stays stable</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">ParentFixed</span>() {</span>
+<span class="line">  <span class="ck">const</span> config = useMemo(() => ({ limit: <span class="cn">10</span> }), []); <span class="cm">// stable reference</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">Child</span> <span class="ca">config</span>={config} /&gt;;</span>
+<span class="line">}</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Golden rule for dependency arrays:</strong> include every value from the component's scope that the effect actually USES (props, state, and any function/variable derived from them). React's ESLint plugin (<ic>eslint-plugin-react-hooks</ic>) can auto-detect missing dependencies — treat its warnings seriously rather than silencing them.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Reading state right after calling its setter shows the OLD value</strong> — the setter schedules an update for the NEXT render; the variable in the current closure never changes mid-render.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Multiple setState calls referencing the outer variable "collapse" into one update</strong> — `setCount(count+1)` called 3 times in a row all read the SAME stale `count`, resulting in only +1 total, not +3. Use the functional updater form `setCount(prev => prev + 1)` to fix this.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useState does NOT shallow-merge objects</strong> like class components' `this.setState` did — `setUser({ name: "Bob" })` completely replaces the previous state value, dropping any other fields unless you spread them back in manually.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting the dependency array runs the effect after EVERY render</strong> — easy to do by accident, and can cause infinite loops if the effect itself triggers a state update that causes a re-render.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Missing a dependency creates a "stale closure"</strong> — the effect keeps using the value from whenever it was LAST created, not the current one, since closures capture variables at creation time.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Object/array/function dependencies are compared by reference</strong>, not deep equality — a new inline object/array/function literal created on every render will make the effect re-run every time, even if its contents look identical.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting cleanup causes duplicate subscriptions or memory leaks</strong> — every effect that sets up a subscription, timer, or listener needs a matching cleanup function, or old ones pile up invisibly across re-renders and after unmount.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Can't perform a state update on an unmounted component" warnings</strong> happen when an async operation (fetch, timer) resolves AFTER the component has already unmounted and tries to call a state setter — fix with an AbortController or an `isMounted`/ignore flag checked before calling the setter.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useEffect runs AFTER the browser paints</strong> (asynchronously, non-blocking) — if you need to measure/mutate the DOM synchronously BEFORE the user sees a flicker, use `useLayoutEffect` instead, which runs synchronously before paint.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Automatic batching (React 18+) can surprise code that assumed synchronous updates</strong> outside event handlers (e.g. old timeout/promise-based code written before React 18) — if truly synchronous behavior is required, wrap the update in `flushSync` from `react-dom`.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Practice framing your answers around WHY something behaves the way it does, WHAT the mechanism actually is, WHEN to apply a given pattern, and HOW to implement or fix it — this is how senior interviewers probe for depth.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does it mean that state updates are "asynchronous" in React?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Calling a state setter (like `setCount(5)`) doesn't immediately change the variable in the CURRENT render's scope — `count` remains whatever it was for the rest of that render's execution, since it's a `const` captured in that render's closure. Instead, React SCHEDULES a re-render; the NEW value only becomes visible once that next render function call actually runs and creates a fresh `count` binding. This is why logging state immediately after calling its setter shows the OLD value.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why did React's team design state updates to be async instead of applying them immediately?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Making updates asynchronous is what enables BATCHING — grouping multiple state updates that happen close together into a single re-render pass, instead of re-rendering (and re-running potentially expensive render logic, effects, and DOM updates) once per individual `setState` call. It also gives React's scheduler the flexibility to prioritize urgent updates (like user input) over less urgent ones, and to prepare/discard in-progress renders efficiently — capabilities that would be impossible if every state change forced an immediate, synchronous re-render.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you use the functional updater form (setCount(prev => prev + 1)) instead of setCount(count + 1)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whenever the NEW state value depends on the PREVIOUS state value — especially when you're calling the setter multiple times in a row within the same event handler, or from inside a closure that might be "stale" by the time it runs (like a `setInterval` or `setTimeout` callback, or an async function's continuation). The functional form always receives the most up-to-date pending state as its argument, avoiding bugs where multiple updates all read the same outdated value from the render's closure.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a click handler that calls setCount(count + 1) three times but only increments the count by 1?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Replace each call with the functional updater form:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="cm">// Before — only +1 total (all 3 read the same stale "count")</span></span>
+<span class="line">setCount(count + <span class="cn">1</span>);</span>
+<span class="line">setCount(count + <span class="cn">1</span>);</span>
+<span class="line">setCount(count + <span class="cn">1</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// After — correctly +3 total</span></span>
+<span class="line">setCount(prev => prev + <span class="cn">1</span>);</span>
+<span class="line">setCount(prev => prev + <span class="cn">1</span>);</span>
+<span class="line">setCount(prev => prev + <span class="cn">1</span>);</span>
+          </div>
+          Each functional update is applied in sequence against the LATEST pending value, rather than all three reading the same value captured when the handler started.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is "batching" in the context of React state updates?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Batching is React's optimization of grouping multiple state updates that occur within the same synchronous block of code (like one event handler) into a SINGLE re-render, rather than re-rendering once for every individual `setState` call. If you call three different setters inside one click handler, React waits until the handler finishes, then applies all three updates together and re-renders exactly once — rather than rendering three separate times with intermediate, wasted states in between.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why did automatic batching in React 18 matter as a change, compared to React 17?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Before React 18, batching only happened INSIDE React's own synthetic event handlers (onClick, onChange, etc.) — updates triggered from `setTimeout`, native `addEventListener` callbacks, or Promise `.then()` continuations were NOT batched, causing a separate, wasteful re-render for each `setState` call in those contexts. This inconsistency made performance unpredictable depending on WHERE in your code a state update originated. React 18's automatic batching makes the behavior consistent and more performant everywhere by default, reducing unnecessary re-renders across the entire app without requiring any code changes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you need to opt OUT of automatic batching using flushSync?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Rarely — but one legitimate case is when you need to read an updated DOM measurement (like an element's height or scroll position) IMMEDIATELY after a state change, before the browser paints, and the default batched/async update timing would be too late for your synchronous DOM-reading code. `flushSync(() => setState(...))` forces React to apply that specific update and its resulting DOM changes synchronously and immediately, before continuing — this should be reached for sparingly since it defeats the performance benefits of batching for that call.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a cleanup function in useEffect, and what problem does it solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A cleanup function is whatever function you OPTIONALLY return from the callback passed to `useEffect`. React automatically calls it right before running the effect again (when a dependency changes) and one final time when the component unmounts. It solves the problem of properly "undoing" whatever the effect SET UP — like removing an event listener, clearing a timer/interval, unsubscribing from a data source, or cancelling an in-flight network request — preventing memory leaks and duplicate side effects that would otherwise accumulate silently across re-renders.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does React run the cleanup function BEFORE re-running the effect, rather than only on unmount?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If the effect sets up something tied to a specific dependency value (e.g. subscribing to updates for a specific `userId`), and that dependency changes, the OLD subscription/listener/timer from the previous value is no longer valid or wanted — it needs to be torn down before a NEW one is set up for the new value. If cleanup only ran on unmount, every dependency change would ADD another subscription/listener on top of the previous ones instead of replacing them, quickly causing duplicated side effects (e.g. multiple simultaneous data-fetching subscriptions) and memory leaks.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it actually necessary to include a cleanup function, versus when can you safely omit it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          You NEED cleanup whenever the effect creates something that persists beyond the effect's own execution and could "leak" or duplicate if left unattended — event listeners, `setInterval`/`setTimeout` timers, WebSocket connections, external library subscriptions, or in-flight async requests that might resolve after the component no longer cares about the result. You can safely OMIT cleanup for effects that only do a one-time, self-contained action with no lingering resource — like a single synchronous DOM read, a one-off `console.log`, or firing an analytics event that doesn't need to be "undone."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you prevent a "setState on unmounted component" warning caused by a fetch call inside useEffect?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use an `AbortController` (or a simple boolean flag) that the cleanup function activates, and check it before calling the state setter:
+          <div class="code-block" style="margin-top:8px">
+<span class="line">useEffect(() => {</span>
+<span class="line">  <span class="ck">const</span> controller = <span class="ck">new</span> AbortController();</span>
+<span class="line"></span>
+<span class="line">  fetch(`/api/user/${userId}`, { signal: controller.signal })</span>
+<span class="line">    .then(res => res.json())</span>
+<span class="line">    .then(data => setUser(data)) <span class="cm">// only reached if not aborted</span></span>
+<span class="line">    .catch(err => {</span>
+<span class="line">      <span class="ck">if</span> (err.name !== <span class="cs">"AbortError"</span>) console.error(err);</span>
+<span class="line">    });</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> () => controller.abort(); <span class="cm">// runs on unmount or userId change</span></span>
+<span class="line">}, [userId]);</span>
+          </div>
+          When the component unmounts (or `userId` changes before the fetch completes), the cleanup function aborts the in-flight request, so its `.then()` callback that calls `setUser` never actually fires with stale/unwanted data.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What determines when an effect re-runs, and what are the three possible forms of the dependency array?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The dependency array (2nd argument to `useEffect`) controls when React decides to re-run the effect, by comparing each value in the array to its value from the PREVIOUS render (using `Object.is` reference equality). Three forms: <strong>(1)</strong> no array at all — the effect re-runs after literally every render; <strong>(2)</strong> an empty array `[]` — the effect runs exactly once, right after the initial mount, and never again; <strong>(3)</strong> an array with values `[a, b]` — the effect runs after mount, then again any time `a` or `b` differs from its value in the previous render.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can an object or array literal in the dependency array cause an effect to run on every single render?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          React compares dependency array entries using reference equality (roughly `Object.is`), not deep/structural equality. An object or array literal (e.g. `{ limit: 10 }` or `[1,2,3]`) written directly inside the render body creates a BRAND NEW reference on every single render, even if its actual contents are identical to the previous render's. Since the reference is different, React considers the dependency "changed" and re-runs the effect — every time, regardless of whether the logical data actually changed. Fixing this requires memoizing the object/array with `useMemo` (or moving it outside the component, or depending on its primitive fields individually instead of the whole object).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose useLayoutEffect over useEffect?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you need to read layout information from the DOM (like an element's measured size or position) and SYNCHRONOUSLY make changes BEFORE the browser paints the updated screen to the user — for example, measuring a tooltip's size to reposition it before it becomes visible, to avoid a visible flicker/jump. `useEffect` runs asynchronously AFTER paint, so any DOM mutation inside it can cause a brief visual flash of the "wrong" state first. `useLayoutEffect` runs synchronously before paint, blocking the browser from showing anything until it finishes — use it sparingly, since it can hurt performance if overused for non-visual side effects.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · useState &amp; useEffect Basics · Async Updates · Batching · Cleanup Functions
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
