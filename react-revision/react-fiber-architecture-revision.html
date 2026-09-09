@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>React Fiber Architecture — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(189,147,249,0.1); color: var(--accent); border: 1px solid rgba(189,147,249,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(189,147,249,0.12); color: #d9c0ff; border-color: rgba(189,147,249,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Internals</div>
+    <h1>React Fiber Architecture</h1>
+    <p>Why React Left the Stack Reconciler · Time-Slicing · Prioritization — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Old Stack Reconciler</a>
+    <a class="topic-pill" href="#s2">2. The Blocking Problem</a>
+    <a class="topic-pill" href="#s3">3. What Is a Fiber?</a>
+    <a class="topic-pill" href="#s4">4. Two Phases: Render &amp; Commit</a>
+    <a class="topic-pill" href="#s5">5. Time-Slicing</a>
+    <a class="topic-pill" href="#s6">6. Prioritization</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Old Stack Reconciler
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Old "Stack Reconciler" (Pre-React 16)</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Before React 16, reconciliation (comparing the new Virtual DOM tree to the old one, and figuring out what changed) used the JavaScript engine's own <strong>call stack</strong> — recursively walking the element tree, function call within function call, all the way down and back up. This is why it was called the "stack reconciler."</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Recursive tree-walk — once started, it can't pause partway through</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="300" y="20" width="100" height="40" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="45" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">App</text>
+
+        <path d="M330 60 L230 100" stroke="#555a6e" stroke-width="1.5" fill="none"/>
+        <path d="M370 60 L470 100" stroke="#555a6e" stroke-width="1.5" fill="none"/>
+
+        <rect x="180" y="100" width="100" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="230" y="125" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Sidebar</text>
+
+        <rect x="420" y="100" width="100" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="470" y="125" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">MainContent</text>
+
+        <path d="M230 140 L180 180" stroke="#555a6e" stroke-width="1.5" fill="none"/>
+        <path d="M230 140 L280 180" stroke="#555a6e" stroke-width="1.5" fill="none"/>
+
+        <rect x="140" y="180" width="90" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="185" y="202" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">NavItem</text>
+
+        <rect x="240" y="180" width="90" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="285" y="202" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">NavItem</text>
+
+        <text x="560" y="130" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">Once JS starts</text>
+        <text x="560" y="145" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">recursing down this</text>
+        <text x="560" y="160" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">whole tree, it CANNOT</text>
+        <text x="560" y="175" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">stop until it's done —</text>
+        <text x="560" y="190" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">the call stack can't be</text>
+        <text x="560" y="205" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">paused and resumed</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The core limitation:</strong> a native JS function call stack is synchronous and uninterruptible by design — once <ic>renderApp()</ic> calls <ic>renderSidebar()</ic> which calls <ic>renderNavItem()</ic>, JavaScript must fully unwind that entire call chain before it can do ANYTHING else, including responding to a click, a keystroke, or letting the browser repaint the screen.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Blocking Problem
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The Real-World Problem This Caused</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Browsers are also <strong>single-threaded</strong> — JavaScript execution, layout, painting, and responding to user input all compete for the SAME thread. If reconciliation for a large component tree takes, say, 300ms, the browser is BLOCKED from doing anything else — including redrawing the screen or responding to a click — for that entire 300ms.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">A large synchronous render blocks the main thread — dropped frames, unresponsive UI</div>
+      <svg class="diagram-svg" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10.5">Main thread timeline:</text>
+
+        <rect x="20" y="40" width="500" height="40" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="270" y="65" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">ONE giant synchronous render (blocking)</text>
+
+        <rect x="530" y="40" width="60" height="40" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5" opacity="0.4"/>
+        <text x="560" y="65" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">paint</text>
+
+        <text x="270" y="105" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="10">User clicks a button HERE — click is queued but the browser</text>
+        <text x="270" y="120" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="10">can't even process it, animate, or repaint until this finishes</text>
+
+        <path d="M270 40 L270 20" stroke="#ffb86c" stroke-width="1.5" marker-end="url(#arrowClick)"/>
+        <text x="270" y="12" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">👆 click here</text>
+
+        <defs>
+          <marker id="arrowClick" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb86c"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Symptom</th><th>Why it happened</th></tr></thead>
+      <tbody>
+        <tr><td>Janky animations during a big re-render</td><td>The browser can't paint new animation frames while JS is busy recursing through the tree</td></tr>
+        <tr><td>Input lag while typing in a large form/list</td><td>Every keystroke triggers a full synchronous re-render pass that must finish before the next keystroke is handled</td></tr>
+        <tr><td>UI feels "frozen" during heavy updates</td><td>Click/scroll/hover events sit in the queue, unprocessed, until the JS call stack fully unwinds</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The 16ms budget:</strong> to maintain a smooth 60fps, the browser needs to complete a full cycle of JS + layout + paint within about 16.6ms per frame. A synchronous render that takes 100ms+ blows through many frames' worth of budget in one uninterruptible chunk — this was the exact problem Fiber was built to solve.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — What Is a Fiber?
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>What Exactly Is a "Fiber"?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A <strong>Fiber</strong> is a plain JavaScript object — one per component/element — that represents a UNIT OF WORK. Instead of relying on the native call stack, React builds its OWN in-memory linked-list-like tree of fiber nodes, which it can traverse manually, ONE NODE AT A TIME, pausing and resuming at will.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">A fiber tree — each node knows its child, sibling, and return (parent) pointers</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="300" y="20" width="100" height="40" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="45" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">App fiber</text>
+
+        <path d="M340 60 L240 100" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowChild)"/>
+        <text x="270" y="78" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8">child</text>
+
+        <rect x="190" y="100" width="100" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="240" y="125" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Sidebar fiber</text>
+
+        <path d="M290 120 L410 120" stroke="#ff79c6" stroke-width="1.5" fill="none" stroke-dasharray="3 3" marker-end="url(#arrowSibling)"/>
+        <text x="350" y="112" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="8">sibling</text>
+
+        <rect x="410" y="100" width="120" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="470" y="125" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">MainContent fiber</text>
+
+        <path d="M480 140 L480 100" stroke="#5cffb0" stroke-width="1.5" fill="none" stroke-dasharray="2 2" marker-end="url(#arrowReturn)" transform="translate(-260,60)"/>
+        <text x="240" y="165" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">return (parent) ↑</text>
+
+        <text x="350" y="200" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Each fiber node stores: type, props, state, child/sibling/return pointers,</text>
+        <text x="350" y="215" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">and an "alternate" pointer to its previous version — a persistent, mutable data structure</text>
+
+        <defs>
+          <marker id="arrowChild" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowSibling" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff79c6"/></marker>
+          <marker id="arrowReturn" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// A (heavily simplified) sketch of what a Fiber node conceptually holds</span></span>
+  <span class="line">{</span>
+  <span class="line">  type: <span class="cs">"div"</span>,             <span class="cm">// or a component function/class</span></span>
+  <span class="line">  key: <span class="ck">null</span>,</span>
+  <span class="line">  <span class="cm">// ── Tree structure — a LINKED LIST, not recursive stack frames ──</span></span>
+  <span class="line">  child: <span class="cx">FiberNode</span>,        <span class="cm">// first child</span></span>
+  <span class="line">  sibling: <span class="cx">FiberNode</span>,      <span class="cm">// next sibling</span></span>
+  <span class="line">  <span class="ck">return</span>: <span class="cx">FiberNode</span>,       <span class="cm">// parent (called "return" internally)</span></span>
+  <span class="line">  <span class="cm">// ── Work tracking ──</span></span>
+  <span class="line">  pendingProps: {...},</span>
+  <span class="line">  memoizedState: {...},   <span class="cm">// hooks state lives here!</span></span>
+  <span class="line">  alternate: <span class="cx">FiberNode</span>,     <span class="cm">// pointer to the fiber from the PREVIOUS render (double buffering)</span></span>
+  <span class="line">  effectTag: <span class="cs">"UPDATE"</span>,    <span class="cm">// what DOM operation this fiber needs (add/update/delete)</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Because this is a plain JS object (not a call stack frame), React can:</span></span>
+  <span class="line"><span class="cm">// - stop working on it at any point</span></span>
+  <span class="line"><span class="cm">// - store a reference to "where it left off"</span></span>
+  <span class="line"><span class="cm">// - come back and resume later</span></span>
+  <span class="line"><span class="cm">// - or even throw the whole in-progress tree away and start over</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The key insight:</strong> by moving the "call stack" out of the JS engine and into React's OWN data structure (a fiber tree it manages by hand), React gains full manual control over WHEN and HOW work happens — instead of being at the mercy of whatever the native call stack allows.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Two Phases: Render and Commit
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Two Phases: Render (interruptible) &amp; Commit (not)</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Fiber splits work into two phases with very different rules</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="380" height="120" rx="10" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="210" y="55" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">RENDER PHASE</text>
+        <text x="210" y="75" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">Build the new fiber tree, run</text>
+        <text x="210" y="90" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">component functions, diff changes</text>
+        <text x="210" y="112" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">✓ INTERRUPTIBLE</text>
+        <text x="210" y="128" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">can pause, resume, or abandon</text>
+
+        <path d="M400 90 L460 90" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray3)"/>
+
+        <rect x="460" y="30" width="220" height="120" rx="10" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="570" y="55" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">COMMIT PHASE</text>
+        <text x="570" y="75" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">Actually apply changes</text>
+        <text x="570" y="90" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">to the real DOM</text>
+        <text x="570" y="112" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">✗ SYNCHRONOUS</text>
+        <text x="570" y="128" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">runs all at once, uninterrupted</text>
+
+        <text x="350" y="180" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Splitting these two phases is what enables pausing mid-render WITHOUT ever showing a half-updated, flickering DOM to the user</text>
+
+        <defs>
+          <marker id="arrowGray3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Render Phase</th><th>Commit Phase</th></tr></thead>
+      <tbody>
+        <tr><td>Can be paused/resumed</td><td class="yes">✓ Yes</td><td class="no">✗ No — always runs to completion</td></tr>
+        <tr><td>Can be thrown away and restarted</td><td class="yes">✓ Yes (e.g. if a higher-priority update comes in)</td><td class="no">✗ No</td></tr>
+        <tr><td>Touches the real DOM</td><td class="no">✗ No — only builds the fiber tree in memory</td><td class="yes">✓ Yes — applies all DOM mutations</td></tr>
+        <tr><td>Runs class lifecycle / hooks like this</td><td>render(), most of the "render logic"</td><td>componentDidMount/Update, useLayoutEffect, useEffect (scheduled after)</td></tr>
+        <tr><td>Visible to the user mid-phase?</td><td class="no">✗ Never — work-in-progress tree isn't shown</td><td>N/A — happens atomically, all at once</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎭</span>
+      <span><strong>Double buffering:</strong> React keeps TWO fiber trees in memory — the "current" tree (what's actually on screen) and a "work-in-progress" tree (being built during the render phase). Once the work-in-progress tree is fully ready, the commit phase swaps it in as the new "current" tree in one atomic step — similar to how graphics engines avoid screen tearing.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Time-Slicing
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Time-Slicing — Breaking Work into Chunks</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Time-slicing</strong> means React works through the fiber tree in small chunks, periodically YIELDING control back to the browser between chunks to check "does anything more urgent need to happen right now (like a click or a paint)?" — instead of doing all the work in one giant, blocking burst.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Old (stack): one giant block · New (fiber): small chunks with yield points</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">Stack reconciler (old)</text>
+        <rect x="20" y="35" width="600" height="30" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="320" y="55" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">ONE uninterrupted block — browser frozen the whole time</text>
+
+        <text x="20" y="100" fill="#5cffb0" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">Fiber reconciler (new) — time-sliced</text>
+        <rect x="20" y="110" width="90" height="30" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="65" y="130" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">chunk 1</text>
+
+        <rect x="120" y="110" width="20" height="30" rx="3" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="130" y="130" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="7">✓</text>
+
+        <rect x="150" y="110" width="90" height="30" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="195" y="130" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">chunk 2</text>
+
+        <rect x="250" y="110" width="20" height="30" rx="3" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="260" y="130" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="7">✓</text>
+
+        <rect x="280" y="110" width="90" height="30" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="325" y="126" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">urgent</text>
+        <text x="325" y="138" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7">click handled!</text>
+
+        <rect x="380" y="110" width="90" height="30" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="425" y="130" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">chunk 3</text>
+
+        <text x="500" y="128" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">...resume where</text>
+        <text x="500" y="142" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">it left off</text>
+
+        <text x="350" y="180" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">At each ✓ checkpoint, React can pause, let the browser paint/handle input, then resume — or even prioritize a more urgent task first</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Conceptual sketch of how the fiber "work loop" operates (simplified)</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">workLoop</span>(deadline) {</span>
+  <span class="line">  <span class="ck">while</span> (nextUnitOfWork && deadline.timeRemaining() > <span class="cn">0</span>) {</span>
+  <span class="line">    <span class="cm">// process ONE fiber node, then check the clock again</span></span>
+  <span class="line">    nextUnitOfWork = <span class="cf">performUnitOfWork</span>(nextUnitOfWork);</span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">if</span> (nextUnitOfWork) {</span>
+  <span class="line">    <span class="cm">// ran out of time this frame — yield back to the browser,</span></span>
+  <span class="line">    <span class="cm">// schedule continuation for the NEXT available idle time</span></span>
+  <span class="line">    requestIdleCallback(workLoop);</span>
+  <span class="line">  } <span class="ck">else</span> {</span>
+  <span class="line">    <span class="cf">commitRoot</span>(); <span class="cm">// all done — apply everything to the real DOM at once</span></span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// (React's actual scheduler is far more sophisticated than this — it uses</span></span>
+  <span class="line"><span class="cm">// its own custom scheduling package, not literally requestIdleCallback —</span></span>
+  <span class="line"><span class="cm">// but this captures the core "chunk + yield + resume" idea)</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Because a fiber tree is a data structure React controls</strong> (not the native call stack), "pausing" simply means remembering a pointer to the next fiber node to process, and "resuming" means picking up from that pointer later — something completely impossible with recursive function calls on the native stack.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Prioritization
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Prioritization — Not All Updates Are Equal</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Because Fiber can pause and resume work, React can also REORDER it — giving urgent updates (like text you just typed, or a button press) priority over less urgent ones (like a large list re-rendering after a filter), even INTERRUPTING in-progress low-priority work to handle the urgent one first.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Priority level (conceptual)</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Immediate / Synchronous</td><td>Discrete user input like a click that must feel instant</td></tr>
+        <tr><td>User-blocking</td><td>Typing in a text field — needs to feel responsive right away</td></tr>
+        <tr><td>Normal</td><td>Data arriving from a network request, most typical updates</td></tr>
+        <tr><td>Low / Transition</td><td>Updates explicitly marked with `startTransition` — e.g. re-filtering a large list</td></tr>
+        <tr><td>Idle</td><td>Work that can wait until the browser has genuinely nothing else to do</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// startTransition — explicitly tell React "this update is LOW priority"</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchPage</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">const</span> [results, setResults] = useState([]);</span>
+  <span class="line">  <span class="ck">const</span> [isPending, startTransition] = useTransition();</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleChange</span> = (e) => {</span>
+  <span class="line">    setQuery(e.target.value); <span class="cm">// HIGH priority — the input must feel instant</span></span>
+  <span class="line"></span>
+  <span class="line">    startTransition(() => {</span>
+  <span class="line">      <span class="cm">// LOW priority — can be interrupted by more typing before it finishes</span></span>
+  <span class="line">      setResults(<span class="cf">expensiveFilter</span>(allItems, e.target.value));</span>
+  <span class="line">    });</span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">value</span>={query} <span class="ca">onChange</span>={handleChange} /&gt; <span class="cm">{/* stays snappy */}</span></span>
+  <span class="line">      {isPending ? &lt;<span class="ct">Spinner</span> /&gt; : &lt;<span class="ct">ResultsList</span> <span class="ca">results</span>={results} /&gt;}</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Without transitions: typing feels laggy because EVERY keystroke forces</span></span>
+  <span class="line"><span class="cm">// a full re-filter of a potentially huge list before the input can update.</span></span>
+  <span class="line"><span class="cm">// With transitions: the input updates immediately; the expensive re-filter</span></span>
+  <span class="line"><span class="cm">// happens in the background and can be abandoned mid-way if you keep typing.</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>None of this (transitions, priority levels, concurrent features) would be POSSIBLE without Fiber underneath</strong> — Fiber is the low-level architectural foundation; APIs like <ic>useTransition</ic>, <ic>useDeferredValue</ic>, and Concurrent Mode/React 18's concurrent rendering are all built ON TOP of Fiber's ability to pause, resume, reorder, and abandon units of work.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>"Interruptible" only applies to the render phase, never the commit phase</strong> — a common mix-up. The commit phase (actually touching the DOM) always runs synchronously to completion once started, to avoid ever showing a half-applied UI.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Because the render phase can be paused, thrown away, and restarted, component function bodies (and anything called during rendering) must be PURE</strong> — no side effects during render — since React may call your component function multiple times for a single logical update, or abandon a render entirely without completing it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Fiber ships in React 16+, but Concurrent Features (transitions, Suspense for data fetching, automatic batching everywhere) are separate, LATER additions built on top of it</strong> — Fiber existing since 16 doesn't mean all "concurrent" behavior was available immediately; much of it arrived with React 18's `createRoot`.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Time-slicing does not make individual renders "faster"</strong> — the SAME amount of total work still needs to happen; time-slicing makes the work feel smoother/more responsive by not blocking everything else for its entire duration, not by reducing the raw work itself.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>startTransition does not delay STATE updates from happening in the sense of being skipped</strong> — it marks them as interruptible/lower priority; the update still eventually happens, just potentially after more urgent updates, and can be restarted if a newer transition supersedes it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Fiber's "linked list" tree structure (child/sibling/return pointers) is an implementation detail</strong>, not something application code interacts with directly — you don't manipulate fibers yourself; you interact with the declarative component/hooks API, and Fiber operates invisibly underneath.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every re-render benefits from or uses time-slicing</strong> — small, fast updates may well complete within a single time slice with no visible difference from the old synchronous model; the benefits become apparent specifically for LARGE trees or expensive render work.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Double buffering means memory usage is technically higher</strong> (two fiber trees exist during a render pass) — a reasonable trade-off, but worth knowing if asked about the "cost" side of Fiber's design.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>React does not use the browser's native `requestIdleCallback` API directly</strong> in modern versions — it ships its OWN scheduler package (`scheduler`) with more precise control over timing and priority than the native browser API alone would allow.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Fiber doesn't eliminate the need to optimize your own code</strong> — `React.memo`, `useMemo`, `useCallback`, virtualization for long lists, etc. are all still relevant and important; Fiber makes React's OWN internal work more interruptible, but doesn't make an inherently expensive render computation itself any cheaper.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Fiber is an internals/architecture topic — interviewers use it to gauge depth beyond "how to use React." Framing answers around why it was built, what it fundamentally changed, when its benefits actually kick in, and how it works mechanically shows that depth.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is React Fiber, in one sentence?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Fiber is React's internal reconciliation engine (introduced in React 16) that represents the component tree as its OWN data structure of linked plain JavaScript objects (fiber nodes) rather than relying on the native JavaScript call stack — giving React manual control to pause, resume, reorder, or abandon rendering work at any point.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why did React need to move away from the old stack-based reconciler?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The old reconciler walked the component tree using ordinary recursive JavaScript function calls, relying on the native call stack. A native call stack is synchronous and uninterruptible by design — once it starts unwinding through a large tree, it CANNOT pause partway through to let the browser handle a click, run an animation frame, or repaint the screen. For large component trees, this caused the main thread to be blocked long enough to visibly drop frames, delay input response, and make the UI feel janky or frozen. React needed an architecture that could break rendering work into interruptible chunks — which required replacing the call stack with its OWN manually-managed data structure (the fiber tree).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does Fiber's interruptibility actually make a noticeable difference to an app?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Primarily for LARGE component trees or expensive render computations — a small, fast update (a handful of components) completes well within a single frame's time budget regardless of architecture, so the difference is invisible there. The benefit becomes apparent when rendering work is substantial enough that it WOULD have blocked the main thread for a noticeable stretch under the old model — e.g. filtering/re-rendering a list with thousands of items, or a complex dashboard with many simultaneously-updating widgets — where Fiber can keep the UI responsive (handling clicks, keeping animations smooth, keeping text input snappy) by yielding control between chunks of that work.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How does React manage to "pause" rendering, mechanically speaking?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Since the fiber tree is a plain JavaScript object graph (linked via child/sibling/return pointers) that React itself owns and traverses manually — not the native call stack — "pausing" simply means React's work loop stops after processing the current fiber node and keeps a reference to WHICH fiber node should be processed next. It then yields control back to the browser (allowing paint, input handling, etc.), and later — when the scheduler decides it's time to continue — resumes by picking up work starting from that saved pointer, exactly where it left off. This is only possible because the "call stack" here is data React controls, not the JS engine's own native stack frames.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is the difference between the render phase and the commit phase in Fiber's architecture?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The RENDER phase is where React builds the new "work-in-progress" fiber tree — calling component functions, computing new state/props, and figuring out what changed — and this phase is interruptible; React can pause it, throw it away, or restart it if a higher-priority update comes in. The COMMIT phase is where React actually applies the calculated changes to the real DOM (and runs things like `componentDidMount`/`useLayoutEffect`) — this phase is always synchronous and runs to completion once started, specifically so the user never sees a partially-updated, flickering UI.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why must the commit phase be synchronous and non-interruptible, even though the render phase isn't?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If the commit phase COULD be paused midway, the user might see a half-updated DOM — some elements reflecting the new state, others still showing the old one — a jarring, visually broken intermediate state. By keeping the commit phase atomic (runs fully, uninterrupted, once it begins), React guarantees the DOM always transitions cleanly from one fully-consistent state to the next fully-consistent state, with nothing "torn" or half-applied ever visible on screen.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use startTransition, and what does it actually do under the hood?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use `startTransition` when you have a state update that's expensive to render (like re-filtering a huge list) that you want to explicitly mark as LOWER priority than more urgent updates (like the text currently being typed into an input). Under the hood, it tells React's fiber scheduler to treat the wrapped state update as interruptible/deprioritized — React will process more urgent work (like the next keystroke) first, and can pause or even entirely discard and restart the transition's in-progress render if a newer, conflicting update comes in before it finishes — all made possible by Fiber's ability to interrupt and reorder units of work.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does it mean for component rendering to need to be "pure" specifically because of Fiber's architecture?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because Fiber may call a component function multiple times for what is logically a SINGLE update (e.g. starting a render, pausing it, then having to restart it from scratch due to a higher-priority interruption, or React's StrictMode intentionally double-invoking for detection purposes), any side effects performed directly inside the render/component function body (like mutating an external variable, making a network call, or logging) could run MORE THAN ONCE, or run for a render that ultimately gets thrown away entirely and never committed. This is why component bodies must be pure functions of their props/state — side effects belong in `useEffect`, which only runs after a render has been fully committed, not during the interruptible render phase itself.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is "double buffering" (maintaining both a current and a work-in-progress fiber tree) a useful design choice?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Keeping the "current" tree (matching what's actually on screen) completely separate and untouched while building a new "work-in-progress" tree means the in-progress work can be freely modified, paused, or even discarded entirely WITHOUT ever risking corrupting or partially updating what the user currently sees. Once the work-in-progress tree is fully built and ready, React swaps it in as the new "current" tree in one atomic step — conceptually similar to how graphics rendering engines use double buffering to avoid showing a half-drawn frame (screen tearing).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When did Fiber ship, and when did features like transitions/concurrent rendering become available — are they the same thing?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Fiber (the underlying architecture/data structure) shipped in <strong>React 16</strong> — but for several years it mostly worked the same way as before FROM THE OUTSIDE, since most of the interruptibility/prioritization capabilities weren't yet exposed through public APIs. Concurrent features like `useTransition`, `useDeferredValue`, and full concurrent rendering (via `createRoot`) arrived later, primarily with <strong>React 18</strong>. Fiber is the necessary FOUNDATION; the concurrent APIs are built ON TOP of that foundation — Fiber existing doesn't automatically mean every concurrent capability was available from day one.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain, step by step, what happens when setState is called in a Fiber-based React app?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> The update is scheduled with a certain PRIORITY level (e.g. high for direct user input, lower if wrapped in `startTransition`).<br>
+          <strong>2.</strong> React's scheduler begins (or resumes) the RENDER phase, building a new work-in-progress fiber tree by processing fiber nodes one at a time.<br>
+          <strong>3.</strong> Periodically, React checks whether it should yield control back to the browser (e.g. running out of the current frame's time budget, or a higher-priority update arriving) — if so, it pauses and remembers where to resume.<br>
+          <strong>4.</strong> Once the entire work-in-progress tree is complete (uninterrupted from that point), React enters the COMMIT phase — synchronously applying all DOM mutations at once, then running effects like `useLayoutEffect` synchronously and `useEffect` asynchronously afterward.<br>
+          <strong>5.</strong> The work-in-progress tree becomes the new "current" tree, ready to serve as the baseline for the next update.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Fiber Architecture · Render/Commit Phases · Time-Slicing · Prioritization
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

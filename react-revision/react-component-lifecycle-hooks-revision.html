@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Component Lifecycle &amp; Hook Equivalents — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(255,184,108,0.1); color: var(--accent); border: 1px solid rgba(255,184,108,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(255,184,108,0.12); color: #ffd49a; border-color: rgba(255,184,108,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Lifecycle phase cards ── */
+  .phase-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem; margin-bottom: 1rem; border-top: 3px solid transparent;
+  }
+  .phase-card-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .phase-icon-badge {
+    width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700; color: #0d0f14; flex-shrink: 0;
+  }
+  .phase-card-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .phase-card .code-block { margin: 0; }
+
+  /* ── Mapping table (class -> hook) ── */
+  .map-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .map-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .map-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; font-family: var(--font-mono); font-size: 12px; }
+  .map-table tr:last-child td { border-bottom: none; }
+  .map-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .map-table td.class-col { color: var(--pink); }
+  .map-table td.hook-col { color: var(--teal); }
+  .map-table td.note-col { font-family: var(--font-body); font-size: 11.5px; color: var(--text3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Lifecycle</div>
+    <h1>Component Lifecycle &amp; Hooks</h1>
+    <p>Mount · Update · Unmount · Class Lifecycle Methods vs Hook Equivalents — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The 3 Phases</a>
+    <a class="topic-pill" href="#s2">2. Mount Phase</a>
+    <a class="topic-pill" href="#s3">3. Update Phase</a>
+    <a class="topic-pill" href="#s4">4. Unmount Phase</a>
+    <a class="topic-pill" href="#s5">5. Class → Hook Map</a>
+    <a class="topic-pill" href="#s6">6. Full Lifecycle in One Effect</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The 3 Phases Overview
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The 3 Lifecycle Phases — Overview</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Every component goes through three conceptual phases: <strong>Mount</strong> (created and inserted into the DOM for the first time), <strong>Update</strong> (re-rendered due to new props/state), and <strong>Unmount</strong> (removed from the DOM). Class components had dedicated named methods for each; function components use <ic>useEffect</ic> (and friends) to achieve the same timing.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The lifecycle at a glance</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="60" width="180" height="70" rx="10" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="110" y="88" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">MOUNT</text>
+        <text x="110" y="105" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">first render,</text>
+        <text x="110" y="118" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">inserted into DOM</text>
+
+        <path d="M200 95 L260 95" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue6)"/>
+
+        <rect x="260" y="60" width="180" height="70" rx="10" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="88" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">UPDATE</text>
+        <text x="350" y="105" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">re-render on new</text>
+        <text x="350" y="118" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">props/state</text>
+
+        <path d="M350 60 C 350 20, 350 20, 350 60" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue6)" transform="translate(0,-5)"/>
+        <path d="M320 25 C 280 25, 280 55, 300 60" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue6)"/>
+        <text x="350" y="20" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">can repeat many times</text>
+
+        <path d="M440 95 L500 95" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed3)"/>
+
+        <rect x="500" y="60" width="180" height="70" rx="10" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="590" y="88" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">UNMOUNT</text>
+        <text x="590" y="105" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">removed from DOM,</text>
+        <text x="590" y="118" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">cleanup runs</text>
+
+        <text x="350" y="170" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">A component can cycle through Update many times before eventually Unmounting</text>
+
+        <defs>
+          <marker id="arrowBlue6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowRed3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Phase</th><th>Triggered by</th><th>Happens how many times</th></tr></thead>
+      <tbody>
+        <tr><td>Mount</td><td>Component first added to the tree</td><td>Exactly once per component instance</td></tr>
+        <tr><td>Update</td><td>Props change, state changes, or parent re-renders</td><td>Zero to many times</td></tr>
+        <tr><td>Unmount</td><td>Component removed from the tree (conditionally rendered away, parent removed, navigation, etc.)</td><td>Exactly once per component instance</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Mount Phase
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Mount Phase</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#5cffb0">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#5cffb0,#2db87a)">M</div>
+        Component created and inserted into the DOM for the first time
+      </div>
+      <div class="phase-card-sub">Class: constructor → render → componentDidMount. Function: render → useEffect(fn, [])</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'mount-class')">Class component</button>
+      <button class="tab-btn" onclick="showTab(event,'mount-hook')">Function component (hook)</button>
+    </div>
+
+    <div id="tab-mount-class" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="ck">class</span> UserProfile <span class="ck">extends</span> React.Component {</span>
+  <span class="line">  <span class="cf">constructor</span>(props) {</span>
+  <span class="line">    <span class="ck">super</span>(props);</span>
+  <span class="line">    <span class="ck">this</span>.state = { user: <span class="ck">null</span> }; <span class="cm">// initial state setup</span></span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cf">componentDidMount</span>() {</span>
+  <span class="line">    <span class="cm">// runs ONCE, right after the component is first inserted into the DOM</span></span>
+  <span class="line">    <span class="cf">fetchUser</span>(<span class="ck">this</span>.props.userId).then(user => <span class="ck">this</span>.setState({ user }));</span>
+  <span class="line">    <span class="cm">// classic use: initial data fetch, subscribing to external events</span></span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cf">render</span>() {</span>
+  <span class="line">    <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{<span class="ck">this</span>.state.user?.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+      </div>
+    </div>
+
+    <div id="tab-mount-hook" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">UserProfile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    <span class="cm">// empty dependency array [] → runs ONCE, right after the first render commits</span></span>
+  <span class="line">    <span class="cf">fetchUser</span>(userId).then(setUser);</span>
+  <span class="line">  }, []); <span class="cm">// equivalent timing to componentDidMount</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user?.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Timing nuance:</strong> <ic>componentDidMount</ic> runs SYNCHRONOUSLY right after the DOM is updated, before the browser paints. <ic>useEffect</ic> with <ic>[]</ic> runs ASYNCHRONOUSLY, AFTER the browser paints. For the rare cases needing pre-paint timing (avoiding visual flicker), <ic>useLayoutEffect</ic> is the closer match to <ic>componentDidMount</ic>'s exact timing.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Update Phase
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Update Phase</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#6ab0ff">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#6ab0ff,#4d84cc)">U</div>
+        Component re-renders due to new props, new state, or a parent re-rendering
+      </div>
+      <div class="phase-card-sub">Class: render → componentDidUpdate. Function: render → useEffect(fn, [deps]) whenever a listed dependency changes</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'update-class')">Class component</button>
+      <button class="tab-btn" onclick="showTab(event,'update-hook')">Function component (hook)</button>
+    </div>
+
+    <div id="tab-update-class" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="ck">class</span> UserProfile <span class="ck">extends</span> React.Component {</span>
+  <span class="line">  <span class="cf">componentDidUpdate</span>(prevProps, prevState) {</span>
+  <span class="line">    <span class="cm">// runs after EVERY update — you must manually compare to avoid infinite loops!</span></span>
+  <span class="line">    <span class="ck">if</span> (prevProps.userId !== <span class="ck">this</span>.props.userId) {</span>
+  <span class="line">      <span class="cf">fetchUser</span>(<span class="ck">this</span>.props.userId).then(user => <span class="ck">this</span>.setState({ user }));</span>
+  <span class="line">    }</span>
+  <span class="line">  }</span>
+  <span class="line">  <span class="cf">render</span>() { <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{<span class="ck">this</span>.state.user?.name}&lt;/<span class="ct">div</span>&gt;; }</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Note the MANUAL prevProps/prevState comparison — easy to forget,</span></span>
+  <span class="line"><span class="cm">// and forgetting it causes an infinite fetch loop!</span></span>
+      </div>
+    </div>
+
+    <div id="tab-update-hook" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">UserProfile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    <span class="cf">fetchUser</span>(userId).then(setUser);</span>
+  <span class="line">  }, [userId]); <span class="cm">// React automatically compares "userId" for you — no manual check needed!</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user?.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// This effect ALSO runs on MOUNT (first render counts as "userId changed</span></span>
+  <span class="line"><span class="cm">// from nothing to something") — one hook covers BOTH mount and update logic</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Key simplification hooks bring:</strong> <ic>componentDidMount</ic> and <ic>componentDidUpdate</ic> were two SEPARATE methods, often containing duplicated logic (e.g. the same fetch call in both, once unconditionally and once behind a prop-comparison check). A single <ic>useEffect</ic> with the right dependency array naturally covers BOTH the mount case and the relevant update case, since React treats the very first run as "everything changed."</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Unmount Phase
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Unmount Phase</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#ff6b6b">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#ff6b6b,#cc4545)">X</div>
+        Component removed from the DOM — final chance to clean up
+      </div>
+      <div class="phase-card-sub">Class: componentWillUnmount. Function: the function RETURNED from useEffect's callback</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'unmount-class')">Class component</button>
+      <button class="tab-btn" onclick="showTab(event,'unmount-hook')">Function component (hook)</button>
+    </div>
+
+    <div id="tab-unmount-class" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="ck">class</span> Clock <span class="ck">extends</span> React.Component {</span>
+  <span class="line">  <span class="cf">componentDidMount</span>() {</span>
+  <span class="line">    <span class="ck">this</span>.intervalId = setInterval(() => <span class="ck">this</span>.forceUpdate(), <span class="cn">1000</span>);</span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cf">componentWillUnmount</span>() {</span>
+  <span class="line">    clearInterval(<span class="ck">this</span>.intervalId); <span class="cm">// prevent memory leak — SEPARATE method, far from setup</span></span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cf">render</span>() { <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{<span class="ck">new</span> Date().toLocaleTimeString()}&lt;/<span class="ct">div</span>&gt;; }</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// The setup (componentDidMount) and teardown (componentWillUnmount) logic</span></span>
+  <span class="line"><span class="cm">// live in two DIFFERENT methods, potentially far apart in the file</span></span>
+      </div>
+    </div>
+
+    <div id="tab-unmount-hook" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Clock</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [time, setTime] = useState(<span class="ck">new</span> Date());</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    <span class="ck">const</span> intervalId = setInterval(() => setTime(<span class="ck">new</span> Date()), <span class="cn">1000</span>);</span>
+  <span class="line"></span>
+  <span class="line">    <span class="ck">return</span> () => clearInterval(intervalId); <span class="cm">// cleanup lives RIGHT NEXT to the setup!</span></span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{time.toLocaleTimeString()}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Setup and teardown are co-located in the SAME effect — much easier to</span></span>
+  <span class="line"><span class="cm">// verify every subscription/timer/listener has a matching cleanup</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Important subtlety:</strong> the cleanup function doesn't ONLY run on unmount — it also runs BEFORE the effect re-runs due to a dependency change (see the Update phase). This means a single cleanup function serves BOTH "tear down before re-running" and "tear down on final removal," which has no direct one-to-one equivalent as a separate class method — <ic>componentWillUnmount</ic> alone only covered the final removal case.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Full Class-to-Hook Mapping Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Full Class Lifecycle → Hook Mapping</h2>
+    </div>
+
+    <table class="map-table">
+      <thead><tr><th>Class lifecycle method</th><th>Hook equivalent</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="class-col">constructor(props)</td><td class="hook-col">useState(initialValue)</td><td class="note-col">State initialization</td></tr>
+        <tr><td class="class-col">componentDidMount</td><td class="hook-col">useEffect(fn, [])</td><td class="note-col">Runs once after first render (though timing is post-paint, not pre-paint)</td></tr>
+        <tr><td class="class-col">componentDidUpdate</td><td class="hook-col">useEffect(fn, [deps])</td><td class="note-col">Runs when any listed dependency changes — no manual prevProps diffing needed</td></tr>
+        <tr><td class="class-col">componentWillUnmount</td><td class="hook-col">return () => {...} inside useEffect</td><td class="note-col">The returned cleanup function, co-located with its setup</td></tr>
+        <tr><td class="class-col">shouldComponentUpdate</td><td class="hook-col">React.memo() / useMemo() / useCallback()</td><td class="note-col">Different mechanism — memoization instead of a lifecycle veto</td></tr>
+        <tr><td class="class-col">getDerivedStateFromProps</td><td class="hook-col">Just compute the value directly during render</td><td class="note-col">No hook needed — function components can derive values inline every render</td></tr>
+        <tr><td class="class-col">componentDidCatch / getDerivedStateFromError</td><td class="hook-col">No hook equivalent — still requires a class (Error Boundary)</td><td class="note-col">One of the few remaining cases classes are still required for</td></tr>
+        <tr><td class="class-col">this.forceUpdate()</td><td class="hook-col">No direct equivalent (rarely needed with hooks)</td><td class="note-col">Hooks encourage deriving from state instead of forcing re-renders</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Error boundaries are the one major exception:</strong> as of today, there is NO hook equivalent for <ic>componentDidCatch</ic>/<ic>getDerivedStateFromError</ic> — catching rendering errors in a subtree still requires a class component. Most codebases write ONE small Error Boundary class component and reuse it everywhere else via hooks/function components.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Full Lifecycle in One Effect
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Seeing All 3 Phases in One Component</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">ChatRoom</span>({ roomId }) {</span>
+  <span class="line">  useEffect(() => {</span>
+  <span class="line">    console.log(<span class="cs">`[MOUNT or UPDATE] Connecting to room: ${roomId}`</span>);</span>
+  <span class="line">    <span class="ck">const</span> connection = <span class="cf">createConnection</span>(roomId);</span>
+  <span class="line">    connection.connect();</span>
+  <span class="line"></span>
+  <span class="line">    <span class="ck">return</span> () => {</span>
+  <span class="line">      console.log(<span class="cs">`[CLEANUP before next effect, or UNMOUNT] Disconnecting: ${roomId}`</span>);</span>
+  <span class="line">      connection.disconnect();</span>
+  <span class="line">    };</span>
+  <span class="line">  }, [roomId]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">h1</span>&gt;Welcome to {roomId}!&lt;/<span class="ct">h1</span>&gt;;</span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Scenario</th><th>Console output</th></tr></thead>
+      <tbody>
+        <tr><td>Initial mount with roomId="general"</td><td>"[MOUNT or UPDATE] Connecting to room: general"</td></tr>
+        <tr><td>Parent changes roomId to "random"</td><td>"[CLEANUP...] Disconnecting: general" <em>then</em> "[MOUNT or UPDATE] Connecting to room: random"</td></tr>
+        <tr><td>Component unmounts entirely</td><td>"[CLEANUP...] Disconnecting: random" (no further connect)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>This single, small effect demonstrates all three "phases" using ONE unified mental model: <strong>setup runs</strong> (mount, and again on every relevant update) and <strong>cleanup runs</strong> (before every re-setup, and one final time on unmount). This is a MUCH simpler mental model than tracking 3+ separate named lifecycle methods.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>useEffect is NOT exactly "componentDidMount + componentDidUpdate + componentWillUnmount" merged</strong> — it's a genuinely different mental model (synchronize with an external system based on dependencies) that happens to cover the same use cases, not a literal 1:1 combination of the three methods.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useEffect runs AFTER paint (asynchronously)</strong>, while componentDidMount/componentDidUpdate run synchronously BEFORE paint — this can cause a visible flicker for effects that measure/mutate the DOM, where the class equivalent wouldn't have. Use `useLayoutEffect` for exact pre-paint timing parity.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Missing a dependency in the array recreates the "componentDidUpdate forgot to check prevProps" bug in a different form</strong> — a stale closure results in the effect referencing outdated values, similar in spirit to forgetting the prevProps comparison in a class component.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Multiple useEffect calls in one component are independent</strong> — each has its OWN dependency array and runs on its OWN schedule, unlike class components where ALL mount logic had to live together in the single componentDidMount method. This is often cleaner (grouping related logic together) but can surprise developers expecting one unified "on mount" block.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>There is no hook equivalent for getSnapshotBeforeUpdate</strong> (used rarely, e.g. for preserving scroll position before a DOM update) — this remains one of the few gaps between the class and hook lifecycle APIs, though `useLayoutEffect` can approximate some use cases.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Error boundaries still require a class component</strong> — there is no `useErrorBoundary` hook as of today; `componentDidCatch`/`getDerivedStateFromError` have no functional equivalent, so most apps keep one small class-based ErrorBoundary wrapper used alongside otherwise all-functional code.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>StrictMode in React 18+ intentionally double-invokes effects in development</strong> (mount → cleanup → mount again) specifically to help you catch missing/incorrect cleanup logic — this can look like a bug at first, but it's a deliberate diagnostic tool, and does NOT happen in production builds.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Treating useEffect purely as "the mount hook" (always using an empty array without thinking) misses its real purpose</strong> — it's meant to synchronize a component with an external system based on specific dependencies, not simply to replicate "run once" class behavior by default.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>shouldComponentUpdate has no direct hook equivalent</strong> — `React.memo` (for skipping a whole component's re-render when props are shallow-equal) is the closest hook-era analog, but it works at the component-wrapping level, not as an internal lifecycle method you override.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Referring to "the mount phase" as happening only once is per COMPONENT INSTANCE, not per component type</strong> — if a component is unmounted and later a NEW instance of the same component type is mounted again (e.g. via conditional rendering toggling on/off), that counts as a completely fresh mount, running effects again from scratch, with entirely new state.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>These four angles cover the full depth interviewers probe for: definitions, motivations, decision points, and hands-on implementation.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the three phases of a React component's lifecycle?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Mount</strong> — the component is created and inserted into the DOM for the first time (happens exactly once). <strong>Update</strong> — the component re-renders due to new props, new state, or a parent re-rendering (can happen zero to many times). <strong>Unmount</strong> — the component is removed from the DOM (happens exactly once, and is the final opportunity to clean up any resources the component set up).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why did React introduce useEffect instead of just keeping the three separate class lifecycle methods for function components?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Class lifecycle methods often forced you to split ONE logical concern (e.g. "keep this subscription in sync with the current roomId") across TWO separate methods — the setup in `componentDidMount` and the manual re-sync logic (with prevProps diffing) in `componentDidUpdate`, plus teardown in a THIRD method, `componentWillUnmount`. This scattered related code across the file and made it easy to forget to update one of the methods when the others changed. `useEffect` unifies setup, re-sync, and cleanup for a single concern into ONE co-located block, organized around dependencies rather than named lifecycle moments — a fundamentally more cohesive mental model for "synchronizing with an external system."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you still need a class component instead of hooks, in modern React?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The main remaining case is <strong>Error Boundaries</strong> — catching JavaScript errors thrown anywhere in a subtree during rendering requires `componentDidCatch` and/or `getDerivedStateFromError`, neither of which has a hook equivalent as of today. Most modern codebases write a single small Error Boundary class component once, and use it as a wrapper around otherwise fully hooks-based function components — you rarely need MORE than one or two class components in an entire modern app.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you convert a class component with componentDidMount, componentDidUpdate, and componentWillUnmount into a function component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Step 1:</strong> identify what the effect actually depends on (which props/state values it reads).<br>
+          <strong>Step 2:</strong> move the shared "setup" logic (from componentDidMount and the relevant branch of componentDidUpdate) into a single `useEffect` callback.<br>
+          <strong>Step 3:</strong> move the teardown logic from componentWillUnmount into a function RETURNED from that same `useEffect` callback.<br>
+          <strong>Step 4:</strong> set the dependency array to include every value from step 1 — this makes React automatically re-run the effect (with cleanup first) whenever those values change, replacing the manual prevProps/prevState comparison that componentDidUpdate required.
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="cm">// One useEffect replaces all three methods for a single concern</span></span>
+  <span class="line">useEffect(() => {</span>
+  <span class="line">  <span class="cm">// setup — was componentDidMount + relevant part of componentDidUpdate</span></span>
+  <span class="line">  <span class="ck">return</span> () => {</span>
+  <span class="line">    <span class="cm">// cleanup — was componentWillUnmount</span></span>
+  <span class="line">  };</span>
+  <span class="line">}, [<span class="cm">/* dependencies read inside */</span>]);</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What triggers the "update" phase specifically?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Three things can trigger an update/re-render: <strong>(1)</strong> the component's own state changes via a state setter, <strong>(2)</strong> the component receives new props from its parent (because the parent itself re-rendered and passed different values), or <strong>(3)</strong> a parent re-renders for ANY reason (even if the props passed down are identical, by default a child re-renders too unless wrapped in `React.memo`).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does the cleanup function run before EVERY re-run of the effect, not just on unmount?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If an effect sets up something tied to a specific dependency's value (e.g. a WebSocket connection to a specific `roomId`), and that dependency changes, the OLD setup (connected to the OLD roomId) needs to be torn down before a NEW one (for the new roomId) is created — otherwise you'd end up with multiple simultaneous connections stacking up instead of one connection that correctly follows the current value. Running cleanup before every re-run — not just final unmount — is what guarantees each "cycle" of setup and teardown stays properly paired, no matter how many times the dependency changes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you use useLayoutEffect instead of useEffect to better match class lifecycle timing?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you need to read layout information from the DOM (like a measured size or scroll position) and make synchronous adjustments BEFORE the browser paints the new frame — matching `componentDidMount`/`componentDidUpdate`'s actual synchronous, pre-paint timing. `useEffect` runs asynchronously AFTER paint, so any DOM-measuring/mutating logic inside it can cause a brief visible flicker of the "wrong" layout first, which `useLayoutEffect`'s pre-paint timing avoids. Use it sparingly, though — because it's synchronous and blocking, overusing it for non-visual side effects can hurt perceived performance.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does it mean that "mounting" happens once per component INSTANCE, not per component definition?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If a component is conditionally rendered — shown, then hidden, then shown again (e.g. `{isVisible && &lt;Modal /&gt;}`) — each time it reappears after being removed, React treats it as a COMPLETELY NEW instance: a fresh mount, fresh state (any previous state is gone), and effects with `[]` run again from scratch, exactly as if it were the very first time that component type had ever been rendered anywhere. The "runs once" guarantee of a mount-only effect is scoped to that specific instance's lifetime, not to the component function/type as a whole.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does React's StrictMode intentionally run effects twice (mount → cleanup → mount) in development?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It's a deliberate diagnostic technique to help developers catch MISSING or INCORRECT cleanup logic early. If an effect sets something up (a subscription, listener, timer) but doesn't properly clean it up, running mount→cleanup→mount in development surfaces the bug immediately — e.g. you'll see duplicated console logs, doubled network requests, or leaked subscriptions that wouldn't have been obvious with only a single mount. This behavior is exclusive to development builds (specifically components wrapped in `&lt;StrictMode&gt;`) and does NOT happen in production, where each effect still only truly mounts once as expected.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use multiple separate useEffect calls in one component, instead of combining everything into one?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whenever the component has multiple UNRELATED side effects/concerns that each depend on DIFFERENT things — for example, one effect that sets the document title based on a `title` prop, and a completely separate effect that subscribes to a WebSocket based on a `roomId` prop. Combining them into one effect would force them to share a single dependency array (even though they logically depend on different values) and would tie their cleanup/re-run timing together unnecessarily. Splitting by CONCERN, not by lifecycle phase, is the guiding principle — each effect should represent one cohesive "synchronize X with Y" relationship.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you replicate shouldComponentUpdate's "skip this re-render" behavior in a function component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Wrap the function component in `React.memo()`, which shallow-compares the new props against the previous props and skips re-rendering the component (reusing its previous render output) if they're all equal:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">const</span> UserCard = React.memo(<span class="ck">function</span> <span class="cf">UserCard</span>({ name, age }) {</span>
+  <span class="line">  console.log(<span class="cs">"rendering UserCard"</span>);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{name}, {age}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">});</span>
+  <span class="line"><span class="cm">// Only re-renders if "name" or "age" actually changed (by reference/value)</span></span>
+  <span class="line"><span class="cm">// compared to the last render — skips otherwise, similar to returning</span></span>
+  <span class="line"><span class="cm">// false from shouldComponentUpdate</span></span>
+          </div>
+          For a custom comparison function (instead of the default shallow-equal check), `React.memo` accepts an optional second argument, mirroring `shouldComponentUpdate`'s ability to define custom "should I skip this?" logic.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Component Lifecycle · Mount · Update · Unmount · Class-to-Hook Equivalents
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

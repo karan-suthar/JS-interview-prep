@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>React 18 Concurrent Features — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(106,176,255,0.1); color: var(--accent); border: 1px solid rgba(106,176,255,0.2);
+  }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(106,176,255,0.12); color: #a8d4ff; border-color: rgba(106,176,255,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Two col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 220px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(106,176,255,0.08); border: 1px solid rgba(106,176,255,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 900px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · React 18</div>
+    <h1>React 18 Concurrent Features</h1>
+    <p>Automatic Batching · Suspense · useTransition · useDeferredValue — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Automatic Batching</a>
+    <a class="topic-pill" href="#s2">2. Suspense</a>
+    <a class="topic-pill" href="#s3">3. useTransition</a>
+    <a class="topic-pill" href="#s4">4. useDeferredValue</a>
+    <a class="topic-pill" href="#s5">5. Transition vs Deferred Value</a>
+    <a class="topic-pill" href="#s6">6. Decision Guide</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Feature</th><th>Solves</th><th>Core idea</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Automatic Batching</td><td>Extra re-renders from state updates outside event handlers</td><td>Groups ALL updates in a tick into one render, everywhere</td></tr>
+      <tr><td>Suspense</td><td>Showing a fallback while async data/code loads</td><td>"Pause" rendering a subtree until it's ready, show a fallback meanwhile</td></tr>
+      <tr><td>useTransition</td><td>Slow/expensive state updates blocking the UI from feeling responsive</td><td>Marks a state update as low-priority/interruptible</td></tr>
+      <tr><td>useDeferredValue</td><td>Same problem, but for a VALUE you receive (e.g. a prop), not a setter you own</td><td>Gives you a "lagging behind" version of a value that updates at low priority</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Automatic Batching
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Automatic Batching</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>React 18's <ic>createRoot</ic> makes <strong>batching</strong> — grouping multiple state updates in the same tick into a single re-render — happen EVERYWHERE, not just inside React's own event handlers like it did before.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">React 17 vs React 18 — batching inside a setTimeout</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">React 17 — setTimeout NOT batched</text>
+        <rect x="20" y="35" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="85" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">setCount()</text>
+        <path d="M150 52 L200 52" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRed4)"/>
+        <rect x="200" y="35" width="90" height="35" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="245" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">render #1</text>
+
+        <rect x="310" y="35" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="375" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">setFlag()</text>
+        <path d="M440 52 L490 52" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRed4)"/>
+        <rect x="490" y="35" width="90" height="35" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="535" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">render #2</text>
+
+        <text x="20" y="115" fill="#9affd4" font-family="Inter, sans-serif" font-size="11" font-weight="600">React 18 — setTimeout IS batched</text>
+        <rect x="20" y="125" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="85" y="147" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">setCount()</text>
+
+        <rect x="160" y="125" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="225" y="147" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">setFlag()</text>
+
+        <path d="M290 142 L340 142" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreen6)"/>
+
+        <rect x="340" y="125" width="110" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="395" y="147" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">1 render only</text>
+
+        <defs>
+          <marker id="arrowRed4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+          <marker id="arrowGreen6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// React 18 with createRoot (the new default)</span></span>
+  <span class="line"><span class="ck">import</span> { createRoot } <span class="ck">from</span> <span class="cs">"react-dom/client"</span>;</span>
+  <span class="line">createRoot(document.getElementById(<span class="cs">"root"</span>)).render(&lt;<span class="ct">App</span> /&gt;);</span>
+  <span class="line"></span>
+  <span class="line">setTimeout(() => {</span>
+  <span class="line">  setCount(c => c + <span class="cn">1</span>); <span class="cm">// ✓ batched</span></span>
+  <span class="line">  setFlag(f => !f);       <span class="cm">// ✓ same render as above — only 1 total</span></span>
+  <span class="line">}, <span class="cn">1000</span>);</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Also batched now: native event listeners, Promise .then(), async/await continuations</span></span>
+  <span class="line">fetch(<span class="cs">"/api"</span>).then(() => {</span>
+  <span class="line">  setLoading(<span class="ck">false</span>);   <span class="cm">// ✓ batched together — 1 render</span></span>
+  <span class="line">  setData(newData);      <span class="cm">// ✓</span></span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Escape hatch, when truly needed — flushSync forces an IMMEDIATE, synchronous update</span></span>
+  <span class="line"><span class="ck">import</span> { flushSync } <span class="ck">from</span> <span class="cs">"react-dom"</span>;</span>
+  <span class="line">flushSync(() => setCount(c => c + <span class="cn">1</span>)); <span class="cm">// applied right away, not batched</span></span>
+  <span class="line">setFlag(f => !f); <span class="cm">// this one is still batched normally</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Migration note:</strong> automatic batching only kicks in if you're using the NEW <ic>createRoot</ic> API. Apps still using the legacy <ic>ReactDOM.render</ic> keep the old, more limited batching behavior even on React 18 — upgrading the root API is what actually flips this feature on.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Suspense
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Suspense</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>&lt;Suspense&gt;</ic> lets a component "pause" rendering while it's waiting on something asynchronous (lazily-loaded code, or — with supporting libraries/frameworks — data), showing a <ic>fallback</ic> UI in its place until it's ready, WITHOUT you manually wiring up loading-state booleans.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Suspense boundary — catches "not ready yet" from anything below it in the tree</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="250" y="20" width="200" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="47" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">&lt;Suspense fallback={...}&gt;</text>
+
+        <path d="M350 65 L350 95" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray4)"/>
+
+        <rect x="250" y="95" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="122" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">LazyLoadedComponent</text>
+
+        <text x="530" y="45" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">not ready yet →</text>
+        <text x="530" y="60" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">shows fallback UI</text>
+
+        <text x="530" y="115" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">once ready →</text>
+        <text x="530" y="130" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">renders normally</text>
+
+        <text x="350" y="175" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Any descendant that "suspends" is caught by the NEAREST Suspense boundary above it</text>
+
+        <defs>
+          <marker id="arrowGray4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'susp-lazy')">Code-splitting (React.lazy)</button>
+      <button class="tab-btn" onclick="showTab(event,'susp-multiple')">Multiple boundaries</button>
+    </div>
+
+    <div id="tab-susp-lazy" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="cm">// The most universally supported use case — code-splitting with React.lazy</span></span>
+  <span class="line"><span class="ck">const</span> Dashboard = React.lazy(() => <span class="ck">import</span>(<span class="cs">"./Dashboard"</span>));</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">Suspense</span> <span class="ca">fallback</span>={&lt;<span class="ct">Spinner</span> /&gt;}&gt;</span>
+  <span class="line">      &lt;<span class="ct">Dashboard</span> /&gt; <span class="cm">{/* while the Dashboard.js chunk downloads, shows &lt;Spinner /&gt; */}</span></span>
+  <span class="line">    &lt;/<span class="ct">Suspense</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// No manual "isLoading" state needed — the Suspense boundary handles it</span></span>
+      </div>
+    </div>
+
+    <div id="tab-susp-multiple" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="cm">// Nested/multiple boundaries — different parts of the UI can load independently</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ProfilePage</span>() {</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">ProfileHeader</span> /&gt; <span class="cm">{/* renders immediately, not wrapped */}</span></span>
+  <span class="line"></span>
+  <span class="line">      &lt;<span class="ct">Suspense</span> <span class="ca">fallback</span>={&lt;<span class="ct">PostsSkeleton</span> /&gt;}&gt;</span>
+  <span class="line">        &lt;<span class="ct">ProfilePosts</span> /&gt; <span class="cm">{/* this section can show its OWN loading state */}</span></span>
+  <span class="line">      &lt;/<span class="ct">Suspense</span>&gt;</span>
+  <span class="line"></span>
+  <span class="line">      &lt;<span class="ct">Suspense</span> <span class="ca">fallback</span>={&lt;<span class="ct">FriendsSkeleton</span> /&gt;}&gt;</span>
+  <span class="line">        &lt;<span class="ct">ProfileFriends</span> /&gt; <span class="cm">{/* independent — doesn't wait for Posts */}</span></span>
+  <span class="line">      &lt;/<span class="ct">Suspense</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Each section streams in independently as its own data becomes ready,</span></span>
+  <span class="line"><span class="cm">// instead of the WHOLE page waiting on the SLOWEST piece of data</span></span>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Suspense for DATA FETCHING (not just code-splitting) requires a compatible library/framework</strong> (like Next.js's data fetching, Relay, or React Query with Suspense mode) — you generally cannot make an arbitrary hand-written <ic>fetch</ic> call "suspend" on its own without that supporting infrastructure implementing the required promise-throwing contract.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — useTransition
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>useTransition</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useTransition</ic> lets you mark a STATE UPDATE (that you're triggering) as low-priority/"transition" — React keeps the UI responsive to more urgent updates (like typing) while this one happens in the background, and gives you an <ic>isPending</ic> flag to show a loading indicator.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">TabContainer</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [tab, setTab] = useState(<span class="cs">"home"</span>);</span>
+  <span class="line">  <span class="ck">const</span> [isPending, startTransition] = useTransition();</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">selectTab</span> = (nextTab) => {</span>
+  <span class="line">    startTransition(() => {</span>
+  <span class="line">      setTab(nextTab); <span class="cm">// marked low-priority — can be interrupted by more urgent work</span></span>
+  <span class="line">    });</span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">TabButton</span> <span class="ca">onClick</span>={() => selectTab(<span class="cs">"home"</span>)}&gt;Home&lt;/<span class="ct">TabButton</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">TabButton</span> <span class="ca">onClick</span>={() => selectTab(<span class="cs">"posts"</span>)}&gt;Posts (slow!)&lt;/<span class="ct">TabButton</span>&gt;</span>
+  <span class="line">      {isPending && &lt;<span class="ct">Spinner</span> /&gt;} <span class="cm">{/* shows while the transition is still in progress */}</span></span>
+  <span class="line">      &lt;<span class="ct">TabContent</span> <span class="ca">tab</span>={tab} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Clicking "Posts" (which triggers an expensive re-render) doesn't freeze</span></span>
+  <span class="line"><span class="cm">// the tab buttons themselves — they stay clickable and responsive throughout</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Classic use case: search-as-you-type with an expensive results render.</strong> Keep the input itself updating at HIGH priority (feels instant), while the potentially slow list re-render happens as a LOW priority transition — if the user keeps typing, React abandons the stale, in-progress transition and starts a fresh one for the latest input, rather than rendering results for text the user has already changed.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — useDeferredValue
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>useDeferredValue</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useDeferredValue</ic> gives you a "lagging" copy of a VALUE — it returns the OLD value while a slow render for the NEW value happens in the background, then updates once ready. Use it when you receive a value (like a prop, or from a hook you don't control) rather than owning the setter yourself.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchResults</span>({ query }) {</span>
+  <span class="line">  <span class="ck">const</span> deferredQuery = useDeferredValue(query);</span>
+  <span class="line">  <span class="cm">// deferredQuery LAGS BEHIND "query" during rapid changes — it's the LAST</span></span>
+  <span class="line">  <span class="cm">// value React had time to fully render with, not necessarily the latest one</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> results = <span class="cf">useMemo</span>(</span>
+  <span class="line">    () => <span class="cf">expensiveSearch</span>(deferredQuery),</span>
+  <span class="line">    [deferredQuery] <span class="cm">// recompute only when the DEFERRED value settles</span></span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> isStale = query !== deferredQuery; <span class="cm">// true while results are "catching up"</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span> <span class="ca">style</span>={{ opacity: isStale ? <span class="cn">0.5</span> : <span class="cn">1</span> }}&gt;</span>
+  <span class="line">      &lt;<span class="ct">ResultsList</span> <span class="ca">results</span>={results} /&gt;</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">value</span>={query} <span class="ca">onChange</span>={(e) => setQuery(e.target.value)} /&gt; <span class="cm">{/* stays snappy */}</span></span>
+  <span class="line">      &lt;<span class="ct">SearchResults</span> <span class="ca">query</span>={query} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>The classic distinction interviewers probe for:</strong> use <ic>useTransition</ic> when YOU are calling the state setter that triggers the slow update. Use <ic>useDeferredValue</ic> when you're just RECEIVING a value (e.g. as a prop from a parent you don't control, or from a third-party hook) and want to render an expensive consumer of it without blocking on every change.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — useTransition vs useDeferredValue
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>useTransition vs useDeferredValue — Side by Side</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>useTransition</th><th>useDeferredValue</th></tr></thead>
+      <tbody>
+        <tr><td>What it wraps</td><td>A function that calls a state SETTER</td><td>An existing VALUE (state, prop, or context)</td></tr>
+        <tr><td>You need to own the state</td><td class="yes">✓ Yes — you call setState inside it</td><td class="no">✗ No — works on any value you receive</td></tr>
+        <tr><td>Gives you a pending flag</td><td class="yes">✓ Yes — isPending</td><td class="no">✗ No — you derive "isStale" yourself by comparing values</td></tr>
+        <tr><td>Typical trigger</td><td>An event handler you write (tab click, filter change)</td><td>A prop/value that changes from ABOVE your component</td></tr>
+        <tr><td>Underlying mechanism</td><td>Marks the UPDATE as low priority</td><td>Marks re-rendering FOR the new value as low priority</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Both are built on the SAME underlying Fiber capability (interruptible, priority-based rendering) — they're just two different ergonomic APIs for the two different situations of "I'm triggering this update" vs "I received this value and want to consume it without blocking."</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Decision Guide
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Which One Do I Need? — Decision Guide</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Walk through in order</div>
+      <div class="decision-step">
+        <div class="decision-q">Are you loading async code (lazy component) or data (with a supporting library)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Suspense</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are multiple state setters firing together and you want ONE re-render?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Automatic batching (usually free — no code needed)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are YOU calling a state setter that triggers a slow render, and want to keep other UI responsive?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">useTransition</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are you RECEIVING a value (prop/context) that changes rapidly, feeding an expensive render?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">useDeferredValue</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Automatic batching only applies with createRoot</strong> — apps still using the legacy `ReactDOM.render` API don't get it, even on React 18, since the new root API is what actually opts into the new behavior.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>startTransition's callback must be SYNCHRONOUS</strong> — you can't put an `await` directly inside it and expect the code after it to still be treated as part of the transition; only the state updates that happen synchronously within that callback are marked low-priority.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useTransition's state update is still not "skipped" or delayed indefinitely</strong> — it WILL happen, just at lower priority; if nothing more urgent comes along, it may complete almost immediately.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useDeferredValue does not debounce or throttle on a timer</strong> — it's not "wait 300ms" logic; it's priority-based, tied to React's actual rendering capacity, which behaves differently from a fixed-delay debounce/throttle utility.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Suspense for data fetching is NOT automatically available for any random fetch() call</strong> — hand-rolled data fetching doesn't inherently support the "throw a promise" contract Suspense needs; you need a compatible framework/library (Next.js, Relay, React Query's Suspense mode, etc.) actually built to integrate with it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A Suspense fallback replaces the ENTIRE wrapped subtree, not just the missing piece</strong> — if you wrap too much in one boundary, unrelated already-loaded content gets hidden behind the fallback too; splitting into multiple, more granular Suspense boundaries avoids this.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>flushSync should be used sparingly</strong> — forcing a synchronous update defeats the performance benefits batching provides, and is really only needed for specific edge cases like reading DOM measurements immediately after a state change.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Marking an update with startTransition does not make the RENDER itself faster</strong> — the same amount of computation still happens; the benefit is that OTHER, more urgent updates aren't blocked while it happens, not that the total work is reduced.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useDeferredValue's "staleness" needs to be manually detected</strong> if you want to show a visual indicator (e.g. dimmed opacity) — React doesn't give you a built-in boolean like `isPending`; you compare the live value to the deferred value yourself (`value !== deferredValue`).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>None of these features change WHAT gets rendered</strong> — they only change the SCHEDULING/timing/priority of when rendering work happens; the final UI output for a given state is identical with or without transitions/deferred values, just potentially delayed under load.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>These React 18 features are frequently tested for practical judgment, not just API recall — expect questions probing WHY each exists, WHEN to reach for it over the alternatives, and HOW it behaves under specific scenarios.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is automatic batching, and what changed about it in React 18?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Batching is grouping multiple state updates that occur within the same tick into a single re-render, rather than re-rendering once per individual `setState` call. Before React 18, this only happened inside React's own synthetic event handlers (onClick, onChange). React 18, when using the new `createRoot` API, extends batching to happen EVERYWHERE — inside `setTimeout`, native DOM event listeners, Promise `.then()` callbacks, and async/await continuations — making the behavior consistent and more performant across the entire app by default.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why was extending batching to "everywhere" considered valuable enough to be a headline React 18 feature?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The old inconsistency (batched in event handlers, NOT batched in timeouts/promises/native listeners) made performance unpredictable purely based on WHERE in your code a state update happened to originate — the exact same two `setState` calls could cause 1 render or 2 renders depending on their calling context, which is a confusing, easy-to-miss source of unnecessary re-renders. Making batching universal removes this inconsistency, reducing wasted render work across the entire app automatically, without requiring any code changes from developers.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you need flushSync to opt OUT of automatic batching?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Rarely — but a legitimate case is needing to read an updated DOM measurement (like a scroll position or element height) immediately after a state change, before the browser paints, where the normal async/batched update timing would be too late for your synchronous DOM-reading logic. `flushSync(() => setState(...))` forces that specific update to apply synchronously and immediately. This should be used sparingly since it sacrifices the performance benefits of batching for that particular update.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you migrate an app to get automatic batching if it's currently using ReactDOM.render?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Replace the legacy root API with the new one:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="cm">// Before</span></span>
+  <span class="line"><span class="ck">import</span> ReactDOM <span class="ck">from</span> <span class="cs">"react-dom"</span>;</span>
+  <span class="line">ReactDOM.render(&lt;<span class="ct">App</span> /&gt;, document.getElementById(<span class="cs">"root"</span>));</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// After</span></span>
+  <span class="line"><span class="ck">import</span> { createRoot } <span class="ck">from</span> <span class="cs">"react-dom/client"</span>;</span>
+  <span class="line"><span class="ck">const</span> root = createRoot(document.getElementById(<span class="cs">"root"</span>));</span>
+  <span class="line">root.render(&lt;<span class="ct">App</span> /&gt;);</span>
+          </div>
+          This single change unlocks automatic batching (and other React 18 concurrent features) for the entire app, with no other code modifications strictly required.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What problem does Suspense solve, and what exactly does it replace?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Suspense provides a declarative way to show a fallback UI while a component (or its data/code) isn't ready yet, replacing the common manual pattern of tracking an `isLoading` boolean in state, conditionally rendering a spinner, and juggling that logic across potentially many components. Instead, you wrap the part of the tree that might not be ready in a `&lt;Suspense fallback={...}&gt;` boundary, and React automatically shows the fallback until everything inside successfully renders, without you writing any loading-state plumbing yourself for that boundary.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't you just wrap any regular fetch() call in Suspense and expect it to show the fallback automatically?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Suspense works by a component "throwing" a Promise during render when its data isn't ready yet — React catches that thrown Promise, shows the nearest fallback, and re-attempts rendering once the Promise resolves. A plain `fetch()` call inside a `useEffect` doesn't follow this contract; it resolves asynchronously and typically stores its result in state via a setter, which is a completely different mechanism that Suspense has no visibility into. To make data fetching work with Suspense, you need a library/framework specifically built to implement the throw-a-promise pattern under the hood (like Next.js's data layer, Relay, or React Query configured for Suspense) — you generally can't bolt it onto arbitrary hand-written fetch logic.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use multiple, smaller Suspense boundaries instead of one large one wrapping the whole page?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When different sections of a page have independent, separately-loading data and you don't want the WHOLE page to wait on the SLOWEST section before showing anything. Wrapping each independent section in its own Suspense boundary lets faster sections render and become visible as soon as THEIR data is ready, rather than the entire page staying on a single fallback until every single piece — including the slowest one — has finished loading. This creates a more progressive, streaming-like loading experience.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the core difference between useTransition and useDeferredValue?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `useTransition` wraps a FUNCTION that calls a state setter YOU own — you use it when you're the one triggering the update and want to mark that specific state change as low priority, and it gives you an `isPending` flag. `useDeferredValue` instead wraps an existing VALUE (often a prop or value from a hook you don't control) and gives you back a version of it that "lags behind" during rapid changes, letting you render an expensive consumer of that value without blocking on every single change — but it does NOT give you a built-in pending flag; you compare the live and deferred values yourself to detect staleness.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why would you choose useDeferredValue over useTransition for a search results list fed by a prop?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If the component rendering the expensive results list doesn't OWN the state setter for the search query — it just RECEIVES the query as a prop from a parent — there's no state-setting function available inside this component to wrap with `startTransition`. `useDeferredValue` solves exactly this scenario: it lets the component receiving the value decide, independently, to render an expensive consumer of that value at lower priority, without needing access to (or control over) whoever originally owns and updates the underlying state.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you reach for useTransition/useDeferredValue at all, versus just leaving a component as a normal, synchronous update?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Only when you've identified an ACTUAL performance problem — specifically, an expensive render (large lists, complex computations, many simultaneously updating components) that's causing a noticeably janky or unresponsive experience, especially for OTHER, more urgent interactions happening at the same time (like typing feeling laggy because each keystroke triggers a slow re-render). For small or fast-rendering components, wrapping updates in these APIs adds complexity without any perceptible benefit — they're a targeted performance tool for a specific class of problem, not something to apply by default to every state update.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement a search box where typing stays responsive even though filtering a huge list is slow, using useTransition?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchBox</span>({ allItems }) {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">const</span> [results, setResults] = useState(allItems);</span>
+  <span class="line">  <span class="ck">const</span> [isPending, startTransition] = useTransition();</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleChange</span> = (e) => {</span>
+  <span class="line">    <span class="ck">const</span> value = e.target.value;</span>
+  <span class="line">    setQuery(value); <span class="cm">// HIGH priority — input stays instant</span></span>
+  <span class="line"></span>
+  <span class="line">    startTransition(() => {</span>
+  <span class="line">      <span class="cm">// LOW priority — can be interrupted by the NEXT keystroke</span></span>
+  <span class="line">      setResults(allItems.filter(item => item.name.includes(value)));</span>
+  <span class="line">    });</span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">value</span>={query} <span class="ca">onChange</span>={handleChange} /&gt;</span>
+  <span class="line">      {isPending && &lt;<span class="ct">span</span>&gt;Updating...&lt;/<span class="ct">span</span>&gt;}</span>
+  <span class="line">      &lt;<span class="ct">ResultsList</span> <span class="ca">results</span>={results} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+          </div>
+          The input's own value updates immediately (high priority), while the expensive filtering happens as an interruptible background transition — if the user keeps typing quickly, React abandons stale in-progress filter renders and starts fresh with the latest query, rather than working through an ever-growing backlog of outdated renders.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · React 18 · Automatic Batching · Suspense · useTransition · useDeferredValue
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
