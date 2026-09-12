@@ -165,6 +165,14 @@
         color: var(--accent);
       }
 
+      .mobile-menu-toggle {
+        display: none;
+      }
+
+      .sidebar-backdrop {
+        display: none;
+      }
+
       /* Main */
       .main {
         padding: 40px 48px;
@@ -579,28 +587,162 @@
         .app {
           grid-template-columns: 1fr;
         }
-        .sidebar {
-          display: none;
+
+        .mobile-menu-toggle {
+          display: flex;
+          position: fixed;
+          top: 16px;
+          left: 16px;
+          z-index: 60;
+          width: 44px;
+          height: 44px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: rgba(19, 22, 27, 0.9);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 5px;
+          cursor: pointer;
         }
+
+        .mobile-menu-toggle span {
+          display: block;
+          width: 20px;
+          height: 2px;
+          background: var(--text);
+          border-radius: 2px;
+          transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .mobile-menu-toggle[aria-expanded="true"] span:nth-child(1) {
+          transform: translateY(7px) rotate(45deg);
+        }
+
+        .mobile-menu-toggle[aria-expanded="true"] span:nth-child(2) {
+          opacity: 0;
+        }
+
+        .mobile-menu-toggle[aria-expanded="true"] span:nth-child(3) {
+          transform: translateY(-7px) rotate(-45deg);
+        }
+
+        .sidebar-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(3, 6, 10, 0.7);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease, visibility 0.2s ease;
+          z-index: 30;
+        }
+
+        .sidebar-backdrop.visible {
+          opacity: 1;
+          visibility: visible;
+        }
+
+        .sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: min(280px, 82vw);
+          transform: translateX(-104%);
+          transition: transform 0.25s ease;
+          z-index: 40;
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          padding: 24px 0 16px;
+          border-right: 1px solid var(--border);
+          background: rgba(19, 22, 27, 0.98);
+          backdrop-filter: blur(10px);
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .sidebar-logo {
+          width: 100%;
+          padding: 0 20px 20px;
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 8px;
+        }
+
+        .nav-section-label {
+          width: 100%;
+          padding: 10px 20px 6px;
+        }
+
+        .nav-item {
+          padding: 12px 20px;
+          border-left: none;
+          border-bottom: 2px solid transparent;
+        }
+
+        .nav-item.active {
+          border-left-color: transparent;
+          border-bottom-color: var(--accent);
+        }
+
         .main {
           padding: 24px 20px;
+          padding-top: 80px;
         }
+
         .stats-row {
           grid-template-columns: 1fr 1fr;
         }
+
         .task-grid {
           grid-template-columns: 1fr;
         }
+
         .dash-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .sidebar {
+          width: min(260px, 86vw);
+        }
+
+        .nav-item {
+          min-width: 100%;
+          width: 100%;
+        }
+
+        .page-header h2 {
+          font-size: 26px;
+        }
+
+        .stats-row {
           grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
+    <button
+      class="mobile-menu-toggle"
+      type="button"
+      aria-label="Open navigation"
+      aria-expanded="false"
+      onclick="toggleSidebar()"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
     <div class="app">
       <!-- ═══ SIDEBAR ═══ -->
-      <nav class="sidebar">
+      <nav class="sidebar" id="sidebar-nav">
         <div class="sidebar-logo">
           <div class="tag">7 YOE · Frontend</div>
           <h1>Interview<br /><em>Prep Tracker</em></h1>
@@ -4366,6 +4508,28 @@
         }
       }
 
+      function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar-nav");
+        const toggle = document.querySelector(".mobile-menu-toggle");
+        const backdrop = document.getElementById("sidebar-backdrop");
+        if (!sidebar || !toggle || !backdrop) return;
+
+        const isOpen = sidebar.classList.toggle("open");
+        toggle.setAttribute("aria-expanded", String(isOpen));
+        backdrop.classList.toggle("visible", isOpen);
+      }
+
+      function closeSidebar() {
+        const sidebar = document.getElementById("sidebar-nav");
+        const toggle = document.querySelector(".mobile-menu-toggle");
+        const backdrop = document.getElementById("sidebar-backdrop");
+        if (!sidebar || !toggle || !backdrop) return;
+
+        sidebar.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+        backdrop.classList.remove("visible");
+      }
+
       function showPage(pageId, navEl) {
         document
           .querySelectorAll(".page")
@@ -4376,9 +4540,42 @@
         const page = document.getElementById("page-" + pageId);
         if (page) page.classList.add("active");
         if (navEl) navEl.classList.add("active");
+        if (window.innerWidth <= 900) closeSidebar();
         window.scrollTo(0, 0);
         buildWeekRows();
       }
+
+      function resolveGuideUrl(relativePath) {
+        try {
+          return new URL(relativePath, window.location.href).href;
+        } catch (error) {
+          return relativePath;
+        }
+      }
+
+      function openGuide(relativePath) {
+        const url = resolveGuideUrl(relativePath);
+        if (window.location.protocol === "file:") {
+          window.location.href = url;
+          return;
+        }
+        window.open(url, "_self");
+      }
+
+      document.addEventListener("click", (event) => {
+        const link = event.target.closest(".resource-link");
+        if (!link) return;
+
+        const href = link.getAttribute("href");
+        if (!href || href.startsWith("http://") || href.startsWith("https://")) return;
+
+        event.preventDefault();
+        openGuide(href);
+      });
+
+      document.querySelectorAll(".resource-link").forEach((link) => {
+        link.setAttribute("target", "_self");
+      });
 
       function restoreState() {
         Object.entries(state).forEach(([taskId, status]) => {
