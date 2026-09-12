@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>React Server Components — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .section-header h2 .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle; letter-spacing: 0.05em;
+    background: rgba(92,255,176,0.1); color: var(--accent); border: 1px solid rgba(92,255,176,0.2);
+  }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(92,255,176,0.12); color: #7affc4; border-color: rgba(92,255,176,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Limitation cards ── */
+  .limit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .limit-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.85rem 1rem; border-left: 3px solid var(--red);
+  }
+  .limit-title { font-family: var(--font-mono); font-size: 12.5px; color: #ff9a9a; margin-bottom: 6px; font-weight: 500; }
+  .limit-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Server Components</div>
+    <h1>React Server Components</h1>
+    <p>What Renders Where · RSC vs SSR · Current Limitations — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Are RSC?</a>
+    <a class="topic-pill" href="#s2">2. What Renders Where</a>
+    <a class="topic-pill" href="#s3">3. RSC vs SSR</a>
+    <a class="topic-pill" href="#s4">4. The Client Boundary</a>
+    <a class="topic-pill" href="#s5">5. Data Fetching in RSC</a>
+    <a class="topic-pill" href="#s6">6. The Serialization Boundary</a>
+    <a class="topic-pill" href="#s7">7. Current Limitations</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Concept</th><th>What it means</th><th>Key distinction</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Server Component</td><td>Renders ONLY on the server, ships zero JS to the client</td><td>Default in the App Router — no directive needed</td></tr>
+      <tr><td>Client Component</td><td>Renders on the server first (for SSR), then hydrates and can re-render in the browser</td><td>Opt-in via the "use client" directive</td></tr>
+      <tr><td>SSR</td><td>Rendering HTML on the server, then hydrating that SAME component tree in the browser</td><td>Every component's JS still ships to the client</td></tr>
+      <tr><td>RSC payload</td><td>A special serialized format (not HTML, not JSON) describing the rendered tree</td><td>Streamed to the client, NOT re-executed there for Server Components</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Are Server Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Are React Server Components?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Server Components (RSC)</strong> are components that render EXCLUSIVELY on the server — their code, and the libraries they depend on, NEVER get shipped to the browser as JavaScript at all. The browser only ever receives the already-rendered OUTPUT (a special serialized description of it), not the component's source code.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// app/page.js — a Server Component by DEFAULT in the Next.js App Router</span></span>
+  <span class="line"><span class="cm">// No "use client" directive = this runs ONLY on the server</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">BlogPage</span>() {</span>
+  <span class="line">  <span class="cm">// Can directly access server-only resources — no API layer needed!</span></span>
+  <span class="line">  <span class="ck">const</span> posts = <span class="ck">await</span> db.posts.findMany(); <span class="cm">// direct database call</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">h1</span>&gt;Blog&lt;/<span class="ct">h1</span>&gt;</span>
+  <span class="line">      {posts.map((post) =&gt; (</span>
+  <span class="line">        &lt;<span class="ct">article</span> <span class="ca">key</span>={post.id}&gt;</span>
+  <span class="line">          &lt;<span class="ct">h2</span>&gt;{post.title}&lt;/<span class="ct">h2</span>&gt;</span>
+  <span class="line">          &lt;<span class="ct">p</span>&gt;{post.excerpt}&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line">        &lt;/<span class="ct">article</span></span>
+  <span class="line">      ))}</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> BlogPage;</span>
+  <span class="line"><span class="cm">// The database client library, the query logic, and this component's own</span></span>
+  <span class="line"><span class="cm">// code NEVER reach the browser — zero bytes of JS shipped for this piece</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The headline benefit:</strong> smaller client-side JavaScript bundles. A component that renders a large markdown parser, a heavy date library, or fetches directly from a database can do ALL of that server-side — none of that code or its dependencies ever needs to be downloaded, parsed, or executed by the user's browser.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — What Renders Where
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>What Renders Where — Visualizing the Split</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">A typical page — Server Components form the shell, Client Components are interactive islands</div>
+      <svg class="diagram-svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="660" height="240" rx="10" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <text x="40" y="42" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">SERVER — runs only here, zero JS shipped</text>
+
+        <rect x="40" y="55" width="620" height="45" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="82" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Page (Server Component) — fetches data directly</text>
+
+        <rect x="60" y="115" width="280" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="200" y="139" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Header (Server Component)</text>
+
+        <rect x="360" y="115" width="280" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="500" y="139" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">ArticleList (Server Component)</text>
+
+        <rect x="60" y="180" width="280" height="65" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="2"/>
+        <text x="200" y="202" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">"use client"</text>
+        <text x="200" y="218" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5">SearchBar (Client Component)</text>
+        <text x="200" y="233" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">ships JS, hydrates, interactive</text>
+
+        <rect x="360" y="180" width="280" height="65" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="2"/>
+        <text x="500" y="202" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">"use client"</text>
+        <text x="500" y="218" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5">LikeButton (Client Component)</text>
+        <text x="500" y="233" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">ships JS, hydrates, interactive</text>
+
+        <text x="350" y="270" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Server Components form the STATIC shell; Client Components are small, deliberate "islands" of interactivity within it</text>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Question</th><th>Server Component</th><th>Client Component</th></tr></thead>
+      <tbody>
+        <tr><td>Runs on the server</td><td class="yes">✓ Yes — only there</td><td class="yes">✓ Yes — once, for the initial HTML (SSR)</td></tr>
+        <tr><td>Runs in the browser</td><td class="no">✗ Never</td><td class="yes">✓ Yes — hydrates, and re-renders on state/interaction</td></tr>
+        <tr><td>Ships JS to the client</td><td class="no">✗ No — zero bytes</td><td class="yes">✓ Yes — its code becomes part of the JS bundle</td></tr>
+        <tr><td>Can use useState/useEffect</td><td class="no">✗ No — no hooks that imply interactivity/browser APIs</td><td class="yes">✓ Yes</td></tr>
+        <tr><td>Can directly query a database</td><td class="yes">✓ Yes — server-only code is safe here</td><td class="no">✗ No — would leak credentials/logic to the browser</td></tr>
+        <tr><td>Can access browser APIs (window, localStorage)</td><td class="no">✗ No — no browser exists at render time</td><td class="yes">✓ Yes</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — RSC vs SSR
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>RSC vs SSR — The Key Difference</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>This is the single most commonly confused distinction: <strong>SSR (Server-Side Rendering)</strong> renders NORMAL client components to HTML on the server for a fast first paint — but the SAME component code THEN ships to the browser to be hydrated and take over. <strong>RSC</strong> means the component ONLY EVER runs on the server — its code never ships at all, hydration doesn't apply to it, and it can never re-render in the browser.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">SSR-only app vs an app using Server Components</div>
+      <svg class="diagram-svg" viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="22" fill="#6ab0ff" font-family="Inter, sans-serif" font-size="11" font-weight="600">Traditional SSR (e.g. classic Next.js pages, or CRA + renderToString)</text>
+        <rect x="20" y="32" width="180" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="56" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Render to HTML (server)</text>
+        <path d="M200 52 L250 52" stroke="#6ab0ff" stroke-width="1.5" marker-end="url(#arrowBlue7)"/>
+        <rect x="250" y="32" width="180" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="340" y="56" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Ship SAME JS to browser</text>
+        <path d="M430 52 L480 52" stroke="#6ab0ff" stroke-width="1.5" marker-end="url(#arrowBlue7)"/>
+        <rect x="480" y="32" width="180" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="570" y="56" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Hydrate in browser</text>
+
+        <text x="20" y="115" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">With Server Components</text>
+        <rect x="20" y="125" width="180" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="110" y="149" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5">Render RSC (server only)</text>
+        <path d="M200 145 L250 145" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreen7)"/>
+        <rect x="250" y="125" width="180" height="40" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="340" y="145" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">Ship ONLY Client Component</text>
+        <text x="340" y="158" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">JS (much smaller!)</text>
+        <path d="M430 145 L480 145" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRed5)"/>
+        <rect x="480" y="125" width="180" height="40" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="570" y="149" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5">Hydrate ONLY that part</text>
+
+        <text x="350" y="210" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">RSC components (green) are OMITTED entirely from the JS bundle — only Client Components (red) get shipped and hydrated</text>
+
+        <defs>
+          <marker id="arrowBlue7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowGreen7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowRed5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>SSR (of Client Components)</th><th>React Server Components</th></tr></thead>
+      <tbody>
+        <tr><td>Where it runs</td><td>Server (first render) AND client (hydration + updates)</td><td>Server ONLY, forever</td></tr>
+        <tr><td>Ships JS for that component?</td><td class="yes">✓ Yes, always</td><td class="no">✗ Never</td></tr>
+        <tr><td>Hydration needed?</td><td class="yes">✓ Yes</td><td class="no">✗ No — nothing to hydrate, it's not interactive</td></tr>
+        <tr><td>Can it use useState/useEffect?</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>Solves</td><td>Faster FIRST PAINT / SEO for an otherwise client-rendered app</td><td>Reducing the amount of JS shipped AT ALL for non-interactive parts</td></tr>
+        <tr><td>Relationship</td><td colspan="2" style="text-align:center; color:var(--text3)">RSC is a NEW rendering model that can be COMBINED with SSR — most RSC frameworks (like Next.js App Router) use SSR for the Client Component portions of the tree too</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The clearest one-line distinction to give in an interview:</strong> SSR is about WHEN a component first renders (server, for speed/SEO) — the component still fully exists on the client afterward. RSC is about WHERE a component EVER renders (server, permanently) — it has no client-side existence at all.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — The Client Boundary
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>The "use client" Boundary</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Components are Server Components BY DEFAULT. Adding the <ic>"use client"</ic> directive at the top of a file marks it (and everything it imports) as a CLIENT boundary — from that point down the tree, components behave like traditional React: they can use hooks, browser APIs, and event handlers.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// components/LikeButton.js</span></span>
+  <span class="line"><span class="cs">"use client"</span>; <span class="cm">// marks this file — and everything it imports — as CLIENT</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">import</span> { useState } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">LikeButton</span>({ initialLikes }) {</span>
+  <span class="line">  <span class="ck">const</span> [likes, setLikes] = useState(initialLikes); <span class="cm">// hooks ONLY work in Client Components</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setLikes(likes + <span class="cn">1</span>)}&gt;</span>
+  <span class="line">      ❤️ {likes}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> LikeButton;</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>"use client" marks a BOUNDARY, not just one file.</strong> It doesn't mean "only this component is a Client Component" — it means "from HERE DOWN, everything is part of the client bundle." Any component this file imports (even if that imported file has no directive of its own) becomes part of the client tree too.</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab(event,'boundary-composing')">Composing Server + Client</button>
+      <button class="tab-btn" onclick="showTab(event,'boundary-children')">Passing Server Components as children</button>
+    </div>
+
+    <div id="tab-boundary-composing" class="tab-panel active">
+      <div class="code-block">
+  <span class="line"><span class="cm">// app/page.js — Server Component (no directive)</span></span>
+  <span class="line"><span class="ck">import</span> LikeButton <span class="ck">from</span> <span class="cs">"./LikeButton"</span>; <span class="cm">// a Client Component</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">ArticlePage</span>({ params }) {</span>
+  <span class="line">  <span class="ck">const</span> article = <span class="ck">await</span> db.articles.findById(params.id); <span class="cm">// server-only data fetch</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">article</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">h1</span>&gt;{article.title}&lt;/<span class="ct">h1</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">p</span>&gt;{article.body}&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">LikeButton</span> <span class="ca">initialLikes</span>={article.likes} /&gt; <span class="cm">{/* a Client "island" inside a Server tree */}</span></span>
+  <span class="line">    &lt;/<span class="ct">article</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Server Components CAN import and render Client Components — this is the</span></span>
+  <span class="line"><span class="cm">// normal, expected direction of composition</span></span>
+      </div>
+    </div>
+
+    <div id="tab-boundary-children" class="tab-panel">
+      <div class="code-block">
+  <span class="line"><span class="cm">// The REVERSE (Client importing Server) is NOT allowed directly — but you</span></span>
+  <span class="line"><span class="cm">// CAN pass a Server Component as "children"/a prop into a Client Component!</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cs">"use client"</span>;</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ExpandablePanel</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [isOpen, setIsOpen] = useState(<span class="ck">false</span>);</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setIsOpen(!isOpen)}&gt;Toggle&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">      {isOpen &amp;&amp; children} <span class="cm">{/* renders whatever was passed in — could be a Server Component! */}</span></span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// app/page.js — a Server Component</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Page</span>() {</span>
+  <span class="line">  <span class="ck">const</span> data = <span class="ck">await</span> db.getExpensiveData(); <span class="cm">// server-only fetch, stays server-side</span></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">ExpandablePanel</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">ServerRenderedContent</span> <span class="ca">data</span>={data} /&gt; <span class="cm">{/* this stays a Server Component! */}</span></span>
+  <span class="line">    &lt;/<span class="ct">ExpandablePanel</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// The Client Component never IMPORTS the Server Component — it just receives</span></span>
+  <span class="line"><span class="cm">// its ALREADY-RENDERED output as "children", passed down from a parent that</span></span>
+  <span class="line"><span class="cm">// CAN see both. This pattern is key to minimizing what actually becomes "client."</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Data Fetching in Server Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Data Fetching in Server Components</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Server Components can be <ic>async</ic> functions directly — you <ic>await</ic> data right inside the component body, with no <ic>useEffect</ic>, no loading state boilerplate, and no client-side request waterfall for that data.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Traditional client-side fetching</div>
+        <div class="code-block">
+  <span class="line"><span class="cs">"use client"</span>;</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Profile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [loading, setLoading] = useState(<span class="ck">true</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    fetch(`/api/users/${userId}`)</span>
+  <span class="line">      .then((r) =&gt; r.json())</span>
+  <span class="line">      .then((data) =&gt; {</span>
+  <span class="line">        setUser(data);</span>
+  <span class="line">        setLoading(<span class="ck">false</span>);</span>
+  <span class="line">      });</span>
+  <span class="line">  }, [userId]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">if</span> (loading) <span class="ck">return</span> &lt;<span class="ct">Spinner</span> /&gt;;</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Needs an API route, ships fetch logic</span></span>
+  <span class="line"><span class="cm">// to the client, manual loading state</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Server Component data fetching</div>
+        <div class="code-block">
+  <span class="line"><span class="cm">// no directive — Server Component</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Profile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> user = <span class="ck">await</span> db.users.findById(userId);</span>
+  <span class="line">  <span class="cm">// direct DB call — no API route,</span></span>
+  <span class="line">  <span class="cm">// no client fetch, no loading state</span></span>
+  <span class="line">  <span class="cm">// needed at all for THIS component</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// The component simply doesn't</span></span>
+  <span class="line"><span class="cm">// render until the data is ready —</span></span>
+  <span class="line"><span class="cm">// React streams the result in</span></span>
+  <span class="line"><span class="cm">// (often paired with Suspense for</span></span>
+  <span class="line"><span class="cm">// a fallback while it awaits)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Pairing with Suspense for a streaming loading state</span></span>
+  <span class="line"><span class="ck">import</span> { Suspense } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Page</span>() {</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">h1</span>&gt;Dashboard&lt;/<span class="ct">h1</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">Suspense</span> <span class="ca">fallback</span>={&lt;<span class="ct">Spinner</span> /&gt;}&gt;</span>
+  <span class="line">        &lt;<span class="ct">SlowServerComponent</span> /&gt; <span class="cm">{/* streams in once its await resolves */}</span></span>
+  <span class="line">      &lt;/<span class="ct">Suspense</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — The Serialization Boundary
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>The Serialization Boundary — Passing Props Across</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>When a Server Component passes props to a Client Component, those props MUST be <strong>serializable</strong> — they cross an actual network/process boundary in a special RSC payload format. Functions, class instances, Dates handled incorrectly, Symbols, and other non-serializable values generally CANNOT be passed as props from Server to Client.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Passing a function/non-serializable prop</div>
+        <div class="code-block">
+  <span class="line"><span class="cm">// Server Component</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Page</span>() {</span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"clicked"</span>); <span class="cm">// this is server-only code!</span></span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">ClientButton</span> <span class="ca">onClick</span>={handleClick} /&gt;;</span>
+  <span class="line">  <span class="cm">// ✗ ERROR — functions can't be</span></span>
+  <span class="line">  <span class="cm">// serialized across the boundary</span></span>
+  <span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Pass plain data; define the handler in the client</div>
+        <div class="code-block">
+  <span class="line"><span class="cm">// Server Component — pass plain, serializable data only</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Page</span>() {</span>
+  <span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> db.products.find(<span class="cn">1</span>);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">ClientButton</span> <span class="ca">productId</span>={product.id} /&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Client Component — owns its own handler logic</span></span>
+  <span class="line"><span class="cs">"use client"</span>;</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ClientButton</span>({ productId }) {</span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () =&gt; console.log(productId);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleClick}&gt;Buy&lt;/<span class="ct">button</span>&gt;;</span>
+  <span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Can cross Server → Client as a prop?</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td class="yes">✓ Plain objects, arrays, strings, numbers, booleans</td><td>{ id: 1, title: "Post", tags: ["a", "b"] }</td></tr>
+        <tr><td class="yes">✓ Other React elements (including Server Components as "children")</td><td>&lt;ClientWrapper&gt;&lt;ServerChild /&gt;&lt;/ClientWrapper&gt;</td></tr>
+        <tr><td class="no">✗ Functions / event handlers</td><td>onClick={someServerFunction} — not allowed</td></tr>
+        <tr><td class="no">✗ Class instances (non-plain objects)</td><td>A custom class instance with methods</td></tr>
+        <tr><td class="no">✗ Symbols</td><td>Symbol("id") as a prop value</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Current Limitations
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Current Limitations</h2>
+    </div>
+
+    <div class="limit-grid">
+      <div class="limit-card">
+        <div class="limit-title">No hooks in Server Components</div>
+        <div class="limit-desc">useState, useEffect, useContext, useReducer, and any hook implying interactivity or a persistent client instance simply cannot be used — Server Components render once, on the server, and are gone.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">No browser APIs</div>
+        <div class="limit-desc">window, document, localStorage, and similar don't exist at Server Component render time — there is no browser involved in producing their output.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Framework-dependent</div>
+        <div class="limit-desc">RSC isn't something you "turn on" in plain Create React App or a bare Vite+React setup — it requires a framework/bundler that implements the RSC protocol (currently, primarily Next.js's App Router).</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Serialization boundary constraints</div>
+        <div class="limit-desc">Props passed from Server to Client Components must be serializable — no functions, class instances, or other non-plain values, which can require restructuring code that used to pass callbacks freely.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Third-party library compatibility</div>
+        <div class="limit-desc">Many existing libraries assume they can use hooks or browser APIs freely and aren't written with the Server/Client distinction in mind — some require wrapping in a Client Component, or don't yet officially support RSC.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Mental model / learning curve</div>
+        <div class="limit-desc">Deciding what should be a Server vs Client Component, understanding the boundary rules, and debugging serialization errors is a genuinely new set of concepts beyond "classic" React that teams need to learn.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">Tooling and ecosystem still maturing</div>
+        <div class="limit-desc">Testing utilities, some dev-tools workflows, and broader ecosystem support for RSC-specific patterns are newer and less battle-tested than the decade-plus-mature traditional client-rendering ecosystem.</div>
+      </div>
+      <div class="limit-card">
+        <div class="limit-title">No client-side re-rendering of Server Components</div>
+        <div class="limit-desc">A Server Component can't locally re-render in response to client interaction — updating what it shows generally requires a full server round-trip (e.g. a Server Action or navigation) to re-render and re-stream it.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Confusing RSC with SSR is the single most common mistake</strong> — SSR is a RENDERING STRATEGY for regular (client) components to speed up first paint; RSC is a fundamentally different CATEGORY of component that never exists on the client at all. They're complementary, not the same thing, and not mutually exclusive.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"use client" does not mean the component ONLY runs on the client</strong> — a Client Component is typically still server-rendered for the initial HTML (via SSR) and THEN hydrated in the browser; "use client" means "this can ALSO run client-side," not "this ONLY runs client-side."</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"use client" marks a boundary that propagates to everything imported below it</strong> — accidentally importing a Client Component near the ROOT of the tree can inadvertently pull a much larger portion of the app into the client bundle than intended.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>You cannot import a Server Component INTO a Client Component file and render it directly</strong> — the correct pattern is to pass the already-rendered Server Component down as `children`/a prop from a common Server Component ancestor, not to import it inside client code.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Passing a function as a prop from Server to Client throws a serialization error</strong> — a classic gotcha for developers used to freely passing callbacks; event handlers must be DEFINED inside the Client Component itself, not passed down from the server.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Environment variables and secrets used in a Server Component are safe</strong> — but if that same value is accidentally passed as a PROP to a Client Component, it becomes part of the serialized payload sent to the browser, potentially leaking it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Server Components can't hold state across "renders" the way you might expect</strong> — since they render fresh on the server for each request/navigation, there's no persistent component instance retaining state between renders the way a mounted Client Component instance does.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The RSC payload is NOT the same thing as the HTML sent for SSR</strong> — it's a distinct, React-specific serialized format describing the component tree (including "holes" for Client Components), used for the initial load AND for subsequent server-driven updates (e.g. via Server Actions or navigation).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every component needs to fight to be a Server Component</strong> — a component that's inherently interactive (a form, a toggle, an animation) is a natural, correct fit for "use client"; RSC isn't about eliminating Client Components, it's about not defaulting everything to one when it doesn't need to be.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>RSC is primarily associated with (and currently mostly used through) Next.js's App Router</strong> — while the underlying React APIs are framework-agnostic in principle, production-ready RSC support outside of Next.js is still relatively limited as of now, which is worth acknowledging if asked about ecosystem maturity.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>RSC is a newer, architecture-level topic — interviewers often use it to probe whether you understand the underlying MODEL (not just the directive syntax), so practice explaining the reasoning, not just the "how to write it."</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a React Server Component, precisely?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A Server Component is a component that renders EXCLUSIVELY on the server — it has no client-side existence whatsoever. Its source code and any libraries it depends on are never included in the JavaScript bundle sent to the browser; the browser only ever receives the ALREADY-RENDERED output, serialized in a special RSC payload format, which React uses to construct the final UI (interleaved with any Client Component "holes" that do get hydrated normally).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why were Server Components introduced when SSR already existed?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          SSR solves "render fast for the FIRST paint," but the component's full JavaScript still has to ship to the browser afterward for hydration — meaning a component's dependencies (a heavy date-formatting library, a markdown parser, a database client) all end up in the client bundle even if the component never actually needs to re-render or respond to interaction in the browser. Server Components solve a DIFFERENT problem: reducing the amount of JavaScript shipped AT ALL for parts of the UI that are fundamentally non-interactive — letting you use server-only resources (databases, file systems, secrets) directly, and letting large dependencies stay entirely server-side, permanently, rather than just for the first render.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should a component be a Server Component versus a Client Component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Default to a Server Component whenever the component doesn't need interactivity, state, effects, or browser-only APIs — e.g. static content, data display, layout shells, or anything that only needs to fetch and render data. Reach for a Client Component ("use client") specifically when the component needs `useState`/`useEffect`/other hooks, needs to respond to user events (onClick, onChange), needs browser-only APIs (`localStorage`, `window`), or needs to use a third-party library that itself depends on client-side behavior. The general strategy is to push Client Components as far DOWN/leaf-ward in the tree as possible — keeping the majority of the tree as lightweight, JS-free Server Components.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you structure a page with a mix of static content and one interactive widget to minimize the client bundle?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Keep the outer page and most of its content as a (default) Server Component, and extract ONLY the genuinely interactive piece into its own small file marked `"use client"`, importing that small Client Component into the Server Component tree:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="cm">// app/page.js — Server Component (default, no directive)</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">Page</span>() {</span>
+  <span class="line">  <span class="ck">const</span> data = <span class="ck">await</span> db.getData(); <span class="cm">// stays fully server-side</span></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">main</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">StaticHeader</span> /&gt;             <span class="cm">{/* Server Component */}</span></span>
+  <span class="line">      &lt;<span class="ct">ArticleBody</span> <span class="ca">data</span>={data} /&gt;   <span class="cm">{/* Server Component */}</span></span>
+  <span class="line">      &lt;<span class="ct">LikeButton</span> /&gt;               <span class="cm">{/* small Client Component "island" */}</span></span>
+  <span class="line">    &lt;/<span class="ct">main</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+          </div>
+          Only `LikeButton`'s code (and its dependencies) end up in the client JS bundle — everything else remains server-only, dramatically reducing what actually gets shipped and hydrated.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the core distinction between RSC and SSR that interviewers are usually looking for?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          SSR is about WHEN a (normal, client-capable) component first renders — on the server, for a fast initial paint — but its full code still ships to and runs in the browser afterward via hydration. RSC is about WHERE a component EVER renders — permanently on the server, with its code never shipping to the client at all, and no hydration step applying to it. SSR speeds up the first render of components that still fully exist on the client; RSC removes certain components from the client entirely.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't you pass a function as a prop from a Server Component to a Client Component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Data passed from a Server Component to a Client Component has to cross an actual boundary — it gets SERIALIZED into the RSC payload format that's sent over the network/process boundary to where the Client Component actually renders. Functions are not serializable in any general, safe way — you can't meaningfully represent "run this exact server-side closure" as data sent to the browser (and even if you could, invoking server-only code, potentially with access to secrets or a database connection, directly from client-triggered events would be a serious security concern). This is why event handlers must be DEFINED locally inside Client Components rather than passed down from the server — Server Actions exist as the sanctioned, secure mechanism for a client interaction to trigger server-side logic.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use the "pass a Server Component as children into a Client Component" pattern?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you need a Client Component to provide interactive WRAPPING behavior (like a collapsible panel, a modal, or a tab container that needs `useState` to track open/closed or active-tab state) around content that itself doesn't need to be a Client Component — e.g. server-rendered article text or data-driven content. Rather than making the whole subtree a Client Component (which would ship unnecessary JS for the static content too), the Client Component only owns the INTERACTIVE shell, and receives the static content pre-rendered as `children`, keeping that inner content's code out of the client bundle entirely.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the main current limitations of Server Components you should be aware of?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          No hooks (useState, useEffect, etc.) or browser APIs can be used inside them, since they never run in a browser context. They're framework-dependent — you can't just enable RSC in a bare Vite/CRA setup; production support is currently centered around Next.js's App Router. Props passed to Client Components must be serializable, ruling out functions and class instances, which can require restructuring code patterns that previously passed callbacks freely. Many existing third-party libraries weren't built with the Server/Client distinction in mind and may need explicit Client Component wrapping. And the overall mental model (deciding what should be Server vs Client, understanding boundary propagation) is a genuinely new layer of complexity on top of "classic" React.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does "use client" propagate to everything a file imports, rather than only affecting that one component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Once a component is going to run in the browser (and potentially re-render there in response to state/props changes), everything it renders as part of its OWN tree must also be capable of running in the browser — you can't have a Client Component's render output depend on a child that only knows how to run on the server, since the client has no way to re-invoke that server-only logic locally during a client-side re-render. Marking the boundary at the file level and having it propagate downward through imports is what guarantees this consistency: everything "inside" a Client Component's rendering responsibility is verifiably capable of running client-side.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does an app actually benefit meaningfully from adopting Server Components, versus when is it not worth the complexity?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          RSC provides the most benefit for content-heavy applications with substantial non-interactive portions — blogs, e-commerce product pages, dashboards with mostly-static data displays, or any app where a meaningful chunk of the UI doesn't need client-side interactivity, especially if that UI relies on heavy libraries or direct backend/database access. It's less clearly worth the added architectural complexity for HIGHLY interactive apps (like a real-time collaborative editor, a complex client-heavy dashboard with constant local state updates, or a game) where the vast majority of the UI needs to be a Client Component anyway — in those cases, the JS-bundle-reduction benefit of RSC applies to a much smaller fraction of the app, while still incurring the learning curve and architectural constraints.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a "Functions cannot be passed directly to Client Components" error?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Identify what the function was trying to do, and choose the appropriate fix:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="cm">// Option 1: move the handler definition INTO the Client Component itself</span></span>
+  <span class="line"><span class="cs">"use client"</span>;</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">DeleteButton</span>({ itemId }) {</span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleDelete</span> = () =&gt; {</span>
+  <span class="line">    <span class="cm">// logic defined HERE, client-side, using only the plain "itemId" prop</span></span>
+  <span class="line">  };</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleDelete}&gt;Delete&lt;/<span class="ct">button</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Option 2: if server-side logic genuinely needs to run on click,</span></span>
+  <span class="line"><span class="cm">// use a Server Action instead of a plain passed-down function</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">deleteItem</span>(itemId) {</span>
+  <span class="line">  <span class="cs">"use server"</span>; <span class="cm">// marks this as a Server Action — CAN be passed to the client safely</span></span>
+  <span class="line">  <span class="ck">await</span> db.items.delete(itemId);</span>
+  <span class="line">}</span>
+          </div>
+          Either keep the handler purely client-side (using only serializable data passed down as props), or use the "use server" Server Action mechanism, which is specifically designed to let client-triggered interactions safely invoke server-side logic.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · React Server Components · RSC vs SSR · Client Boundary · Current Limitations
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  // Prevent formatting whitespace inside highlighted code lines from
+  // rendering as extra gaps while preserving intentional indentation.
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

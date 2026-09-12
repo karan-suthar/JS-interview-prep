@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Hooks: useDebounce, useFetch, useLocalStorage — Interview Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    font-family: var(--font-body); font-size: 13px; padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg3); color: var(--text); }
+  .tab-btn.active { background: rgba(106,176,255,0.12); color: #a8d4ff; border-color: rgba(106,176,255,0.35); font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Hook header cards ── */
+  .hook-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 3px solid var(--accent);
+  }
+  .hook-sig { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .hook-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Custom Hooks</div>
+    <h1>3 Reusable Custom Hooks</h1>
+    <p>useDebounce · useFetch (with caching) · useLocalStorage — Built From Scratch, with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Why Custom Hooks?</a>
+    <a class="topic-pill" href="#s2">2. useDebounce</a>
+    <a class="topic-pill" href="#s3">3. useFetch (with caching)</a>
+    <a class="topic-pill" href="#s4">4. useLocalStorage</a>
+    <a class="topic-pill" href="#s5">5. Gotchas</a>
+    <a class="topic-pill" href="#s6">6. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Hook</th><th>Solves</th><th>Core mechanism</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>useDebounce</td><td>A rapidly-changing value causing excessive re-renders/API calls</td><td>Delays updating a "debounced" copy of the value using a timer</td></tr>
+      <tr><td>useFetch</td><td>Repeated data-fetching boilerplate + wasted duplicate network requests</td><td>Wraps fetch with loading/error state, an in-memory cache, and request cancellation</td></tr>
+      <tr><td>useLocalStorage</td><td>Keeping state in sync with localStorage across renders (and tabs)</td><td>Wraps useState with read/write to localStorage plus a storage event listener</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Why Custom Hooks
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Why Custom Hooks?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A custom hook is just a JavaScript function whose name starts with <ic>use</ic> and that calls other hooks internally. It lets you EXTRACT reusable, STATEFUL logic out of components — sharing behavior (not just UI) across multiple components without duplicating code or resorting to higher-order components/render props.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Custom hooks share LOGIC; each component still gets its own independent state</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="270" y="20" width="160" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="47" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">useDebounce(value)</text>
+
+        <path d="M310 65 L180 110" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue8)"/>
+        <path d="M390 65 L520 110" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue8)"/>
+
+        <rect x="80" y="110" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="180" y="137" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">SearchBox component</text>
+
+        <rect x="420" y="110" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="520" y="137" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">FilterInput component</text>
+
+        <text x="350" y="180" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Each component calling the hook gets its OWN independent timer/state — the LOGIC is shared, not the data</text>
+
+        <defs>
+          <marker id="arrowBlue8" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Key mental model:</strong> a custom hook is essentially a recipe for combining `useState`/`useEffect`/`useRef`/etc. that gets RE-RUN independently for every component that calls it — there's no shared/global state between callers unless you deliberately introduce one (e.g. via Context or a module-level cache, as `useFetch` will below).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — useDebounce
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>useDebounce</h2>
+    </div>
+
+    <div class="hook-card">
+      <div class="hook-sig">const debouncedValue = useDebounce(value, delay)</div>
+      <div class="hook-desc">Returns a copy of "value" that only updates after "delay" milliseconds have passed WITHOUT value changing again. Perfect for search inputs, live validation, or any rapidly-changing value feeding an expensive operation.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Typing "react" — debouncedValue only updates once, after typing stops</div>
+      <svg class="diagram-svg" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10.5">value:</text>
+        <text x="80" y="25" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">"r" → "re" → "rea" → "reac" → "react"</text>
+
+        <rect x="20" y="40" width="500" height="30" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="270" y="60" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">value updates on EVERY keystroke, instantly</text>
+
+        <text x="20" y="100" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10.5">debouncedValue:</text>
+        <rect x="150" y="90" width="370" height="30" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="335" y="110" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10">stays "" until 500ms of silence, THEN becomes "react"</text>
+
+        <path d="M520 55 L520 90" stroke="#555a6e" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="600" y="140" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Only ONE update to debouncedValue for the entire typing burst</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// hooks/useDebounce.js</span></span>
+  <span class="line"><span class="ck">import</span> { useState, useEffect } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">useDebounce</span>(value, delay) {</span>
+  <span class="line">  <span class="ck">const</span> [debouncedValue, setDebouncedValue] = useState(value);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="cm">// schedule an update to debouncedValue after "delay" ms</span></span>
+  <span class="line">    <span class="ck">const</span> timerId = setTimeout(() =&gt; {</span>
+  <span class="line">      setDebouncedValue(value);</span>
+  <span class="line">    }, delay);</span>
+  <span class="line"></span>
+  <span class="line">    <span class="cm">// if "value" changes again before the timer fires, cancel the OLD</span></span>
+  <span class="line">    <span class="cm">// timer — this is what makes it "debounce" rather than just delay</span></span>
+  <span class="line">    <span class="ck">return</span> () =&gt; clearTimeout(timerId);</span>
+  <span class="line">  }, [value, delay]); <span class="cm">// re-run the effect every time "value" changes</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> debouncedValue;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> useDebounce;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">SearchBox</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">const</span> debouncedQuery = <span class="cf">useDebounce</span>(query, <span class="cn">500</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">if</span> (debouncedQuery) {</span>
+  <span class="line">      <span class="cf">searchAPI</span>(debouncedQuery); <span class="cm">// only fires 500ms after typing STOPS</span></span>
+  <span class="line">    }</span>
+  <span class="line">  }, [debouncedQuery]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">input</span> <span class="ca">value</span>={query} <span class="ca">onChange</span>={(e) =&gt; setQuery(e.target.value)} /&gt;;</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Why this differs from the imperative debounce() from a "debounce/throttle from scratch" exercise:</strong> this is a DECLARATIVE, hook-based version — instead of wrapping a callback function, it returns a delayed VALUE. Both achieve the same underlying goal (avoid reacting to every intermediate change), but this shape fits React's data-flow model more naturally for use inside JSX/effects.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — useFetch with caching
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>useFetch (with Caching)</h2>
+    </div>
+
+    <div class="hook-card">
+      <div class="hook-sig">const { data, loading, error } = useFetch(url)</div>
+      <div class="hook-desc">Fetches data from a URL, tracks loading/error state, CACHES results so repeated calls with the same URL don't re-fetch, and cancels stale in-flight requests to avoid race conditions.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Module-level cache — shared across every component instance, survives unmounts</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="250" y="20" width="200" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="42" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Module-level cache</text>
+        <text x="350" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">Map&lt;url, data&gt;</text>
+
+        <path d="M300 70 L180 120" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue9)"/>
+        <path d="M400 70 L520 120" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlue9)"/>
+
+        <rect x="80" y="120" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="180" y="147" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">ProfileCard (uses /user/5)</text>
+
+        <rect x="420" y="120" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="520" y="147" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Sidebar (also uses /user/5)</text>
+
+        <text x="350" y="190" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Second component reads from the SAME cache entry — no duplicate network request for an identical URL</text>
+
+        <defs>
+          <marker id="arrowBlue9" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// hooks/useFetch.js</span></span>
+  <span class="line"><span class="ck">import</span> { useState, useEffect } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Module-level cache — lives OUTSIDE the hook function, so it persists</span></span>
+  <span class="line"><span class="cm">// across every component instance and every mount/unmount cycle</span></span>
+  <span class="line"><span class="ck">const</span> cache = <span class="ck">new</span> Map();</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">useFetch</span>(url) {</span>
+  <span class="line">  <span class="ck">const</span> [data, setData] = useState(() =&gt; cache.get(url) ?? <span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [loading, setLoading] = useState(!cache.has(url));</span>
+  <span class="line">  <span class="ck">const</span> [error, setError] = useState(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">if</span> (!url) <span class="ck">return</span>;</span>
+  <span class="line"></span>
+  <span class="line">    <span class="cm">// cache HIT — skip the network entirely</span></span>
+  <span class="line">    <span class="ck">if</span> (cache.has(url)) {</span>
+  <span class="line">      setData(cache.get(url));</span>
+  <span class="line">      setLoading(<span class="ck">false</span>);</span>
+  <span class="line">      <span class="ck">return</span>;</span>
+  <span class="line">    }</span>
+  <span class="line"></span>
+  <span class="line">    <span class="ck">const</span> controller = <span class="ck">new</span> AbortController(); <span class="cm">// guards against race conditions</span></span>
+  <span class="line">    setLoading(<span class="ck">true</span>);</span>
+  <span class="line">    setError(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">    fetch(url, { signal: controller.signal })</span>
+  <span class="line">      .then((res) =&gt; {</span>
+  <span class="line">        <span class="ck">if</span> (!res.ok) <span class="ck">throw</span> <span class="ck">new</span> Error(`HTTP ${res.status}`);</span>
+  <span class="line">        <span class="ck">return</span> res.json();</span>
+  <span class="line">      })</span>
+  <span class="line">      .then((json) =&gt; {</span>
+  <span class="line">        cache.set(url, json); <span class="cm">// store result for future callers/mounts</span></span>
+  <span class="line">        setData(json);</span>
+  <span class="line">        setLoading(<span class="ck">false</span>);</span>
+  <span class="line">      })</span>
+  <span class="line">      .catch((err) =&gt; {</span>
+  <span class="line">        <span class="ck">if</span> (err.name !== <span class="cs">"AbortError"</span>) { <span class="cm">// ignore errors from cancelled requests</span></span>
+  <span class="line">          setError(err);</span>
+  <span class="line">          setLoading(<span class="ck">false</span>);</span>
+  <span class="line">        }</span>
+  <span class="line">      });</span>
+  <span class="line"></span>
+  <span class="line">    <span class="cm">// cleanup: cancel this specific request if "url" changes or on unmount,</span></span>
+  <span class="line">    <span class="cm">// preventing a slow OLD request from overwriting a newer one's result</span></span>
+  <span class="line">    <span class="ck">return</span> () =&gt; controller.abort();</span>
+  <span class="line">  }, [url]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> { data, loading, error };</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> useFetch;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">UserProfile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> { data: user, loading, error } = <span class="cf">useFetch</span>(`/api/users/${userId}`);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">if</span> (loading) <span class="ck">return</span> &lt;<span class="ct">Spinner</span> /&gt;;</span>
+  <span class="line">  <span class="ck">if</span> (error) <span class="ck">return</span> &lt;<span class="ct">ErrorMessage</span> <span class="ca">error</span>={error} /&gt;;</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Why the AbortController matters — a classic race condition it prevents:</strong> if <ic>url</ic> changes quickly (e.g. rapid navigation between user profiles), an OLDER, slower request could resolve AFTER a newer one, overwriting the correct, more recent data with stale results. Aborting the previous request when a new one starts (or on unmount) eliminates this class of bug entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — useLocalStorage
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>useLocalStorage</h2>
+    </div>
+
+    <div class="hook-card">
+      <div class="hook-sig">const [value, setValue] = useLocalStorage(key, initialValue)</div>
+      <div class="hook-desc">Works exactly like useState, but automatically persists the value to localStorage — so it survives page refreshes — and (optionally) stays in sync if the SAME key changes in another browser tab.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// hooks/useLocalStorage.js</span></span>
+  <span class="line"><span class="ck">import</span> { useState, useEffect, useCallback } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">useLocalStorage</span>(key, initialValue) {</span>
+  <span class="line">  <span class="cm">// Lazy initializer — reads from localStorage only ONCE, on mount</span></span>
+  <span class="line">  <span class="ck">const</span> [value, setValue] = useState(() =&gt; {</span>
+  <span class="line">    <span class="ck">try</span> {</span>
+  <span class="line">      <span class="ck">const</span> stored = window.localStorage.getItem(key);</span>
+  <span class="line">      <span class="ck">return</span> stored !== <span class="ck">null</span> ? JSON.parse(stored) : initialValue;</span>
+  <span class="line">    } <span class="ck">catch</span> (err) {</span>
+  <span class="line">      console.warn(`Error reading localStorage key "${key}":`, err);</span>
+  <span class="line">      <span class="ck">return</span> initialValue;</span>
+  <span class="line">    }</span>
+  <span class="line">  });</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// Wrapped setter — updates BOTH React state and localStorage together</span></span>
+  <span class="line">  <span class="ck">const</span> setStoredValue = <span class="cf">useCallback</span>(</span>
+  <span class="line">    (newValue) =&gt; {</span>
+  <span class="line">      <span class="ck">setValue</span>((prev) =&gt; {</span>
+  <span class="line">        <span class="cm">// support the same functional-updater pattern as useState</span></span>
+  <span class="line">        <span class="ck">const</span> valueToStore = newValue <span class="ck">instanceof</span> Function ? newValue(prev) : newValue;</span>
+  <span class="line">        <span class="ck">try</span> {</span>
+  <span class="line">          window.localStorage.setItem(key, JSON.stringify(valueToStore));</span>
+  <span class="line">        } <span class="ck">catch</span> (err) {</span>
+  <span class="line">          console.warn(`Error writing localStorage key "${key}":`, err);</span>
+  <span class="line">        }</span>
+  <span class="line">        <span class="ck">return</span> valueToStore;</span>
+  <span class="line">      });</span>
+  <span class="line">    },</span>
+  <span class="line">    [key]</span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// Sync across OTHER browser tabs — the "storage" event only fires in</span></span>
+  <span class="line">  <span class="cm">// tabs that did NOT make the change themselves</span></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">function</span> <span class="cf">handleStorageChange</span>(e) {</span>
+  <span class="line">      <span class="ck">if</span> (e.key === key &amp;&amp; e.newValue !== <span class="ck">null</span>) {</span>
+  <span class="line">        setValue(JSON.parse(e.newValue));</span>
+  <span class="line">      }</span>
+  <span class="line">    }</span>
+  <span class="line">    window.addEventListener(<span class="cs">"storage"</span>, handleStorageChange);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; window.removeEventListener(<span class="cs">"storage"</span>, handleStorageChange);</span>
+  <span class="line">  }, [key]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> [value, setStoredValue];</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> useLocalStorage;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ThemeToggle</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = <span class="cf">useLocalStorage</span>(<span class="cs">"theme"</span>, <span class="cs">"light"</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setTheme((prev) =&gt; (prev === <span class="cs">"light"</span> ? <span class="cs">"dark"</span> : <span class="cs">"light"</span>))}&gt;</span>
+  <span class="line">      Current theme: {theme}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Refresh the page — "theme" is restored automatically from localStorage.</span></span>
+  <span class="line"><span class="cm">// Change it in ANOTHER open tab — this tab updates too, via the storage event.</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The try/catch blocks aren't just defensive boilerplate</strong> — localStorage access can genuinely throw (e.g. in Safari's private browsing mode, when storage quota is exceeded, or when running in a server-side rendering context where <ic>window</ic> doesn't exist at all). Always guard localStorage access defensively in a reusable hook meant for general use.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>useDebounce's cleanup function is what makes it a debounce, not just a delay</strong> — without `return () => clearTimeout(timerId)`, EVERY keystroke would schedule its own independent update, all eventually firing (a "delay," not a "debounce," which should only reflect the FINAL value).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A module-level cache in useFetch means the cache is shared across your ENTIRE app, and never automatically expires</strong> — without a cache invalidation/TTL strategy, stale data could be served indefinitely; production-grade libraries (React Query, SWR) build in configurable staleness/revalidation logic that a simple hand-rolled cache like this omits.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting AbortController in useFetch reintroduces race conditions</strong> — rapidly changing the fetched URL (e.g. fast pagination) without cancelling stale in-flight requests can result in an OLDER response overwriting a NEWER one's data if it happens to resolve later.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useLocalStorage's lazy initializer function must not be called eagerly</strong> — passing `useState(readFromLocalStorage())` instead of `useState(() => readFromLocalStorage())` would read from localStorage on EVERY render, not just the first one, which is both wasteful and can cause subtle bugs if the stored value changes elsewhere mid-render-cycle.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The "storage" event does NOT fire in the SAME tab that made the change</strong> — it's designed specifically for cross-tab sync, so testing "does my state update when I change it" within one tab will never trigger that listener; you need a second tab/window to observe it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>JSON.stringify/JSON.parse in useLocalStorage means functions, undefined, and Symbols silently disappear or error</strong> — the hook is best suited for plain serializable data (strings, numbers, plain objects/arrays), not arbitrary JavaScript values.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>localStorage access will throw during server-side rendering</strong> (no `window` object exists) — a hook meant to work in an SSR framework needs an additional guard (e.g. checking `typeof window !== "undefined"`) before ever touching localStorage.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useFetch's cache uses the URL string as its key</strong> — two logically-different requests that happen to hit the exact same URL with different HEADERS or a different HTTP METHOD would incorrectly share a cache entry in this simplified implementation; a production version would need a more robust cache key.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Custom hooks don't share STATE between components by default</strong> — two separate components calling `useDebounce` each get their OWN independent timer and debounced value; only `useFetch`'s deliberately module-level cache is actually shared, which is a design choice, not automatic hook behavior.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Debounce delay values need to match the use case</strong> — too short (e.g. 50ms) barely reduces excess calls; too long (e.g. 2000ms) makes the UI feel unresponsive. 300–500ms is a common starting point for search-as-you-type scenarios, but should be tuned based on the actual operation's cost and desired feel.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Building custom hooks from scratch is a favorite "show me you actually understand hooks" interview exercise — practice explaining your DESIGN DECISIONS (why a module-level cache, why AbortController, why a lazy initializer), not just reciting working code.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What makes a function a valid "custom hook" rather than just a regular utility function?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          By convention (and enforced by ESLint's hooks plugin), a custom hook's name must start with `use`, and internally it calls one or more OTHER React hooks (`useState`, `useEffect`, `useRef`, etc.) or other custom hooks. This naming convention is what allows both React and tooling (like the Rules of Hooks ESLint plugin) to correctly identify it as a hook and apply the relevant rules — like not calling it conditionally or inside loops — since a plain utility function has no such constraints.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does useDebounce return a delayed VALUE, rather than a debounced FUNCTION like a classic debounce() utility?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          React's data flow is fundamentally value-driven — components re-render in response to values (state/props) changing, and effects react to values in their dependency arrays. Returning a debounced VALUE fits naturally into this model: you can pass `debouncedValue` directly into a dependency array, render it, or pass it to another hook, exactly like any other piece of state. A debounced FUNCTION (the classic imperative utility) would require manually wiring it up to specific event handlers, which is a less idiomatic fit for React's declarative style, especially when the goal is simply "wait until this value settles before reacting to it."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you reach for a hand-rolled useFetch versus a library like React Query or SWR?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A simple hand-rolled `useFetch` is reasonable for small apps, prototypes, or when you specifically want to avoid an external dependency and your data-fetching needs are modest (basic caching, loading/error states, avoiding duplicate requests). Reach for a dedicated library once you need more sophisticated behaviors this simple version doesn't handle well: automatic background revalidation, cache invalidation/expiration (TTL), request deduplication across rapidly-mounting/unmounting components, retry logic, pagination/infinite-scroll helpers, or optimistic updates — building and correctly maintaining all of that yourself quickly becomes its own significant undertaking.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How does the AbortController in useFetch actually prevent a race condition, step by step?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> When the effect runs (because `url` changed), a new `AbortController` is created and its `signal` is passed to `fetch`.<br>
+          <strong>2.</strong> If `url` changes AGAIN before this fetch resolves, the effect's cleanup function runs FIRST (as part of React's effect lifecycle), calling `controller.abort()` on the PREVIOUS controller.<br>
+          <strong>3.</strong> The aborted fetch's promise rejects with an `AbortError`, which the `.catch()` block explicitly checks for and ignores (rather than treating it as a real error).<br>
+          <strong>4.</strong> Only the NEWEST request's `.then()` chain ever successfully calls `setData(...)`, since any earlier, now-aborted request's success handlers never fire. This guarantees the state always reflects the LATEST requested URL's result, never an outdated one that happened to resolve later.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the purpose of the lazy initializer function passed to useState in useLocalStorage?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `useState(() => expensiveOrSideEffectfulComputation())` ensures the function is only INVOKED once, during the component's very first render — React calls it to obtain the initial value and then ignores it on every subsequent render. If you instead wrote `useState(expensiveOrSideEffectfulComputation())`, the function call itself would happen on EVERY render (since it's evaluated as a plain argument before `useState` is even called), even though the RESULT is only used once — wasteful for an expensive computation, and potentially incorrect for something with side effects like reading from localStorage, which shouldn't be re-triggered unnecessarily on every render.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does useLocalStorage need a "storage" event listener at all — doesn't useState already keep the UI in sync?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `useState` only keeps a SINGLE tab/window's React state in sync with re-renders WITHIN that same JavaScript environment — it has no way to know that a completely different browser tab (a separate, independent JS environment) just modified the SAME localStorage key. The browser's native `"storage"` event is specifically designed to notify OTHER tabs/windows (not the one that made the change) when localStorage changes, which is the only way for this hook to detect and react to that external change and update its own React state accordingly, keeping multiple open tabs visually consistent.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would using a module-level cache (like in useFetch) be the wrong choice, and what would you use instead?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A module-level cache is problematic when: data needs a defined expiration/staleness policy (this simple cache never invalidates on its own), you need the cache to be cleared or scoped differently per user/session (e.g. in server-side rendering, where a module-level variable could leak data between different users' requests if the server process is reused), or you need more advanced invalidation triggers (like "refetch when the window regains focus"). In those cases, a dedicated data-fetching library with configurable cache policies (React Query, SWR, Apollo Client for GraphQL) is a better fit, since they're built specifically to handle these more complex caching lifecycles correctly.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you extend useFetch to support manually triggering a refetch (e.g. a "refresh" button), bypassing the cache?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Add a piece of state that acts as a "trigger" in the dependency array, and expose a function that increments it (forcing the effect to re-run) while explicitly deleting the stale cache entry first:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">function</span> <span class="cf">useFetch</span>(url) {</span>
+  <span class="line">  <span class="cm">// ...existing state...</span></span>
+  <span class="line">  <span class="ck">const</span> [refetchIndex, setRefetchIndex] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">refetch</span> = () =&gt; {</span>
+  <span class="line">    cache.delete(url); <span class="cm">// invalidate the stale cached value</span></span>
+  <span class="line">    setRefetchIndex((i) =&gt; i + <span class="cn">1</span>); <span class="cm">// forces the effect below to re-run</span></span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="cm">// ...existing fetch logic...</span></span>
+  <span class="line">  }, [url, refetchIndex]); <span class="cm">// "refetchIndex" added purely to trigger manual re-runs</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> { data, loading, error, refetch };</span>
+  <span class="line">}</span>
+          </div>
+          The component can then call `refetch()` from a button's `onClick`, which clears the cache entry for that URL and increments the trigger state, causing the effect to re-run and fetch fresh data even though the URL itself hasn't changed.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Custom Hooks · useDebounce · useFetch · useLocalStorage
+  </footer>
+
+</div>
+
+<script>
+  function showTab(event, name) {
+    const section = event.target.closest('.section') || document.body;
+    section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

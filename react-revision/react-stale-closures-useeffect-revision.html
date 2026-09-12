@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stale Closures in useEffect — Interview Practice Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff6b6b;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,107,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,107,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,107,107,0.1); color: var(--accent);
+    border: 1px solid rgba(255,107,107,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff6b6b 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4545);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Difficulty badges ── */
+  .diff-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 10px; border-radius: 99px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .diff-easy   { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .diff-medium { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .diff-hard   { background: rgba(255,107,107,0.14); color: #ffaaaa; border: 1px solid rgba(255,107,107,0.3); }
+
+  /* ── Puzzle card (click to reveal) ── */
+  .puzzle-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1.25rem; overflow: hidden; }
+  .puzzle-header { padding: 1rem 1.2rem 0.5rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .puzzle-header .puzzle-title { font-family: var(--font-head); font-weight: 700; font-size: 15px; color: var(--text); }
+  .puzzle-body { padding: 0 1.2rem 1.2rem; }
+  .puzzle-body .code-block { margin-bottom: 0.75rem; }
+  .reveal-btn {
+    font-family: var(--font-mono); font-size: 12.5px; padding: 8px 18px; border-radius: 8px;
+    border: 1px solid rgba(255,107,107,0.35); background: rgba(255,107,107,0.1); color: #ffaaaa;
+    cursor: pointer; transition: all 0.15s; font-weight: 500; width: 100%; text-align: center;
+  }
+  .reveal-btn:hover { background: rgba(255,107,107,0.18); }
+  .puzzle-answer { display: none; margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+  .puzzle-answer.show { display: block; }
+  .puzzle-answer .verdict { font-family: var(--font-head); font-weight: 700; font-size: 13px; color: var(--teal); margin-bottom: 8px; }
+  .puzzle-answer p { font-size: 13.5px; color: var(--text2); line-height: 1.7; margin-bottom: 10px; }
+  .puzzle-answer strong { color: var(--text); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Debugging Practice</div>
+    <h1>Stale Closures in useEffect</h1>
+    <p>5 Buggy Practice Examples · Dependency Array Focus — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Is a Stale Closure?</a>
+    <a class="topic-pill" href="#s2">2. Why It Happens</a>
+    <a class="topic-pill" href="#s3">3. Practice: 5 Buggy Examples</a>
+    <a class="topic-pill" href="#s4">4. General Fix Patterns</a>
+    <a class="topic-pill" href="#s5">5. The ESLint Safety Net</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Is a Stale Closure
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Is a Stale Closure?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A <strong>stale closure</strong> happens when a function "remembers" a variable's value from the render it was CREATED in, but that variable has since changed in a NEWER render — and the old function is still being used (e.g. inside a timer, event listener, or effect that hasn't re-run).</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> id = setInterval(() =&gt; {</span>
+  <span class="line">      console.log(count); <span class="cm">// always logs 0, forever!</span></span>
+  <span class="line">    }, <span class="cn">1000</span>);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; clearInterval(id);</span>
+  <span class="line">  }, []); <span class="cm">// empty array — effect runs ONCE, closing over count's value AT THAT TIME (0)</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setCount(count + <span class="cn">1</span>)}&gt;{count}&lt;/<span class="ct">button</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Even as "count" visibly increases on screen, the interval's callback is</span></span>
+  <span class="line"><span class="cm">// STUCK using the "count" variable from the FIRST render — it's "stale."</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>This is not a React bug — it's how JavaScript closures fundamentally work.</strong> Every render of a function component creates a brand new set of local variables (including <ic>count</ic>). Any function DEFINED during that render (like the interval callback) permanently "closes over" — captures a reference to — that SPECIFIC render's variables, not some magical "live" binding that automatically stays current.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Why It Happens (Visualization)
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Why It Happens — Visualizing Renders as Snapshots</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Each render is its OWN isolated snapshot — closures from render #1 never see render #2's variables</div>
+      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="90" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="120" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Render #1</text>
+        <text x="120" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">const count = 0</text>
+        <text x="120" y="82" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">effect runs, captures</text>
+        <text x="120" y="97" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">count = 0 forever</text>
+
+        <path d="M220 65 L280 65" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray5)"/>
+        <text x="250" y="55" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">click!</text>
+
+        <rect x="280" y="20" width="200" height="90" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="380" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Render #2</text>
+        <text x="380" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">const count = 1</text>
+        <text x="380" y="82" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">(NEW count variable —</text>
+        <text x="380" y="97" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">effect skipped, deps=[])</text>
+
+        <path d="M480 65 L540 65" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGray5)"/>
+        <text x="510" y="55" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">click!</text>
+
+        <rect x="540" y="20" width="140" height="90" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="610" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Render #3</text>
+        <text x="610" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">count = 2</text>
+
+        <rect x="20" y="150" width="660" height="90" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="350" y="175" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">The interval callback from Render #1 is STILL RUNNING every 1000ms</text>
+        <text x="350" y="195" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10.5">It only ever "sees" the count=0 variable it originally closed over —</text>
+        <text x="350" y="215" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10.5">it has NO WAY to know Renders #2 and #3 ever happened</text>
+
+        <defs>
+          <marker id="arrowGray5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The fix is always one of these three things:</strong> (1) add the missing dependency so the effect RE-RUNS with a fresh closure each time it changes, (2) use the FUNCTIONAL updater form (<ic>setCount(prev =&gt; prev + 1)</ic>) to avoid needing to read the stale variable at all, or (3) use a <ic>ref</ic> to hold a value that's always read "live," bypassing the closure problem entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Practice: 5 Buggy Examples
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Practice — 5 Buggy Examples (Click to Reveal the Fix)</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Read each snippet, try to identify the stale closure bug and how the dependency array is involved BEFORE revealing the answer.</span>
+    </div>
+
+    <!-- Puzzle 1 -->
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span class="puzzle-title">Bug #1 — The Classic Interval Counter</span>
+        <span class="diff-badge diff-easy">Easy</span>
+      </div>
+      <div class="puzzle-body">
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Counter</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> id = setInterval(() =&gt; {</span>
+  <span class="line">      setCount(count + <span class="cn">1</span>); <span class="cm">// 🐛 what happens here?</span></span>
+  <span class="line">    }, <span class="cn">1000</span>);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; clearInterval(id);</span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">p</span>&gt;{count}&lt;/<span class="ct">p</span>&gt;;</span>
+  <span class="line">}</span>
+        </div>
+        <button class="reveal-btn" onclick="reveal(this)">Reveal the bug &amp; fix</button>
+        <div class="puzzle-answer">
+          <div class="verdict">🐛 Bug: count gets stuck at 1, forever.</div>
+          <p>The effect runs ONCE (empty deps), so the interval's callback closes over <code>count = 0</code> permanently. Every tick calls <code>setCount(0 + 1)</code> — always computing "1" from the SAME stale <code>count</code>, never actually incrementing further, since the closure never sees a newer value.</p>
+          <div class="verdict">✓ Fix: use the functional updater form.</div>
+          <div class="code-block">
+  <span class="line">useEffect(() =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> id = setInterval(() =&gt; {</span>
+  <span class="line">    setCount(prev =&gt; prev + <span class="cn">1</span>); <span class="cm">// always reads the LATEST pending state</span></span>
+  <span class="line">  }, <span class="cn">1000</span>);</span>
+  <span class="line">  <span class="ck">return</span> () =&gt; clearInterval(id);</span>
+  <span class="line">}, []); <span class="cm">// correctly stays empty — no external value is being READ anymore</span></span>
+          </div>
+          <p>The functional updater form sidesteps the stale closure entirely — it doesn't need to read <code>count</code> from the outer scope at all, since React passes in the guaranteed-current value as an argument.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle 2 -->
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span class="puzzle-title">Bug #2 — Fetching Data for the Wrong User</span>
+        <span class="diff-badge diff-easy">Easy</span>
+      </div>
+      <div class="puzzle-body">
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">UserProfile</span>({ userId }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="cf">fetchUser</span>(userId).then(setUser); <span class="cm">// 🐛 what happens if userId changes?</span></span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user?.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+        </div>
+        <button class="reveal-btn" onclick="reveal(this)">Reveal the bug &amp; fix</button>
+        <div class="puzzle-answer">
+          <div class="verdict">🐛 Bug: switching users never re-fetches.</div>
+          <p>The effect closes over the FIRST <code>userId</code> it ever saw, and since the dependency array is empty, it never runs again. If the parent later passes a different <code>userId</code> prop, this component keeps showing the ORIGINAL user's data forever, silently out of sync with its own props.</p>
+          <div class="verdict">✓ Fix: add "userId" to the dependency array.</div>
+          <div class="code-block">
+  <span class="line">useEffect(() =&gt; {</span>
+  <span class="line">  <span class="cf">fetchUser</span>(userId).then(setUser);</span>
+  <span class="line">}, [userId]); <span class="cm">// re-runs with a FRESH closure whenever userId actually changes</span></span>
+          </div>
+          <p>Now every time <code>userId</code> changes, React reruns the effect using the NEW value — each run gets its own fresh closure over the current <code>userId</code>, eliminating the staleness.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle 3 -->
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span class="puzzle-title">Bug #3 — The Stale Event Listener</span>
+        <span class="diff-badge diff-medium">Medium</span>
+      </div>
+      <div class="puzzle-body">
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">KeyLogger</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [keys, setKeys] = useState([]);</span>
+  <span class="line">  <span class="ck">const</span> [isPaused, setIsPaused] = useState(<span class="ck">false</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">function</span> <span class="cf">handleKeyDown</span>(e) {</span>
+  <span class="line">      <span class="ck">if</span> (isPaused) <span class="ck">return</span>; <span class="cm">// 🐛 "isPaused" read inside — what's the issue?</span></span>
+  <span class="line">      setKeys((prev) =&gt; [...prev, e.key]);</span>
+  <span class="line">    }</span>
+  <span class="line">    window.addEventListener(<span class="cs">"keydown"</span>, handleKeyDown);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; window.removeEventListener(<span class="cs">"keydown"</span>, handleKeyDown);</span>
+  <span class="line">  }, []); <span class="cm">// 🐛 missing dependency</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setIsPaused(!isPaused)}&gt;</span>
+  <span class="line">      {isPaused ? <span class="cs">"Resume"</span> : <span class="cs">"Pause"</span>}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+        </div>
+        <button class="reveal-btn" onclick="reveal(this)">Reveal the bug &amp; fix</button>
+        <div class="puzzle-answer">
+          <div class="verdict">🐛 Bug: clicking "Pause" never actually stops logging.</div>
+          <p>The listener is attached ONCE (empty deps), so <code>handleKeyDown</code> permanently closes over the FIRST render's <code>isPaused = false</code>. No matter how many times the button toggles <code>isPaused</code> in state, this specific closure's <code>if (isPaused)</code> check is always testing the ORIGINAL stale value.</p>
+          <div class="verdict">✓ Fix: add "isPaused" to the dependency array.</div>
+          <div class="code-block">
+  <span class="line">useEffect(() =&gt; {</span>
+  <span class="line">  <span class="ck">function</span> <span class="cf">handleKeyDown</span>(e) {</span>
+  <span class="line">    <span class="ck">if</span> (isPaused) <span class="ck">return</span>;</span>
+  <span class="line">    setKeys((prev) =&gt; [...prev, e.key]);</span>
+  <span class="line">  }</span>
+  <span class="line">  window.addEventListener(<span class="cs">"keydown"</span>, handleKeyDown);</span>
+  <span class="line">  <span class="ck">return</span> () =&gt; window.removeEventListener(<span class="cs">"keydown"</span>, handleKeyDown);</span>
+  <span class="line">}, [isPaused]); <span class="cm">// removes OLD listener, attaches a NEW one with fresh isPaused each time</span></span>
+          </div>
+          <p>Now, every time <code>isPaused</code> changes, the cleanup removes the OLD (stale) listener and a brand new one is attached — closing over the CURRENT value of <code>isPaused</code> each time it changes.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle 4 -->
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span class="puzzle-title">Bug #4 — The Object Dependency That Never Settles</span>
+        <span class="diff-badge diff-medium">Medium</span>
+      </div>
+      <div class="puzzle-body">
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Parent</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+  <span class="line">  <span class="ck">const</span> config = { limit: <span class="cn">10</span> }; <span class="cm">// 🐛 recreated every render</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setCount(count + <span class="cn">1</span>)}&gt;{count}&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">Child</span> <span class="ca">config</span>={config} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Child</span>({ config }) {</span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"config effect ran"</span>); <span class="cm">// 🐛 runs WAY more than expected</span></span>
+  <span class="line">  }, [config]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;Limit: {config.limit}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+        </div>
+        <button class="reveal-btn" onclick="reveal(this)">Reveal the bug &amp; fix</button>
+        <div class="puzzle-answer">
+          <div class="verdict">🐛 Bug: the effect fires on EVERY Parent re-render, even though "config" looks unchanged.</div>
+          <p>This isn't a MISSING dependency bug — it's the opposite problem. <code>{'{ limit: 10 }'}</code> is a brand NEW object reference created every time <code>Parent</code> re-renders. React's dependency comparison uses reference equality, not deep equality, so <code>config</code> is considered "different" on every single render of <code>Parent</code> — even clicking the unrelated counter button re-triggers this effect.</p>
+          <div class="verdict">✓ Fix: memoize the object, or depend on its primitive fields.</div>
+          <div class="code-block">
+  <span class="line"><span class="cm">// Option 1: useMemo to keep a stable reference</span></span>
+  <span class="line"><span class="ck">const</span> config = useMemo(() =&gt; ({ limit: <span class="cn">10</span> }), []);</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Option 2 (often simpler): depend on the primitive value directly</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Child</span>({ config }) {</span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"config effect ran"</span>);</span>
+  <span class="line">  }, [config.limit]); <span class="cm">// a number compares by VALUE, not reference</span></span>
+  <span class="line">}</span>
+          </div>
+          <p>This is technically the "opposite" of a stale closure (an OVER-eager effect instead of a stuck one), but it stems from the exact same root cause: misunderstanding how the dependency array's comparison actually works.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle 5 -->
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span class="puzzle-title">Bug #5 — The WebSocket That Only Sends the First Message</span>
+        <span class="diff-badge diff-hard">Hard</span>
+      </div>
+      <div class="puzzle-body">
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">ChatRoom</span>({ roomId }) {</span>
+  <span class="line">  <span class="ck">const</span> [draft, setDraft] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">const</span> [connection, setConnection] = useState(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> ws = <span class="cf">createConnection</span>(roomId);</span>
+  <span class="line">    ws.onmessage = (msg) =&gt; console.log(<span class="cs">"received:"</span>, msg);</span>
+  <span class="line">    setConnection(ws);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; ws.close();</span>
+  <span class="line">  }, [roomId]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">function</span> <span class="cf">handleSend</span>() {</span>
+  <span class="line">    connection.send(draft); <span class="cm">// 🐛 sometimes sends OLD draft text!</span></span>
+  <span class="line">    setDraft(<span class="cs">""</span>);</span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">value</span>={draft} <span class="ca">onChange</span>={(e) =&gt; setDraft(e.target.value)} /&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleSend}&gt;Send&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+        </div>
+        <button class="reveal-btn" onclick="reveal(this)">Reveal the bug &amp; fix</button>
+        <div class="puzzle-answer">
+          <div class="verdict">🎯 Trick question — this one is actually FINE!</div>
+          <p><code>handleSend</code> is redefined FRESH on every render (it's not inside a <code>useEffect</code> or wrapped in <code>useCallback</code> with stale deps) — so every time it runs, it reads the CURRENT render's <code>draft</code> and <code>connection</code> directly from the component's own scope, not from some old closure captured long ago. Since it's attached fresh to the button's <code>onClick</code> on every render, there's no staleness here.</p>
+          <div class="verdict">⚠ Where it WOULD break: wrapping handleSend in a badly-configured useCallback.</div>
+          <div class="code-block">
+  <span class="line"><span class="cm">// 🐛 THIS version reintroduces the bug</span></span>
+  <span class="line"><span class="ck">const</span> <span class="cf">handleSend</span> = useCallback(() =&gt; {</span>
+  <span class="line">  connection.send(draft); <span class="cm">// closes over draft/connection from</span></span>
+  <span class="line">  setDraft(<span class="cs">""</span>);           <span class="cm">// whenever this useCallback was LAST recreated</span></span>
+  <span class="line">}, []); <span class="cm">// 🐛 missing "draft" and "connection" — stale closure returns!</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ Fix: include the real dependencies</span></span>
+  <span class="line"><span class="ck">const</span> <span class="cf">handleSend</span> = useCallback(() =&gt; {</span>
+  <span class="line">  connection.send(draft);</span>
+  <span class="line">  setDraft(<span class="cs">""</span>);</span>
+  <span class="line">}, [connection, draft]); <span class="cm">// fresh closure whenever either changes</span></span>
+          </div>
+          <p>The lesson: stale closures aren't unique to <code>useEffect</code> — ANY memoized callback (<code>useCallback</code>, <code>useMemo</code>) or effect with an incomplete dependency array can capture and "freeze" outdated values from the render it was created in.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — General Fix Patterns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>General Fix Patterns — Your Toolkit</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Pattern</th><th>When to use it</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Add the missing dependency</td><td>The effect should genuinely re-run with the new value</td><td><code style="font-family:var(--font-mono)">}, [userId]);</code></td></tr>
+        <tr><td>Functional state updater</td><td>You only need the PREVIOUS state to compute the next state</td><td><code style="font-family:var(--font-mono)">setCount(prev =&gt; prev + 1)</code></td></tr>
+        <tr><td>Ref for "always current" values</td><td>You need to read a live value inside a callback WITHOUT triggering re-runs</td><td><code style="font-family:var(--font-mono)">const latestRef = useRef(value); latestRef.current = value;</code></td></tr>
+        <tr><td>Memoize object/array/function dependencies</td><td>A dependency is an object/array/function literal recreated every render</td><td><code style="font-family:var(--font-mono)">useMemo(() =&gt; ({...}), [deps])</code></td></tr>
+        <tr><td>Depend on primitives instead of whole objects</td><td>You only actually use one or two fields of a larger object prop</td><td><code style="font-family:var(--font-mono)">}, [config.limit]);</code> instead of <code style="font-family:var(--font-mono)">[config]</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The "ref for always-current values" pattern in full — useful when you</span></span>
+  <span class="line"><span class="cm">// genuinely need the LATEST value inside a long-lived closure (e.g. a</span></span>
+  <span class="line"><span class="cm">// timer) WITHOUT wanting the effect to restart every time that value changes</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Chat</span>({ message }) {</span>
+  <span class="line">  <span class="ck">const</span> latestMessage = useRef(message);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    latestMessage.current = message; <span class="cm">// keep the ref in sync EVERY render</span></span>
+  <span class="line">  }); <span class="cm">// no dependency array — runs after every render, always up to date</span></span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> id = setInterval(() =&gt; {</span>
+  <span class="line">      console.log(latestMessage.current); <span class="cm">// always reads the CURRENT value via the ref</span></span>
+  <span class="line">    }, <span class="cn">5000</span>);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; clearInterval(id);</span>
+  <span class="line">  }, []); <span class="cm">// correctly runs once — the ref sidesteps the need to depend on "message"</span></span>
+  <span class="line">}</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — The ESLint Safety Net
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>The ESLint Safety Net — exhaustive-deps</h2>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span>The official <ic>eslint-plugin-react-hooks</ic> package's <ic>exhaustive-deps</ic> rule automatically analyzes your effect's body and WARNS you if you're using a value that isn't listed in the dependency array — catching most stale closure bugs before they ever ship.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// .eslintrc — enabling the rule</span></span>
+  <span class="line">{</span>
+  <span class="line">  <span class="cs">"plugins"</span>: [<span class="cs">"react-hooks"</span>],</span>
+  <span class="line">  <span class="cs">"rules"</span>: {</span>
+  <span class="line">    <span class="cs">"react-hooks/exhaustive-deps"</span>: <span class="cs">"warn"</span></span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// With the rule enabled, this triggers a warning automatically:</span></span>
+  <span class="line">useEffect(() =&gt; {</span>
+  <span class="line">  <span class="cf">fetchUser</span>(userId).then(setUser);</span>
+  <span class="line">}, []); <span class="cm">// ⚠️ ESLint: React Hook useEffect has a missing dependency: 'userId'</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Do not silence this warning with an eslint-disable comment as a default habit.</strong> It's tempting when you "know" an empty array is intentional — but doing this routinely is exactly how real stale closure bugs slip into production. Reach for one of the fix patterns above INSTEAD of suppressing the warning, and reserve disabling it for the rare, deliberately-justified case.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Stale closures aren't unique to useEffect</strong> — any function defined during a render (a plain callback, a `useCallback`, a `useMemo` factory) can capture and "freeze" that render's values if it outlives the render and isn't recreated with fresh dependencies.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An empty dependency array doesn't mean "correct" — it means "runs once, closes over that render's values forever."</strong> Whether that's a bug depends entirely on whether the effect body reads any value that could later change.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Blindly adding every suggested dependency can cause a NEW bug: infinite effect loops</strong> — if an effect depends on a value it ALSO sets (directly or indirectly), adding it naively can cause the effect to re-run every single render.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Functions defined inside the component and used inside an effect are also "dependencies"</strong> — if `handleThing` is defined in the component body and called inside a `useEffect`, and it's not wrapped in `useCallback`, it's technically a NEW function every render, so the exhaustive-deps rule will flag it too.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The functional updater form only helps when you need the PREVIOUS state to compute the next one</strong> — it doesn't help if the effect needs to read some OTHER, unrelated prop/state value; that genuinely needs to be in the dependency array or accessed via a ref.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Refs used to bypass staleness intentionally opt OUT of React's reactivity</strong> — reading `ref.current` inside a callback won't cause anything to re-render or re-trigger based on its changes; it's purely a way to read a "live" value, not a substitute for state when the UI needs to visually reflect that value.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Cleanup functions can ALSO be stale</strong> — if a cleanup function references a value from the SAME closure as its effect, it has the identical staleness characteristics; this is usually fine since cleanup is paired with its own effect run, but worth remembering when reasoning about it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>console.log inside an effect can lie to you during debugging</strong> — logging a value INSIDE a stale closure will keep printing the OLD captured value, which can look like "the app isn't updating" when actually the app IS updating fine; it's specifically that ONE captured closure that's frozen.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Object/array/function dependencies create "false positive" staleness</strong> (effect re-runs unnecessarily) which is a DIFFERENT bug from true staleness (effect doesn't re-run when it should) — both stem from misunderstanding dependency comparison, but require opposite-feeling fixes (memoizing vs. adding to the array).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Custom hooks can hide stale closures from view</strong> — if a custom hook internally uses a `useEffect` with an incomplete dependency array, the bug lives inside the hook's implementation, not visibly in the component using it, making it harder to spot just by reading the component's own code.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4545);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Stale closures are one of the most common "gotcha" debugging questions in React interviews — practicing the reasoning behind WHY they happen (not just memorizing the fixes) is what separates a strong answer from a shallow one.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a stale closure, in precise terms?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A stale closure is a function that continues to reference a variable's value from the specific render (or scope) it was originally CREATED in, even after that variable's "current" value has changed in a later render. Because each render of a function component creates entirely new local variable bindings, any function defined during that render permanently captures references to THAT render's specific variables — it has no way to automatically "see" updates from subsequent renders unless explicitly recreated with fresh values.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does useEffect's dependency array directly control whether a stale closure bug occurs?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The dependency array determines WHEN the effect function itself gets recreated and re-run — and a NEW run of the effect means a BRAND NEW closure, capturing whatever the CURRENT values are at that point. If a value the effect reads is missing from the dependency array, the effect never re-runs when that value changes, so it never gets a chance to capture a fresh, up-to-date closure — leaving it permanently stuck with whatever value existed the last time it actually ran (often just once, on mount, if the array is empty).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is an empty dependency array ([]) actually correct, versus when is it a bug waiting to happen?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          An empty array is correct when the effect's body doesn't read ANY value from props, state, or context that could change over the component's lifetime — e.g. setting up a one-time subscription using only stable, unchanging references, or a truly "on mount only" side effect with no external values involved. It becomes a bug when the effect DOES read a prop or state value that can legitimately change later — in that case, an empty array silently freezes the effect's behavior to whatever that value was on the very first render, which is exactly the stale closure trap.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a stale closure bug where an interval needs to always use the CURRENT value of a frequently-changing prop, without restarting the interval on every change?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use a ref to hold the "live" current value, updated on every render via a separate no-dependency-array effect, and read the ref's `.current` inside the interval callback instead of the prop directly:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">function</span> <span class="cf">Ticker</span>({ label }) {</span>
+  <span class="line">  <span class="ck">const</span> labelRef = useRef(label);</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    labelRef.current = label; <span class="cm">// stays in sync every render</span></span>
+  <span class="line">  });</span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> id = setInterval(() =&gt; {</span>
+  <span class="line">      console.log(labelRef.current); <span class="cm">// always current, via the ref</span></span>
+  <span class="line">    }, <span class="cn">2000</span>);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; clearInterval(id);</span>
+  <span class="line">  }, []); <span class="cm">// interval itself is only created ONCE, never restarted</span></span>
+  <span class="line">}</span>
+          </div>
+          This achieves both goals simultaneously: the interval is set up exactly once (no restart churn), and it always reads the truly current value of `label` at the moment it fires, because it reads through the ref rather than a captured closure variable.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between a "missing dependency" bug and an "over-firing effect" bug, and how are they related?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A missing dependency bug means the effect DOESN'T re-run when it should, because a value it depends on isn't listed — resulting in a stale closure using outdated data. An over-firing effect bug means the effect re-runs MORE OFTEN than logically necessary, typically because a dependency is an object/array/function literal that gets a new reference on every render (even though its actual content hasn't meaningfully changed), and dependency comparison is reference-based, not deep-equality-based. They're related because both stem from the SAME underlying mechanic — how React decides "has this dependency changed?" — just manifesting as opposite symptoms (effect runs too rarely vs. too often).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is disabling the exhaustive-deps ESLint rule considered risky as a default habit?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The rule exists specifically because manually tracking which values an effect closure depends on is easy to get wrong, especially as a component's code evolves over time — a dependency array that was correct when written can silently become incorrect after a later edit adds a new variable reference inside the effect that isn't reflected in the array. Disabling the rule removes this automated safety net, meaning such bugs can slip in silently and only surface later as a confusing runtime behavior (data not updating, listeners using outdated state) rather than being caught immediately during development.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose the functional state updater form over adding the state variable to the dependency array?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the ONLY thing the effect needs from that state is to compute its NEXT value based on the PREVIOUS one (e.g. incrementing a counter, toggling a boolean, appending to a list) — in that specific case, the functional updater form (`setCount(prev => prev + 1)`) eliminates the need to read the outer `count` variable at all, letting you correctly leave it OUT of the dependency array without introducing a stale closure. This is preferable to adding the dependency when doing so would otherwise force the effect to re-run (and potentially recreate expensive resources like intervals, subscriptions, or connections) every single time that state value changes, when the effect's actual SETUP logic doesn't need to change at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you debug a suspected stale closure bug in an unfamiliar codebase?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Identify the symptom precisely — a value that "should" update but appears stuck, or behavior that only reflects the state from an earlier point in time.<br>
+          <strong>2.</strong> Locate the `useEffect`/`useCallback`/`useMemo` (or plain closure inside a timer/listener) responsible for that behavior.<br>
+          <strong>3.</strong> Check its dependency array against everything the function body actually READS from the surrounding scope (props, state, or other variables) — the ESLint `exhaustive-deps` rule will often flag this automatically if enabled.<br>
+          <strong>4.</strong> For each value read but missing from the array, decide the right fix: add it as a dependency (if the effect should genuinely re-run), switch to a functional state update (if it's just computing next-from-previous), or introduce a ref for a "read current value without re-running" need.<br>
+          <strong>5.</strong> Verify the fix doesn't introduce the OPPOSITE bug (an infinite loop, or an over-firing effect) — check whether any of the values now listed are objects/arrays/functions that get new references every render, and memoize them if so.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Stale Closures · useEffect Dependency Array · Debugging Practice
+  </footer>
+
+</div>
+
+<script>
+  function reveal(btn) {
+    const answer = btn.nextElementSibling;
+    const isShown = answer.classList.contains('show');
+    answer.classList.toggle('show');
+    btn.textContent = isShown ? 'Reveal the bug & fix' : 'Hide answer';
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  // Prevent HTML source-formatting whitespace from creating extra gaps inside
+  // highlighted code lines while preserving intentional indentation.
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+</script>
+</body>
+</html>

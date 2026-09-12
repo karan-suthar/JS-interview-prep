@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>useMemo vs useCallback vs Neither — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #5cffb0;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #5cffb0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 260px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(189,147,249,0.08); border: 1px solid rgba(189,147,249,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Performance</div>
+    <h1>useMemo vs useCallback vs Neither</h1>
+    <p>Concrete Performance Examples · When Memoization Helps and When It's Just Overhead — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Three Options</a>
+    <a class="topic-pill" href="#s2">2. What useMemo Does</a>
+    <a class="topic-pill" href="#s3">3. What useCallback Does</a>
+    <a class="topic-pill" href="#s4">4. When "Neither" Is Correct</a>
+    <a class="topic-pill" href="#s5">5. Concrete Performance Examples</a>
+    <a class="topic-pill" href="#s6">6. Decision Guide</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Tool</th><th>Memoizes</th><th>Solves</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>useMemo</td><td>A computed VALUE (the result of a function)</td><td>Avoiding re-running an expensive calculation on every render</td></tr>
+      <tr><td>useCallback</td><td>A FUNCTION reference itself</td><td>Keeping a function's identity stable across renders (for deps/memoized children)</td></tr>
+      <tr><td>Neither</td><td>Nothing — just let it recompute/recreate</td><td>The vast majority of components, where the computation is cheap and nothing downstream cares about reference stability</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Three Options at a Glance
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Three Options, at a Glance</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Both <ic>useMemo</ic> and <ic>useCallback</ic> are OPTIMIZATION tools with a real cost (memory to store the cached value, and a comparison check on every render) — they are NOT free, and reaching for them by default is itself a performance anti-pattern. The correct default, for most code, is "neither."</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// useMemo — memoizes a VALUE</span></span>
+  <span class="line"><span class="ck">const</span> sortedList = useMemo(() =&gt; [...list].sort(), [list]);</span>
+  <span class="line"><span class="cm">// re-runs the sort only when "list" changes; otherwise reuses the cached array</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// useCallback — memoizes a FUNCTION's reference/identity</span></span>
+  <span class="line"><span class="ck">const</span> <span class="cf">handleClick</span> = useCallback(() =&gt; {</span>
+  <span class="line">  doSomething(id);</span>
+  <span class="line">}, [id]);</span>
+  <span class="line"><span class="cm">// returns the SAME function reference across renders, as long as "id" hasn't changed</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Neither — just compute it plainly, every render</span></span>
+  <span class="line"><span class="ck">const</span> fullName = `${firstName} ${lastName}`;</span>
+  <span class="line"><span class="cm">// string concatenation is essentially free — memoizing this would be pure overhead</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Important nuance: <ic>useCallback(fn, deps)</ic> is literally implemented as <ic>useMemo(() =&gt; fn, deps)</ic> under the hood</strong> — they're the SAME underlying memoization mechanism; <ic>useCallback</ic> is just a convenience wrapper specifically for the common case of memoizing a function.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — What useMemo Does
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>What useMemo Actually Does</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">useMemo — skip recomputation when dependencies haven't changed</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="200" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="120" y="53" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Render happens</text>
+        <text x="120" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">(for any reason)</text>
+
+        <path d="M220 55 L280 55" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGray6)"/>
+
+        <rect x="280" y="30" width="180" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="370" y="53" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">Did dependencies change?</text>
+        <text x="370" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">compare to last render</text>
+
+        <path d="M460 45 L520 30" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRed6)"/>
+        <text x="530" y="25" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">YES</text>
+        <rect x="500" y="35" width="180" height="40" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="590" y="60" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5">RE-RUN the calculation</text>
+
+        <path d="M460 65 L520 100" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreen8)"/>
+        <text x="530" y="115" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">NO</text>
+        <rect x="500" y="105" width="180" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="590" y="130" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5">Return CACHED value</text>
+
+        <text x="350" y="175" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">The comparison itself has a small cost too — useMemo is a trade, not a free win</text>
+
+        <defs>
+          <marker id="arrowGray6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+          <marker id="arrowRed6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+          <marker id="arrowGreen8" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Genuinely expensive computation — a real candidate for useMemo</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ProductList</span>({ products, sortBy }) {</span>
+  <span class="line">  <span class="ck">const</span> sortedProducts = useMemo(() =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"sorting 50,000 products..."</span>); <span class="cm">// expensive — O(n log n) over a big array</span></span>
+  <span class="line">    <span class="ck">return</span> [...products].sort((a, b) =&gt; a[sortBy] - b[sortBy]);</span>
+  <span class="line">  }, [products, sortBy]); <span class="cm">// only re-sorts when the actual inputs change</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">ProductTable</span> <span class="ca">products</span>={sortedProducts} /&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Without useMemo: sorting 50,000 items would re-run on EVERY render of</span></span>
+  <span class="line"><span class="cm">// ProductList, even ones triggered by something totally unrelated (like a</span></span>
+  <span class="line"><span class="cm">// parent's unrelated state change causing this component to re-render)</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — What useCallback Does
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>What useCallback Actually Does</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>useCallback</ic> doesn't make a function "faster" or cheaper to call — it makes the function's REFERENCE stable across renders. This matters ONLY when something downstream cares about that reference (a dependency array, or a child wrapped in <ic>React.memo</ic>).</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Without useCallback — React.memo defeated</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Parent</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// NEW function reference created</span></span>
+  <span class="line">  <span class="cm">// on EVERY Parent render</span></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"clicked"</span>);</span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setCount(count+<span class="cn">1</span>)}&gt;</span>
+  <span class="line">        {count}</span>
+  <span class="line">      &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">ExpensiveChild</span> <span class="ca">onClick</span>={handleClick} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> ExpensiveChild = React.memo(<span class="cf">Child</span>);</span>
+  <span class="line"><span class="cm">// re-renders EVERY time anyway — the</span></span>
+  <span class="line"><span class="cm">// "onClick" prop looks "new" every time,</span></span>
+  <span class="line"><span class="cm">// so React.memo's shallow comparison</span></span>
+  <span class="line"><span class="cm">// always sees a change</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ With useCallback — React.memo works as intended</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">Parent</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [count, setCount] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// SAME function reference across</span></span>
+  <span class="line">  <span class="cm">// renders, since deps=[] never changes</span></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = useCallback(() =&gt; {</span>
+  <span class="line">    console.log(<span class="cs">"clicked"</span>);</span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;&gt;</span>
+  <span class="line">      &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; setCount(count+<span class="cn">1</span>)}&gt;</span>
+  <span class="line">        {count}</span>
+  <span class="line">      &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">ExpensiveChild</span> <span class="ca">onClick</span>={handleClick} /&gt;</span>
+  <span class="line">    &lt;/&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> ExpensiveChild = React.memo(<span class="cf">Child</span>);</span>
+  <span class="line"><span class="cm">// now correctly SKIPS re-rendering when</span></span>
+  <span class="line"><span class="cm">// only "count" changes — "onClick" is a</span></span>
+  <span class="line"><span class="cm">// stable reference React.memo recognizes</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The critical, commonly-missed point: useCallback ALONE does nothing for performance.</strong> It only matters PAIRED with something that checks reference equality — typically <ic>React.memo</ic> on the receiving component, or a dependency array elsewhere that includes this function. Without that pairing, wrapping a function in <ic>useCallback</ic> accomplishes nothing beneficial.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — When Neither Is Correct
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>When "Neither" Is the Correct Answer</h2>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>For the vast majority of components, the correct answer is "neither."</strong> Most computations (string concatenation, simple filtering of small arrays, basic arithmetic) are so cheap that the OVERHEAD of memoization (storing the cached value, running the dependency comparison every render) outweighs any benefit.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// None of these NEED memoization — they're all cheap enough to just recompute</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">UserGreeting</span>({ firstName, lastName, isActive }) {</span>
+  <span class="line">  <span class="ck">const</span> fullName = `${firstName} ${lastName}`;                <span class="cm">// trivial string concat</span></span>
+  <span class="line">  <span class="ck">const</span> statusLabel = isActive ? <span class="cs">"Online"</span> : <span class="cs">"Offline"</span>;      <span class="cm">// trivial ternary</span></span>
+  <span class="line">  <span class="ck">const</span> <span class="cf">handleClick</span> = () =&gt; console.log(<span class="cs">"clicked"</span>);        <span class="cm">// cheap function creation</span></span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span> <span class="ca">onClick</span>={handleClick}&gt;</span>
+  <span class="line">      {fullName} — {statusLabel}</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Creating a new string or a new function object is EXTREMELY cheap in V8 —</span></span>
+  <span class="line"><span class="cm">// wrapping any of this in useMemo/useCallback adds MORE overhead (the hook</span></span>
+  <span class="line"><span class="cm">// call itself, the dependency array allocation, the comparison) than it saves</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Situation</th><th>Memoize?</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>String concatenation, simple ternaries, basic math</td><td class="no">✗ No</td><td>The computation itself is cheaper than memoization's bookkeeping overhead</td></tr>
+        <tr><td>Filtering/mapping a SMALL array (a few dozen items)</td><td class="no">✗ Usually no</td><td>Still fast enough in practice that the difference is imperceptible</td></tr>
+        <tr><td>A function passed to a plain (non-memoized) child</td><td class="no">✗ No</td><td>Nothing downstream checks the reference, so stability buys nothing</td></tr>
+        <tr><td>Sorting/filtering thousands of items</td><td class="yes">✓ Yes (useMemo)</td><td>Measurably expensive; recomputing on every unrelated render wastes real time</td></tr>
+        <tr><td>A callback passed to a React.memo-wrapped child</td><td class="yes">✓ Yes (useCallback)</td><td>Reference stability is REQUIRED for React.memo's shallow comparison to work</td></tr>
+        <tr><td>A value/function used in another hook's dependency array</td><td>✓ Often yes</td><td>Prevents that OTHER hook (e.g. useEffect) from re-running unnecessarily</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Concrete Performance Examples
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Concrete Performance Examples</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1rem;">
+      <span class="callout-icon">📊</span>
+      <span>Illustrative orders of magnitude to reason about in an interview — exact numbers vary by hardware/data, but the RELATIVE scale is what matters for justifying a decision.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Scenario</th><th>Approx. cost WITHOUT memoization</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Sorting an array of 10 items</td><td>~0.001ms — negligible</td><td class="no">Skip memoization</td></tr>
+        <tr><td>Sorting an array of 100,000 items</td><td>Several milliseconds — noticeable if re-run every render</td><td class="yes">useMemo justified</td></tr>
+        <tr><td>Filtering + mapping + reducing a 50,000-row dataset</td><td>Can exceed a 16ms frame budget, causing visible jank</td><td class="yes">useMemo justified</td></tr>
+        <tr><td>Creating a new inline arrow function for onClick</td><td>~0.0001ms — essentially free</td><td class="no">Skip useCallback (unless paired with React.memo)</td></tr>
+        <tr><td>Re-rendering a component with 1,000 DOM nodes because a memo-wrapped child's prop reference changed unnecessarily</td><td>Potentially many milliseconds of wasted reconciliation + DOM work</td><td class="yes">useCallback justified — the COST here is the wasted re-render it prevents, not the function creation itself</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Concrete example: WITHOUT memoization, this expensive derived value recomputes</span></span>
+  <span class="line"><span class="cm">// on EVERY keystroke in an unrelated search box elsewhere in the same component</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Dashboard</span>({ transactions }) {</span>
+  <span class="line">  <span class="ck">const</span> [searchTerm, setSearchTerm] = useState(<span class="cs">""</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// 🐌 recalculates a full reduce over potentially thousands of transactions</span></span>
+  <span class="line">  <span class="cm">// on EVERY render — including every keystroke in the unrelated search box below</span></span>
+  <span class="line">  <span class="ck">const</span> totalRevenue = transactions.reduce((sum, t) =&gt; sum + t.amount, <span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">h2</span>&gt;Total: ${totalRevenue}&lt;/<span class="ct">h2</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">input</span> <span class="ca">value</span>={searchTerm} <span class="ca">onChange</span>={(e) =&gt; setSearchTerm(e.target.value)} /&gt;</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ Fixed — the expensive reduce only re-runs when "transactions" actually changes,</span></span>
+  <span class="line"><span class="cm">// NOT on every keystroke in the unrelated search input</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Dashboard</span>({ transactions }) {</span>
+  <span class="line">  <span class="ck">const</span> [searchTerm, setSearchTerm] = useState(<span class="cs">""</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> totalRevenue = useMemo(</span>
+  <span class="line">    () =&gt; transactions.reduce((sum, t) =&gt; sum + t.amount, <span class="cn">0</span>),</span>
+  <span class="line">    [transactions] <span class="cm">// only recomputes when the transactions array itself changes</span></span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> ( <span class="cm">/* same JSX */</span> );</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The justification here is NOT "memoization is always good" — it's the SPECIFIC observation that an unrelated state update (typing in the search box) was forcing a genuinely expensive computation to re-run for no reason.</strong> This is the kind of concrete reasoning ("what triggers this re-render, and is the recomputation's cost actually significant relative to it") interviewers want to hear.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Decision Guide
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Decision Guide</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Walk through in order, for any given value/function</div>
+      <div class="decision-step">
+        <div class="decision-q">Is this a plain VALUE, and is computing it genuinely expensive (measured, not assumed)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">useMemo</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this a FUNCTION passed to a React.memo-wrapped child, or used in another hook's deps?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">useCallback</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is the computation cheap (strings, simple math, small arrays) and nothing downstream cares about reference stability?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Neither — just compute it plainly</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Unsure whether it's actually expensive?</div>
+        <div class="decision-yes">→</div>
+        <div class="decision-result">Profile FIRST (React DevTools Profiler), then decide</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The single best piece of practical advice to give in an interview:</strong> "I don't reach for useMemo/useCallback preemptively — I write the simple version first, and only add memoization after PROFILING reveals an actual, measurable bottleneck." This shows engineering judgment, not just API knowledge.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>useMemo/useCallback are NOT guarantees — they're hints/optimizations React MAY choose to honor</strong> — technically, React's docs note it may discard cached values in rare cases (e.g. for memory reasons) and recompute anyway; don't rely on them as a semantic correctness mechanism, only as a performance optimization.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useCallback alone (without React.memo or a dependency-array consumer) does absolutely nothing useful</strong> — this is probably the single most common misuse: wrapping every event handler in useCallback "just in case," when nothing downstream ever checks that function's reference.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Memoizing something that depends on a value which changes every render defeats the purpose entirely</strong> — if a useMemo's dependency array includes an inline object/array literal (a new reference every render), the memoization NEVER actually hits its cache, providing zero benefit while still paying the overhead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Over-memoizing an entire codebase can make it SLOWER, not faster</strong> — every useMemo/useCallback call has a real, nonzero cost (extra hook state, the dependency comparison); applying it reflexively to cheap computations adds net overhead across the whole app.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Premature optimization" applies directly here</strong> — deciding a computation "seems expensive" without measuring it, and adding memoization preemptively, is a classic case of optimizing based on intuition rather than actual profiling data.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>React.memo itself has a cost too</strong> (the shallow prop comparison on every potential re-render) — wrapping every single component in React.memo "for safety" is the same anti-pattern as over-using useCallback, and can hurt more than help for cheap-to-render components.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Memoizing a value doesn't prevent the COMPONENT itself from re-rendering</strong> — useMemo/useCallback skip recomputing a SPECIFIC value/function; the surrounding component still re-renders normally (runs its function body, returns new JSX) whenever its own state/props/parent triggers it to.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The React Compiler (newer tooling) aims to automate much of this decision-making</strong> — by automatically memoizing values and functions where beneficial at build time, reducing the need to manually reach for useMemo/useCallback at all; worth mentioning as forward-looking context if the interview goes deep on this topic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useMemo should not be used for side effects</strong> — its factory function is expected to be pure (just compute and return a value); side effects belong in useEffect, and React makes no strict guarantee about exactly how many times the useMemo factory itself might run.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"It might help performance" is a weak justification in an interview — always tie it to a SPECIFIC re-render trigger and a SPECIFIC cost</strong> — e.g. "this recomputes on every keystroke in an unrelated input, and the computation is an O(n) reduce over thousands of rows" is a concrete, defensible justification; "just in case it's slow" is not.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This topic is specifically about JUDGMENT, not API syntax — interviewers are listening for whether you can justify a real trade-off with concrete reasoning, not just recite "useMemo caches values, useCallback caches functions."</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental difference between useMemo and useCallback?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `useMemo` memoizes the RESULT of calling a function — it caches a computed VALUE and only recomputes it when the dependencies change. `useCallback` memoizes the FUNCTION ITSELF — it caches the function's REFERENCE so the same function identity is returned across renders (as long as dependencies haven't changed), rather than caching what the function would return if called. In fact, `useCallback(fn, deps)` is literally implemented as `useMemo(() => fn, deps)` — the underlying mechanism is identical; only what's being cached (a value vs. a function reference) differs.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is "neither" the correct default answer for most components, rather than reaching for these hooks proactively?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Both `useMemo` and `useCallback` have a real, nonzero cost: they allocate additional hook state to store the cached value/dependency array, and they run a comparison check on every render to decide whether to reuse the cache or recompute. For cheap computations (string concatenation, simple ternaries, basic arithmetic, small array operations), this overhead is actually GREATER than the cost of just recomputing the value plainly every time — meaning reflexive memoization can make an app measurably SLOWER, not faster, while also adding code complexity and more surface area for dependency-array bugs. The performance win only materializes when the computation being skipped is genuinely expensive relative to that overhead.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does useCallback actually provide a real performance benefit?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Only when something DOWNSTREAM specifically checks the function's reference identity — the two main cases are: (1) the function is passed as a prop to a child wrapped in `React.memo`, where a new function reference on every render would defeat `React.memo`'s shallow-comparison optimization entirely, causing the "memoized" child to re-render just as often as if it weren't memoized at all; or (2) the function is used inside another hook's dependency array (like a `useEffect`), where an unstable reference would cause that OTHER hook to re-run more often than necessary. Outside of these two scenarios, wrapping a function in `useCallback` provides no measurable benefit.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you determine, concretely, whether a specific computation is "expensive enough" to justify useMemo?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Use the React DevTools Profiler (or simple `console.time`/`console.timeEnd` around the computation) to measure its ACTUAL execution time, rather than guessing based on how the code "looks."<br>
+          <strong>2.</strong> Identify what OTHER state changes trigger the component's re-render — if this expensive computation lives in a component that re-renders frequently for UNRELATED reasons (like a sibling's state update, or a parent re-rendering), that increases how often the wasted recomputation actually happens.<br>
+          <strong>3.</strong> Compare the measured cost against a meaningful threshold — something in the range of single-digit milliseconds or more, especially if it recurs frequently, starts eating into the ~16ms per-frame budget needed for smooth 60fps interaction.<br>
+          <strong>4.</strong> If the cost is measurably significant AND the component re-renders often for reasons unrelated to this computation's actual inputs, that's the concrete justification for wrapping it in `useMemo`.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What happens if you wrap a function in useCallback but never actually use it with React.memo or a dependency array?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Effectively nothing beneficial — the function is still recreated on every render exactly as it would be without `useCallback` (React still needs to re-run the render function's body, which includes constructing the callback expression, to even know what to check against the cache). The ONLY difference is that `useCallback` returns the CACHED reference from a previous render when the dependencies match, but if nothing downstream ever compares that reference to anything, this stability is entirely unused/wasted — you've paid the memoization overhead (extra hook state + comparison) for zero actual performance benefit.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can excessive use of useMemo/useCallback actually make an application slower overall?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Each call to `useMemo`/`useCallback` adds its own per-render bookkeeping cost: storing the previous dependency array and cached result in the component's hook state, and running an equality comparison against the NEW dependencies on every render to decide whether to reuse the cache. When applied to cheap computations (which is the vast majority of what a typical component computes — string formatting, simple derived booleans, basic array operations on small lists), this bookkeeping overhead EXCEEDS the cost of simply recomputing the value fresh each time. Multiplied across a large component tree where memoization has been applied reflexively everywhere, this accumulated overhead can measurably slow down the app's overall rendering performance compared to not memoizing at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use useMemo not for a raw performance win, but for a different reason — like referential stability of an object?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When an object or array VALUE (not a function) is passed as a prop to a `React.memo`-wrapped child, or used in another hook's dependency array, and you need that object's REFERENCE to stay stable across renders where its actual content hasn't logically changed — for example, a configuration object passed to a memoized child, or a derived array used as a `useEffect` dependency. Here, `useMemo`'s purpose isn't to avoid an expensive computation (constructing `{ limit: 10 }` is trivially cheap) — it's specifically to prevent unnecessary downstream re-renders/effect re-runs caused by a fresh object reference being created every render, even though `useCallback` (for functions specifically) is the more idiomatic tool for the equivalent function case.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you justify, in a code review, REMOVING an existing useMemo that you believe is unnecessary?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Provide concrete evidence rather than just an opinion: <strong>(1)</strong> Profile the actual computation being memoized and show its execution time is negligible (e.g. sub-millisecond) — demonstrating the memoization's own overhead (dependency comparison, extra hook state) is comparable to or greater than what it's supposedly saving. <strong>(2)</strong> Confirm nothing downstream depends on referential stability of the memoized value (no `React.memo` child receiving it, no other hook's dependency array using it) — meaning the ONLY purpose being served is avoiding recomputation, which the profiling in step 1 shows isn't meaningfully expensive anyway. <strong>(3)</strong> Point out that removing it simplifies the code and removes a dependency-array footgun (a common source of subtle bugs) with a null indication of downside, backed by the measurements from steps 1-2 rather than "I don't think this is needed."
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · useMemo vs useCallback vs Neither · Concrete Performance Reasoning
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
