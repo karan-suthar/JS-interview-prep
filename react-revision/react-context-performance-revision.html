@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Performance Issues &amp; Fixes — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ff6b6b;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ff6b6b 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Fix header cards ── */
+  .fix-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 3px solid var(--teal);
+  }
+  .fix-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .fix-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Performance</div>
+    <h1>Context Performance Issues &amp; Fixes</h1>
+    <p>Memoization · Splitting Contexts · External Stores — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. How Context Re-renders Work</a>
+    <a class="topic-pill" href="#s2">2. The Performance Problem</a>
+    <a class="topic-pill" href="#s3">3. Fix 1 — Memoize the Value</a>
+    <a class="topic-pill" href="#s4">4. Fix 2 — Split Contexts</a>
+    <a class="topic-pill" href="#s5">5. Fix 3 — External Store</a>
+    <a class="topic-pill" href="#s6">6. Fix Comparison</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Fix</th><th>Solves</th><th>Effort</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Memoize provider value</td><td>Unnecessary re-renders caused by a NEW object/array being passed to value= every render</td><td>Low — wrap in useMemo/useCallback</td></tr>
+      <tr><td>Split contexts</td><td>Consumers re-rendering for fields of the context they don't even use</td><td>Medium — restructure into multiple Provider/Context pairs</td></tr>
+      <tr><td>External store</td><td>Fine-grained, selective subscriptions Context fundamentally can't offer</td><td>High — adopt useSyncExternalStore or a library (Zustand, Redux, Jotai)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — How Context Re-renders Work
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>How Context Re-renders Actually Work</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>When a Context Provider's <ic>value</ic> changes, <strong>EVERY component calling <ic>useContext</ic> on that Context re-renders</strong> — regardless of whether that specific consumer actually cares about the part of the value that changed. Context has NO built-in mechanism for selective/partial subscriptions.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">One context value change → ALL consumers re-render, even ones using unrelated fields</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="250" y="20" width="200" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="42" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">AppContext.Provider</text>
+        <text x="350" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">value={{ user, theme, cart }}</text>
+
+        <path d="M300 70 L150 120" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed7)"/>
+        <path d="M350 70 L350 120" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed7)"/>
+        <path d="M400 70 L550 120" stroke="#ff6b6b" stroke-width="1.5" fill="none" marker-end="url(#arrowRed7)"/>
+
+        <rect x="60" y="120" width="180" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="150" y="143" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">Header</text>
+        <text x="150" y="160" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">only uses "user" — re-renders anyway</text>
+
+        <rect x="260" y="120" width="180" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="350" y="143" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">ThemeSwitch</text>
+        <text x="350" y="160" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">uses "theme" — the ONE that changed</text>
+
+        <rect x="460" y="120" width="180" height="55" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="550" y="143" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">CartIcon</text>
+        <text x="550" y="160" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">only uses "cart" — re-renders anyway</text>
+
+        <text x="350" y="205" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Only ThemeSwitch actually needed to update — Header and CartIcon re-rendered for nothing</text>
+
+        <defs>
+          <marker id="arrowRed7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// This is "all or nothing" — useContext gives you NO way to subscribe</span></span>
+  <span class="line"><span class="cm">// to just ONE field of the context value</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Header</span>() {</span>
+  <span class="line">  <span class="ck">const</span> { user } = useContext(AppContext); <span class="cm">// only reads "user"...</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{user.name}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// ...but STILL re-renders when "theme" or "cart" changes, because the ENTIRE</span></span>
+  <span class="line"><span class="cm">// context object reference changed, and useContext can't distinguish "which</span></span>
+  <span class="line"><span class="cm">// field did I actually destructure" — it just re-renders on ANY value change</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Performance Problem
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The Performance Problem in Practice</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>Context becomes a REAL performance problem when: (1) the value CHANGES FREQUENTLY (e.g. on every keystroke, every mouse move, every tick), AND (2) MANY components consume it, AND (3) those components are themselves expensive to re-render. Any one of these alone is often fine; all three together is where it hurts.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ A textbook Context performance bug</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(null);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line">  <span class="ck">const</span> [mousePos, setMousePos] = useState({});</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// 🐛 a NEW object every render — even</span></span>
+  <span class="line">  <span class="cm">// unrelated re-renders create a new ref</span></span>
+  <span class="line">  <span class="ck">const</span> value = { user, theme, mousePos };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">AppContext.Provider</span> <span class="ca">value</span>={value}&gt;</span>
+  <span class="line">      &lt;<span class="ct">HugeComponentTree</span> /&gt;</span>
+  <span class="line">    &lt;/<span class="ct">AppContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// If mousePos updates on every mousemove,</span></span>
+  <span class="line"><span class="cm">// EVERY consumer of AppContext re-renders</span></span>
+  <span class="line"><span class="cm">// on every single pixel of mouse movement!</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Immediate mitigation — memoize + isolate</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(null);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// mousePos moved to its OWN, separate</span></span>
+  <span class="line">  <span class="cm">// context/component — isolated blast radius</span></span>
+  <span class="line">  <span class="ck">const</span> value = useMemo(</span>
+  <span class="line">    () =&gt; ({ user, theme }),</span>
+  <span class="line">    [user, theme]</span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">AppContext.Provider</span> <span class="ca">value</span>={value}&gt;</span>
+  <span class="line">      &lt;<span class="ct">MouseTrackerProvider</span>&gt;</span>
+  <span class="line">        &lt;<span class="ct">HugeComponentTree</span> /&gt;</span>
+  <span class="line">      &lt;/<span class="ct">MouseTrackerProvider</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">AppContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Fix 1: Memoize the Value
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Fix 1 — Memoize the Provider Value</h2>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-title">The cheapest, first fix to try</div>
+      <div class="fix-desc">If the value passed to <ic>value=</ic> is a new object/array/function literal, it has a NEW reference on every render, even when the underlying data hasn't logically changed. Wrapping it in <ic>useMemo</ic> ensures consumers only see a "changed" value when something they'd actually care about is different.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Before — new object on every AppProvider render, regardless of cause</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">AppProvider</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">AppContext.Provider</span> <span class="ca">value</span>={{ user, setUser, theme, setTheme }}&gt;</span>
+  <span class="line">      {children}</span>
+  <span class="line">    &lt;/<span class="ct">AppContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ After — stable reference unless user or theme ACTUALLY change</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">AppProvider</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> value = useMemo(</span>
+  <span class="line">    () =&gt; ({ user, setUser, theme, setTheme }),</span>
+  <span class="line">    [user, theme] <span class="cm">// setUser/setTheme are already stable — no need to list them</span></span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">AppContext.Provider</span> <span class="ca">value</span>={value}&gt;</span>
+  <span class="line">      {children}</span>
+  <span class="line">    &lt;/<span class="ct">AppContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Important limitation: memoizing the value only helps when the PROVIDER re-renders for reasons UNRELATED to the context's own data</strong> (e.g. a parent re-rendering, or unrelated local state in the provider component). If the underlying data (user, theme) itself changes frequently, memoization does nothing to reduce consumer re-renders — it's not a substitute for Fix 2 or Fix 3 in that case.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Fix 2: Split Contexts
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Fix 2 — Split Contexts by Concern</h2>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-title">Reduce the "blast radius" of each context</div>
+      <div class="fix-desc">Instead of ONE big context holding everything, create SEPARATE contexts for logically independent pieces of state. A consumer only re-renders when the SPECIFIC context it subscribes to changes — unrelated updates elsewhere no longer affect it.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Splitting one context into three shrinks each consumer's "blast radius"</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="120" y="47" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">UserContext</text>
+
+        <rect x="250" y="20" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="47" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">ThemeContext</text>
+
+        <rect x="480" y="20" width="200" height="45" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="580" y="47" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10">CartContext</text>
+
+        <path d="M120 65 L120 110" stroke="#bd93f9" stroke-width="1.5" marker-end="url(#arrowPurple5)"/>
+        <rect x="30" y="110" width="180" height="45" rx="8" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="120" y="137" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Header (uses UserContext only)</text>
+
+        <path d="M350 65 L350 110" stroke="#6ab0ff" stroke-width="1.5" marker-end="url(#arrowBlueB)"/>
+        <rect x="260" y="110" width="180" height="45" rx="8" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="350" y="137" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="9.5">ThemeSwitch (Theme only)</text>
+
+        <path d="M580 65 L580 110" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreen9)"/>
+        <rect x="490" y="110" width="180" height="45" rx="8" fill="var(--bg2)" stroke="#5cffb0" stroke-width="1"/>
+        <text x="580" y="137" text-anchor="middle" fill="#9affd4" font-family="JetBrains Mono, monospace" font-size="9.5">CartIcon (Cart only)</text>
+
+        <text x="350" y="185" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Updating CartContext now ONLY re-renders CartIcon — Header and ThemeSwitch are untouched</text>
+
+        <defs>
+          <marker id="arrowPurple5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#bd93f9"/></marker>
+          <marker id="arrowBlueB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowGreen9" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Before — one big context, everything re-renders on any change</span></span>
+  <span class="line"><span class="ck">const</span> AppContext = createContext();</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">AppProvider</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line">  <span class="ck">const</span> [cart, setCart] = useState([]);</span>
+  <span class="line">  <span class="ck">const</span> value = { user, setUser, theme, setTheme, cart, setCart };</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">AppContext.Provider</span> <span class="ca">value</span>={value}&gt;{children}&lt;/<span class="ct">AppContext.Provider</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ After — three independent contexts, each with its own Provider</span></span>
+  <span class="line"><span class="ck">const</span> UserContext = createContext();</span>
+  <span class="line"><span class="ck">const</span> ThemeContext = createContext();</span>
+  <span class="line"><span class="ck">const</span> CartContext = createContext();</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">AppProviders</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [user, setUser] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"dark"</span>);</span>
+  <span class="line">  <span class="ck">const</span> [cart, setCart] = useState([]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> userValue = useMemo(() =&gt; ({ user, setUser }), [user]);</span>
+  <span class="line">  <span class="ck">const</span> themeValue = useMemo(() =&gt; ({ theme, setTheme }), [theme]);</span>
+  <span class="line">  <span class="ck">const</span> cartValue = useMemo(() =&gt; ({ cart, setCart }), [cart]);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">UserContext.Provider</span> <span class="ca">value</span>={userValue}&gt;</span>
+  <span class="line">      &lt;<span class="ct">ThemeContext.Provider</span> <span class="ca">value</span>={themeValue}&gt;</span>
+  <span class="line">        &lt;<span class="ct">CartContext.Provider</span> <span class="ca">value</span>={cartValue}&gt;</span>
+  <span class="line">          {children}</span>
+  <span class="line">        &lt;/<span class="ct">CartContext.Provider</span>&gt;</span>
+  <span class="line">      &lt;/<span class="ct">ThemeContext.Provider</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">UserContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// A component reading ONLY useContext(CartContext) now never re-renders</span></span>
+  <span class="line"><span class="cm">// when "user" or "theme" changes — genuinely isolated subscriptions</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Fix 3: External Store
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Fix 3 — External Store (Selective Subscriptions)</h2>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-title">The "nuclear option" for truly fine-grained needs</div>
+      <div class="fix-desc">Context fundamentally can't offer field-level subscriptions — <ic>useContext</ic> re-renders on ANY value change, full stop. An external store (via React's own <ic>useSyncExternalStore</ic>, or a library like Zustand/Redux/Jotai) lets EACH component subscribe to only the EXACT slice of state it needs.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Using React's built-in useSyncExternalStore with a hand-rolled store</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">createStore</span>(initialState) {</span>
+  <span class="line">  <span class="ck">let</span> state = initialState;</span>
+  <span class="line">  <span class="ck">const</span> listeners = <span class="ck">new</span> Set();</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> {</span>
+  <span class="line">    getState: () =&gt; state,</span>
+  <span class="line">    setState: (partial) =&gt; {</span>
+  <span class="line">      state = { ...state, ...partial };</span>
+  <span class="line">      listeners.forEach((listener) =&gt; listener()); <span class="cm">// notify subscribers</span></span>
+  <span class="line">    },</span>
+  <span class="line">    subscribe: (listener) =&gt; {</span>
+  <span class="line">      listeners.add(listener);</span>
+  <span class="line">      <span class="ck">return</span> () =&gt; listeners.delete(listener);</span>
+  <span class="line">    },</span>
+  <span class="line">  };</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> appStore = <span class="cf">createStore</span>({ user: <span class="ck">null</span>, theme: <span class="cs">"dark"</span>, cart: [] });</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// A hook that subscribes to only a SLICE of the store, via a selector function</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">useAppStore</span>(selector) {</span>
+  <span class="line">  <span class="ck">return</span> useSyncExternalStore(</span>
+  <span class="line">    appStore.subscribe,</span>
+  <span class="line">    () =&gt; selector(appStore.getState())</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage — each component re-renders ONLY when ITS selected slice changes ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartIcon</span>() {</span>
+  <span class="line">  <span class="ck">const</span> cart = <span class="cf">useAppStore</span>((state) =&gt; state.cart); <span class="cm">// subscribes ONLY to "cart"</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;{cart.length} items&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Updating "theme" or "user" in the SAME store does NOT re-render CartIcon —</span></span>
+  <span class="line"><span class="cm">// true field-level selectivity, impossible with plain Context</span></span>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>This is exactly what libraries like Zustand, Redux (with react-redux), and Jotai give you out of the box</strong> — a `useSyncExternalStore`-based selector mechanism, with a much nicer developer-facing API, so you rarely need to hand-roll this yourself in a real project. Understanding the underlying mechanism, though, is exactly what a deep-dive interview question probes for.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Fix Comparison
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Fix Comparison &amp; When to Reach for Each</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Fix</th><th>Solves</th><th>Doesn't solve</th><th>Effort/complexity</th></tr></thead>
+      <tbody>
+        <tr><td>Memoize provider value</td><td>New object reference from UNRELATED provider re-renders</td><td>Frequent, genuine changes to the actual data itself</td><td class="yes">Low</td></tr>
+        <tr><td>Split contexts</td><td>Consumers re-rendering for fields they don't use</td><td>Fine-grained subscription WITHIN a single logical piece of state (e.g. one field of a large object)</td><td>Medium</td></tr>
+        <tr><td>External store</td><td>True field/selector-level subscriptions, any granularity</td><td>Adds a new dependency/concept if hand-rolled or using a library</td><td class="no">High</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>These fixes are not mutually exclusive — apply them in order of increasing effort.</strong> Start by memoizing the value (cheap, often enough). If specific consumers still re-render too often due to a genuinely multi-concern context, split it. Only reach for an external store when you need subscriptions more granular than "split by logical concern" can achieve, or when the app's state management needs have outgrown Context's design entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Memoizing the value does NOTHING if the underlying state itself changes frequently</strong> — `useMemo(() => ({ mousePos }), [mousePos])` still produces a NEW object every time `mousePos` genuinely changes (which is the whole point of `useMemo`'s dependency check) — memoization only helps with re-renders CAUSED BY something unrelated, not the context's actual data changing.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>React.memo on a consuming component does NOT prevent it from re-rendering due to Context changes</strong> — `React.memo` only checks PROPS; if a component calls `useContext` internally, a context change forces it to re-render regardless of whether its props changed, bypassing `React.memo`'s optimization entirely.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Splitting contexts helps only if the split reflects GENUINELY independent update patterns</strong> — if `user` and `theme` almost always change together in practice, splitting them into separate contexts adds complexity without a real performance benefit.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Overusing Context for HIGH-FREQUENCY updates (mouse position, scroll position, animation frames) is a common anti-pattern</strong> regardless of which fix you apply — Context, even optimized, is generally not designed for extremely frequent updates; local component state, refs, or a dedicated external store is usually a better fit for that specific kind of data.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Nesting multiple Context Providers (from splitting) creates "provider pyramid" visual clutter</strong> — a common mitigation is a small custom wrapper component that composes all the individual providers together, so consuming code doesn't need to see the full nested structure.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>useSyncExternalStore is the correct, React 18+ sanctioned way to subscribe to external stores</strong> — using older patterns (manually calling `forceUpdate`, or subscribing inside a plain `useEffect` with local state) can have subtle bugs with concurrent rendering (tearing) that `useSyncExternalStore` is specifically designed to avoid.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every app needs an external store — this is a targeted fix for a specific, MEASURED problem</strong>, not a default architectural starting point; introducing one prematurely adds real complexity and a learning curve for a problem the app may never actually encounter.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The "split by concern" fix and "memoize the value" fix work TOGETHER, not as alternatives</strong> — after splitting into multiple contexts, EACH smaller context's value should still be memoized individually to avoid the original object-identity problem recurring within each split piece.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Context performance problems often aren't Context's "fault" specifically</strong> — the same class of bug (unnecessary re-renders from unstable references) can happen with regular prop-passing too; Context just makes the BLAST RADIUS larger since a single Provider can affect an unbounded number of consumers scattered anywhere in the subtree.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Profile before optimizing</strong> — as with useMemo/useCallback, the correct first step is confirming via React DevTools Profiler that Context re-renders are ACTUALLY causing a measurable problem, rather than assuming and prematurely restructuring context architecture based on intuition alone.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a classic "senior-level" performance question — interviewers want to see you understand the underlying MECHANISM (why Context re-renders the way it does) before jumping to fixes, and that you can pick the RIGHT level of fix for the actual problem, not just the most sophisticated one.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What exactly triggers a re-render in components consuming a Context?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Every component that calls `useContext(SomeContext)` re-renders whenever the `value` prop passed to the nearest `SomeContext.Provider` above it changes — determined by reference equality (`Object.is`), not deep equality. This happens regardless of which SPECIFIC part of that value the consuming component actually reads or destructures; Context has no mechanism to track "this component only cares about field X" — it's an all-or-nothing subscription to the entire value.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why doesn't wrapping a Context-consuming component in React.memo prevent unnecessary re-renders from Context changes?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `React.memo` works by shallow-comparing a component's PROPS between renders and skipping the re-render if they're all equal — but `useContext` is not a prop; it's a direct subscription a component makes to a Context internally, completely independent of what its parent passes down as props. When the Context's value changes, React re-renders every subscribed component DIRECTLY, bypassing the props-comparison mechanism `React.memo` relies on entirely. This is a common point of confusion: `React.memo` optimizes for the PROPS pathway of re-renders, not the Context subscription pathway.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is memoizing the context value alone NOT enough to fix a performance issue?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the underlying DATA in the context genuinely changes often — memoization with `useMemo(() => value, [deps])` only prevents a NEW reference from being created when the DEPENDENCIES haven't changed; it does nothing to reduce re-renders when those dependencies (the actual data) really are changing frequently, since a new memoized value is correctly produced each time by design. In that case, you need to address the actual granularity problem instead — either splitting the context so fewer consumers are affected by a specific field's changes, or moving to an external store with field-level selectors so each consumer only reacts to the exact piece of data it uses.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you diagnose whether Context is actually the source of a performance problem, versus something else entirely?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Use the React DevTools Profiler to record an interaction and inspect which components re-rendered and why — the Profiler explicitly shows "Context changed" as a re-render reason when applicable.<br>
+          <strong>2.</strong> Confirm the SCALE of the problem — check how MANY components consume the context, how OFTEN the value actually changes, and whether the re-rendering components are themselves expensive (large trees, heavy computations) — if all three are low, Context probably isn't your bottleneck.<br>
+          <strong>3.</strong> Temporarily comment out expensive work inside suspect components to see if the re-render TIME itself drops significantly, isolating whether the issue is "too many re-renders" versus "each re-render is inherently slow" (a different problem, solved differently, e.g. with `useMemo` inside the component or virtualization).<br>
+          <strong>4.</strong> Only after confirming Context re-renders are the measured bottleneck should you apply the memoize/split/external-store fixes, starting with the cheapest one.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between splitting contexts and using an external store with selectors — don't they solve the same problem?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          They solve the SAME class of problem (unnecessary re-renders) but at different granularities. Splitting contexts groups state into separate, logically independent contexts (e.g. `UserContext`, `ThemeContext`) — a consumer still re-renders on ANY change to the ENTIRE context it subscribes to, just a SMALLER context than before. An external store with selectors (`useAppStore(state => state.cart)`) allows subscribing to an arbitrarily precise SLICE of a single, potentially large piece of state — even fields WITHIN what would otherwise be one context — re-rendering only when that EXACT selected value changes, which Context's Provider/Consumer model has no mechanism to express at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is Context generally considered a poor fit for very high-frequency updates like mouse position or scroll position?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Even with every optimization applied (memoized values, tightly-split contexts), Context still triggers a React re-render cycle for every subscribed component on every single value change — for something updating dozens of times per second (mouse movement, scroll position, animation frames), this means dozens of re-render cycles per second propagating through potentially many components, which is inherently more overhead than necessary for such transient, rapidly-changing data. This kind of high-frequency data is usually better handled with direct DOM manipulation via refs (bypassing React's render cycle entirely for the visual update), or with a dedicated external store offering fine-grained subscriptions specifically built to minimize re-render overhead at that update frequency.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you reach for useSyncExternalStore directly, versus adopting a library like Zustand or Redux?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Reach for `useSyncExternalStore` directly when you need to integrate with an EXISTING external data source that already has its own subscription model (e.g. a browser API, a WebSocket connection, or a small amount of truly custom shared state) and want to avoid adding a new dependency for a narrow, well-defined need — it's a low-level primitive meant for exactly this kind of integration. Reach for a full library (Zustand, Redux, Jotai) when you need a more COMPLETE state management solution with a nicer developer-facing API, built-in devtools support, middleware, and established patterns for a LARGER surface of shared application state — building and maintaining the equivalent tooling by hand around `useSyncExternalStore` for a big app is usually not worth the effort compared to adopting a mature, well-tested library.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you refactor a single large AppContext (holding user, theme, and notifications) that's causing performance problems, step by step?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Profile first — confirm which specific field's updates are causing the most problematic re-renders, and identify which consumers are affected unnecessarily.<br>
+          <strong>2.</strong> Apply the cheap fix first — ensure the context's `value` is wrapped in `useMemo` with the correct dependency array, in case some of the problem is simply unrelated re-renders creating new object references.<br>
+          <strong>3.</strong> If problems persist, split the context by concern — create `UserContext`, `ThemeContext`, and `NotificationsContext` as separate context/provider pairs, each independently memoized, so a `notifications` update no longer forces `user`-only consumers to re-render.<br>
+          <strong>4.</strong> If `notifications` specifically updates very frequently (e.g. a live feed) and even its own dedicated context causes too many re-renders among its many consumers, consider moving JUST that piece to an external store with selector-based subscriptions, leaving the more stable `user`/`theme` data in simple, split Contexts.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Context Performance · Memoization · Splitting Contexts · External Stores
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

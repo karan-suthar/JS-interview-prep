@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redux vs Zustand vs Jotai vs Recoil — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Library header cards ── */
+  .lib-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 3px solid var(--accent);
+  }
+  .lib-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .lib-tagline { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-style: italic; }
+  .lib-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Scenario card ── */
+  .scenario-card {
+    background: linear-gradient(135deg, rgba(255,184,108,0.08), rgba(106,176,255,0.05));
+    border: 1px solid rgba(255,184,108,0.25); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.4rem; margin-bottom: 1.25rem;
+  }
+  .scenario-label { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 8px; }
+  .scenario-text { font-size: 14.5px; color: var(--text); line-height: 1.7; }
+
+  /* ── Verdict card ── */
+  .verdict-card {
+    background: rgba(92,255,176,0.06); border: 1px solid rgba(92,255,176,0.25); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.3rem; margin-bottom: 1rem;
+  }
+  .verdict-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--teal); margin-bottom: 8px; }
+  .verdict-text { font-size: 13.5px; color: var(--text2); line-height: 1.75; }
+  .verdict-text strong { color: var(--text); }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 280px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(255,184,108,0.08); border: 1px solid rgba(255,184,108,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · State Management</div>
+    <h1>Redux vs Zustand vs Jotai vs Recoil</h1>
+    <p>Core Models Compared · A Justified Scenario Pick — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Landscape</a>
+    <a class="topic-pill" href="#s2">2. Redux</a>
+    <a class="topic-pill" href="#s3">3. Zustand</a>
+    <a class="topic-pill" href="#s4">4. Jotai</a>
+    <a class="topic-pill" href="#s5">5. Recoil</a>
+    <a class="topic-pill" href="#s6">6. Side-by-Side Comparison</a>
+    <a class="topic-pill" href="#s7">7. Scenario &amp; Justified Pick</a>
+    <a class="topic-pill" href="#s8">8. Decision Guide</a>
+    <a class="topic-pill" href="#s9">9. Gotchas</a>
+    <a class="topic-pill" href="#s10">10. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Library</th><th>Core model</th><th>Best known for</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Redux</td><td>Single global store, reducers, dispatched actions</td><td>Predictability, time-travel debugging, huge ecosystem</td></tr>
+      <tr><td>Zustand</td><td>Small, unopinionated store(s) via a simple hook API</td><td>Minimal boilerplate, easy learning curve</td></tr>
+      <tr><td>Jotai</td><td>Atomic, bottom-up state — many small independent "atoms"</td><td>Fine-grained reactivity, no unnecessary re-renders by design</td></tr>
+      <tr><td>Recoil</td><td>Atomic state (like Jotai) with a graph of derived "selectors"</td><td>Complex derived/computed state graphs, React-team-adjacent origins</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Landscape
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Landscape — Two Philosophies</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>These four libraries split into TWO fundamentally different mental models: <strong>Redux and Zustand</strong> use a "top-down" STORE model (one or a few centralized objects holding state) — while <strong>Jotai and Recoil</strong> use a "bottom-up" ATOMIC model (many small, independent pieces of state that compose together).</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Store model vs Atomic model</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#6ab0ff" font-family="Inter, sans-serif" font-size="11" font-weight="600">Store model (Redux, Zustand)</text>
+        <rect x="95" y="35" width="160" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="175" y="65" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">ONE central store</text>
+
+        <path d="M130 85 L80 130" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlueC)"/>
+        <path d="M175 85 L175 130" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlueC)"/>
+        <path d="M220 85 L270 130" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlueC)"/>
+
+        <rect x="30" y="130" width="100" height="35" rx="6" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="80" y="152" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8.5">Component A</text>
+        <rect x="130" y="130" width="100" height="35" rx="6" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="180" y="152" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8.5">Component B</text>
+        <rect x="230" y="130" width="100" height="35" rx="6" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="280" y="152" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8.5">Component C</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#bd93f9" font-family="Inter, sans-serif" font-size="11" font-weight="600">Atomic model (Jotai, Recoil)</text>
+        <rect x="380" y="35" width="80" height="35" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="420" y="57" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">atom A</text>
+        <rect x="470" y="35" width="80" height="35" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="510" y="57" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">atom B</text>
+        <rect x="560" y="35" width="80" height="35" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="600" y="57" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">atom C</text>
+
+        <path d="M420 70 L420 130" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple6)"/>
+        <path d="M510 70 L510 130" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple6)"/>
+        <path d="M600 70 L600 130" stroke="#bd93f9" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple6)"/>
+
+        <rect x="380" y="130" width="80" height="35" rx="6" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="420" y="152" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="8">reads A only</text>
+        <rect x="470" y="130" width="80" height="35" rx="6" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="510" y="152" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="8">reads B only</text>
+        <rect x="560" y="130" width="80" height="35" rx="6" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="600" y="152" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="8">reads C only</text>
+
+        <text x="175" y="190" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="9.5">Selectors needed to avoid over-subscribing</text>
+        <text x="510" y="190" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="9.5">Fine-grained subscriptions are the DEFAULT</text>
+
+        <defs>
+          <marker id="arrowBlueC" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowPurple6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#bd93f9"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Redux
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Redux</h2>
+    </div>
+
+    <div class="lib-card">
+      <div class="lib-title">Redux (with Redux Toolkit)</div>
+      <div class="lib-tagline">"A single, predictable source of truth, updated through pure reducer functions."</div>
+      <div class="lib-desc">One global (or feature-sliced) store. State changes happen by DISPATCHING actions, which are handled by pure REDUCER functions that compute the next state. Strict unidirectional flow, excellent devtools (time-travel debugging), and a massive ecosystem of middleware.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Modern Redux, using Redux Toolkit (the current recommended approach)</span></span>
+  <span class="line"><span class="ck">import</span> { createSlice, configureStore } <span class="ck">from</span> <span class="cs">"@reduxjs/toolkit"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> cartSlice = <span class="cf">createSlice</span>({</span>
+  <span class="line">  name: <span class="cs">"cart"</span>,</span>
+  <span class="line">  initialState: { items: [] },</span>
+  <span class="line">  reducers: {</span>
+  <span class="line">    addItem: (state, action) =&gt; {</span>
+  <span class="line">      state.items.push(action.payload); <span class="cm">// looks mutable, but Immer handles it safely under the hood</span></span>
+  <span class="line">    },</span>
+  <span class="line">  },</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export const</span> { addItem } = cartSlice.actions;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> store = <span class="cf">configureStore</span>({</span>
+  <span class="line">  reducer: { cart: cartSlice.reducer },</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage in a component ──</span></span>
+  <span class="line"><span class="ck">import</span> { useSelector, useDispatch } <span class="ck">from</span> <span class="cs">"react-redux"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartIcon</span>() {</span>
+  <span class="line">  <span class="ck">const</span> items = useSelector((state) =&gt; state.cart.items); <span class="cm">// selector — subscribes narrowly</span></span>
+  <span class="line">  <span class="ck">const</span> dispatch = useDispatch();</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;{items.length}&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why teams still choose Redux:</strong> unmatched debugging tools (time-travel, action replay, state diffing), a strict, enforceable pattern that scales well across LARGE teams (everyone updates state the same, predictable way), and a mature middleware ecosystem for side effects (redux-saga, redux-thunk, RTK Query for data fetching).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Zustand
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Zustand</h2>
+    </div>
+
+    <div class="lib-card">
+      <div class="lib-title">Zustand</div>
+      <div class="lib-tagline">"State management that gets out of your way."</div>
+      <div class="lib-desc">A minimal store built directly on hooks — no boilerplate actions/reducers/dispatch ceremony required. You define a store as a hook, read from it with a SELECTOR function (for fine-grained subscriptions), and update it by calling a "set" function directly.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The entire store definition — no Provider wrapping needed at all</span></span>
+  <span class="line"><span class="ck">import</span> { create } <span class="ck">from</span> <span class="cs">"zustand"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> useCartStore = <span class="cf">create</span>((set) =&gt; ({</span>
+  <span class="line">  items: [],</span>
+  <span class="line">  <span class="cf">addItem</span>: (item) =&gt;</span>
+  <span class="line">    set((state) =&gt; ({ items: [...state.items, item] })),</span>
+  <span class="line">  <span class="cf">clearCart</span>: () =&gt; set({ items: [] }),</span>
+  <span class="line">}));</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage — just call the hook, no Provider, no context ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartIcon</span>() {</span>
+  <span class="line">  <span class="cm">// selector — this component ONLY re-renders when "items" changes</span></span>
+  <span class="line">  <span class="ck">const</span> items = useCartStore((state) =&gt; state.items);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;{items.length}&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">AddToCartButton</span>({ product }) {</span>
+  <span class="line">  <span class="ck">const</span> addItem = useCartStore((state) =&gt; state.addItem);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">button</span> <span class="ca">onClick</span>={() =&gt; addItem(product)}&gt;Add&lt;/<span class="ct">button</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// No reducers, no action types, no dispatch — direct, minimal API surface</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why teams choose Zustand:</strong> dramatically less boilerplate than Redux for equivalent functionality, built-in selector-based subscriptions (avoiding the Context re-render problem entirely, without extra setup), no required Provider wrapping, and a gentle learning curve — often described as "just useState, but shareable across components."</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Jotai
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Jotai</h2>
+    </div>
+
+    <div class="lib-card">
+      <div class="lib-title">Jotai</div>
+      <div class="lib-tagline">"Primitive and flexible state management, built from small atoms."</div>
+      <div class="lib-desc">Instead of one big store, state is defined as many small, independent "atoms" — each atom is its own unit of state. Components subscribe to EXACTLY the atoms they use, giving fine-grained reactivity by design, without needing to write selectors.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">import</span> { atom, useAtom } <span class="ck">from</span> <span class="cs">"jotai"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Each atom is an independent, standalone piece of state</span></span>
+  <span class="line"><span class="ck">const</span> cartItemsAtom = <span class="cf">atom</span>([]);</span>
+  <span class="line"><span class="ck">const</span> discountCodeAtom = <span class="cf">atom</span>(<span class="cs">""</span>);</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Derived/computed atoms — automatically recompute when their dependencies change</span></span>
+  <span class="line"><span class="ck">const</span> cartTotalAtom = <span class="cf">atom</span>((get) =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> items = get(cartItemsAtom); <span class="cm">// declares a dependency on cartItemsAtom</span></span>
+  <span class="line">  <span class="ck">return</span> items.reduce((sum, item) =&gt; sum + item.price, <span class="cn">0</span>);</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartIcon</span>() {</span>
+  <span class="line">  <span class="cm">// subscribes ONLY to cartItemsAtom — nothing else can cause this to re-render</span></span>
+  <span class="line">  <span class="ck">const</span> [items] = useAtom(cartItemsAtom);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;{items.length}&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartTotal</span>() {</span>
+  <span class="line">  <span class="cm">// subscribes to the DERIVED atom — recomputes automatically when cartItemsAtom changes</span></span>
+  <span class="line">  <span class="ck">const</span> [total] = useAtom(cartTotalAtom);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;${total}&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Updating discountCodeAtom re-renders NEITHER of the above components —</span></span>
+  <span class="line"><span class="cm">// true fine-grained reactivity, by design, with no manual selector needed</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why teams choose Jotai:</strong> fine-grained reactivity is the DEFAULT (not something you have to remember to set up with selectors), a small React-like API (`atom`/`useAtom` mirrors `useState`'s mental model), and clean support for derived/computed state that automatically tracks its own dependencies.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Recoil
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Recoil</h2>
+    </div>
+
+    <div class="lib-card">
+      <div class="lib-title">Recoil</div>
+      <div class="lib-tagline">"A state management library for React, built by Meta's React team."</div>
+      <div class="lib-desc">Similar atomic philosophy to Jotai — state lives in "atoms" — but with an explicit "selector" concept for derived state, forming a data-flow GRAPH. Notably built by engineers on Meta's React team, giving it credibility for React-idiomatic design, though its long-term maintenance status has been less certain in recent years.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">import</span> { atom, selector, useRecoilState, useRecoilValue } <span class="ck">from</span> <span class="cs">"recoil"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> cartItemsState = <span class="cf">atom</span>({</span>
+  <span class="line">  key: <span class="cs">"cartItemsState"</span>, <span class="cm">// unique string key REQUIRED for every atom/selector</span></span>
+  <span class="line">  default: [],</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> cartTotalState = <span class="cf">selector</span>({</span>
+  <span class="line">  key: <span class="cs">"cartTotalState"</span>,</span>
+  <span class="line">  get: ({ get }) =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> items = get(cartItemsState);</span>
+  <span class="line">    <span class="ck">return</span> items.reduce((sum, item) =&gt; sum + item.price, <span class="cn">0</span>);</span>
+  <span class="line">  },</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage — REQUIRES wrapping the app in &lt;RecoilRoot&gt; ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">App</span>() {</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">RecoilRoot</span>&gt;</span>
+  <span class="line">      &lt;<span class="ct">CartIcon</span> /&gt;</span>
+  <span class="line">    &lt;/<span class="ct">RecoilRoot</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartIcon</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [items] = useRecoilState(cartItemsState);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">span</span>&gt;{items.length}&lt;/<span class="ct">span</span>&gt;;</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Important, current-state caveat:</strong> Recoil's maintenance pace and long-term community momentum have visibly SLOWED compared to Jotai in recent years — worth acknowledging directly if this comes up in an interview, since recommending Recoil for a brand-new project today without addressing this would be an incomplete answer.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Side-by-Side Comparison
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Side-by-Side Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Redux</th><th>Zustand</th><th>Jotai</th><th>Recoil</th></tr></thead>
+      <tbody>
+        <tr><td>Mental model</td><td>Centralized store + reducers</td><td>Small store(s) + direct setters</td><td>Atomic, bottom-up</td><td>Atomic, bottom-up</td></tr>
+        <tr><td>Boilerplate</td><td class="no">High (less with RTK)</td><td class="yes">Very low</td><td class="yes">Low</td><td>Moderate (key strings required)</td></tr>
+        <tr><td>Requires a Provider</td><td class="yes">✓ Yes</td><td class="no">✗ No</td><td>Optional (has a default store)</td><td class="yes">✓ Yes (RecoilRoot)</td></tr>
+        <tr><td>Fine-grained subscriptions</td><td>Via manual selectors</td><td>Via manual selectors</td><td class="yes">✓ Built-in, by design</td><td class="yes">✓ Built-in, by design</td></tr>
+        <tr><td>DevTools / time-travel debugging</td><td class="yes">✓ Best-in-class</td><td>Basic (via middleware)</td><td>Limited</td><td>Limited</td></tr>
+        <tr><td>Derived/computed state</td><td>Manual (reselect or memoized selectors)</td><td>Manual, in the store definition</td><td class="yes">✓ First-class (derived atoms)</td><td class="yes">✓ First-class (selectors)</td></tr>
+        <tr><td>Bundle size</td><td>Larger (Redux + Redux Toolkit + React-Redux)</td><td class="yes">✓ Very small</td><td class="yes">✓ Very small</td><td>Moderate</td></tr>
+        <tr><td>Maintenance/community momentum (current)</td><td class="yes">✓ Strong, mature</td><td class="yes">✓ Strong, growing fast</td><td class="yes">✓ Strong, growing</td><td>Slowed in recent years</td></tr>
+        <tr><td>Best fit team size</td><td>Large teams needing strict conventions</td><td>Any size — especially small/mid teams wanting simplicity</td><td>Any size, especially UI with many independent pieces of state</td><td>Teams already invested in it; less ideal for new projects today</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Scenario & Justified Pick
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Scenario &amp; Justified Pick — A Model Answer</h2>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-label">The Scenario</div>
+      <div class="scenario-text">You're the tech lead for a mid-sized team (6 engineers) building a B2B SaaS dashboard product. The app has a complex, deeply nested filter/sort UI with dozens of independently-adjustable filter controls (each affecting different, independent widgets on the page), plus some genuinely global state (the logged-in user, feature flags). The team has moderate React experience but no prior experience with any state management library. You need to pick ONE primary tool for the next 2+ years of this codebase.</div>
+    </div>
+
+    <div class="verdict-card">
+      <div class="verdict-title">✓ My pick: Zustand for the global concerns, Jotai for the filter UI (or Zustand alone, kept simple)</div>
+      <div class="verdict-text">
+        <strong>Reasoning, step by step:</strong><br><br>
+        <strong>1. Rule out Redux first:</strong> Redux's strict reducer/action ceremony and steeper learning curve isn't justified here — the team has NO prior state-library experience, and Redux's biggest strengths (time-travel debugging, strict conventions for very large teams, mature middleware for complex async flows) aren't strongly needed for a 6-person team without an existing investment in Redux patterns. The learning curve cost outweighs the benefit for this team's starting point.<br><br>
+        <strong>2. Rule out Recoil:</strong> its slowed maintenance momentum is a real risk for a codebase meant to last 2+ years — picking a library with uncertain long-term support for a multi-year commitment is a avoidable risk when a very similar (and more actively maintained) alternative, Jotai, exists.<br><br>
+        <strong>3. Why the FILTER UI specifically favors an atomic model (Jotai):</strong> dozens of INDEPENDENT filter controls, each affecting different, independent widgets, is EXACTLY the scenario atomic state was designed for — each filter becomes its own atom, each widget subscribes only to the atoms it actually needs, and changing one filter never triggers unrelated widgets to re-render. Achieving the same fine-grained behavior in a single Zustand store would require carefully hand-writing a selector for every widget — doable, but more manual discipline to get right and keep right as the app grows.<br><br>
+        <strong>4. Why GLOBAL concerns (user, feature flags) still favor Zustand's simplicity:</strong> this data changes rarely and is needed broadly — Zustand's minimal API (a single hook, no Provider) is the simplest possible tool for this job, and mixing in Jotai here would add unnecessary conceptual overhead for something that doesn't need atomic granularity.<br><br>
+        <strong>Alternative, equally defensible answer:</strong> using Zustand ALONE for everything, with selectors applied carefully to the filter state, is also justifiable — it trades a small amount of manual selector discipline for having only ONE library/mental model for the whole team to learn, which can be the right call for a team explicitly prioritizing simplicity over the "automatic" fine-grained reactivity Jotai provides by default.
+      </div>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>What this model answer demonstrates for an interviewer:</strong> ruling OUT options with explicit reasoning (not just picking a favorite), tying the decision to CONCRETE facts from the scenario (team size, experience level, UI shape, time horizon), and acknowledging a reasonable alternative — this is what separates a strong system-design-style answer from a shallow "I like X because it's popular."</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Decision Guide
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>General Decision Guide</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Walk through in order</div>
+      <div class="decision-step">
+        <div class="decision-q">Does the team already use/require Redux conventions, or need best-in-class time-travel debugging?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Redux (Toolkit)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is the UI dominated by MANY independent pieces of state, each affecting different, separate components?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Jotai (atomic model fits naturally)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Want the SIMPLEST possible API, minimal boilerplate, no strong opinion on atomic vs store?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Zustand</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Starting a brand-new project today?</div>
+        <div class="decision-yes">→</div>
+        <div class="decision-result">Prefer Jotai or Zustand over Recoil, given current maintenance trends</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>"Which is BEST" has no single correct answer — interviewers are testing your REASONING, not fishing for one "right" library.</strong> Answering with a single favorite and no trade-off discussion is a weaker answer than reasoning through the scenario's specific constraints.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Modern Redux (via Redux Toolkit) is dramatically less boilerplate-heavy than "classic" Redux</strong> — criticizing Redux purely for verbosity without acknowledging RTK's improvements (createSlice, built-in Immer, less manual action-type constants) is an outdated take.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Zustand's selector pattern must be used correctly to get fine-grained subscriptions</strong> — calling `useCartStore()` with NO selector subscribes a component to the ENTIRE store, defeating the fine-grained benefit; you must call `useCartStore(state => state.items)` to subscribe narrowly.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Jotai/Recoil's atomic model isn't automatically "better" for every case</strong> — a small app with mostly GLOBAL, infrequently-changing state (a logged-in user, a theme) gets little practical benefit from atomizing everything, and a simpler store-based tool may be easier to reason about for that specific shape of state.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Recoil's requirement for globally-unique string "key" values for every atom/selector is an easy source of subtle bugs</strong> — accidentally reusing a key string across two different atoms causes silent, hard-to-diagnose conflicts.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>None of these libraries REPLACE React's own built-in state entirely</strong> — local component state (`useState`) and Context remain perfectly appropriate for state that's genuinely local to one component or a small, shallow part of the tree; reaching for a global state library for everything is itself an anti-pattern.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Bundle size differences, while real, are rarely the DECIDING factor</strong> in a genuine architectural decision — team familiarity, the shape of the app's state, and long-term maintenance considerations usually matter more than a few extra kilobytes, though it's still a legitimate secondary factor to mention.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Server state (data fetched from an API) is often better handled by a DEDICATED data-fetching library</strong> (React Query, SWR) rather than shoehorning it into Redux/Zustand/Jotai/Recoil — these libraries are primarily designed for CLIENT state, and mixing server-state caching/revalidation concerns into them (though possible) often duplicates functionality those dedicated tools already solve well.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Migrating between these libraries mid-project is a real, nontrivial cost</strong> — a strong answer acknowledges that picking wisely upfront (based on the team and the app's actual state shape) matters more than picking whatever is currently trending, since switching later touches a large surface of the codebase.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Fine-grained reactivity by default" (Jotai/Recoil) vs "fine-grained reactivity via selectors" (Redux/Zustand) is a design trade-off, not a strict hierarchy</strong> — the SELECTOR approach gives you explicit control and visibility into subscriptions in the component's own code, while the ATOMIC approach is more automatic but can make it less obvious, just by reading one atom's definition, everywhere it's used across the app.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 10 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is fundamentally a SYSTEM DESIGN-style question dressed up as a library comparison — the strongest answers reason from the SHAPE of the problem (team, app, state characteristics) to the tool, not the other way around.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental architectural difference between Redux/Zustand and Jotai/Recoil?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Redux and Zustand use a "top-down" STORE model — one (or a few) centralized objects hold ALL the relevant state, and components read from it via SELECTORS to achieve fine-grained subscriptions. Jotai and Recoil use a "bottom-up" ATOMIC model — state is decomposed into many small, independent units ("atoms") from the start, and components subscribe directly to only the specific atoms they use, making fine-grained reactivity the DEFAULT behavior rather than something you opt into via a selector function.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why might a team choose Redux today despite its reputation for more boilerplate than the alternatives?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Modern Redux via Redux Toolkit has significantly reduced the historical boilerplate complaint (createSlice, built-in Immer for "mutable-looking" but safe updates, less manual action-type ceremony) — so the gap is smaller than its reputation suggests. Beyond that, Redux still offers unmatched DEBUGGING tooling (time-travel debugging, detailed action/state diffing in DevTools), which matters a great deal for large, complex applications where tracing exactly what caused a bug is a frequent, high-value need. It also enforces a strict, consistent pattern for how state changes happen — valuable for LARGE teams where consistency and predictability across many contributors outweighs the appeal of a more minimal API.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does Jotai's atomic model provide a genuinely better fit than a Zustand store?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the application's state naturally decomposes into MANY independent pieces that different, separate parts of the UI care about individually — a complex form with dozens of independently-validated fields, a dashboard with many independently-configurable widgets, or a filter UI with numerous unrelated filter controls each feeding different, separate result views. In these cases, Jotai's per-atom subscriptions give you fine-grained re-render behavior automatically, without needing to hand-write and maintain a careful selector for every single piece of consumed state, as you would with a single Zustand store trying to achieve the same granularity.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you migrate a small feature currently using Context (with its known re-render issues) to Zustand?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// Before — Context, all consumers re-render on any change</span></span>
+  <span class="line"><span class="ck">const</span> CartContext = createContext();</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">CartProvider</span>({ children }) {</span>
+  <span class="line">  <span class="ck">const</span> [items, setItems] = useState([]);</span>
+  <span class="line">  <span class="ck">const</span> value = useMemo(() =&gt; ({ items, setItems }), [items]);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">CartContext.Provider</span> <span class="ca">value</span>={value}&gt;{children}&lt;/<span class="ct">CartContext.Provider</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// After — Zustand, no Provider needed, selector-based fine-grained subscriptions</span></span>
+  <span class="line"><span class="ck">import</span> { create } <span class="ck">from</span> <span class="cs">"zustand"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> useCartStore = <span class="cf">create</span>((set) =&gt; ({</span>
+  <span class="line">  items: [],</span>
+  <span class="line">  <span class="cf">setItems</span>: (items) =&gt; set({ items }),</span>
+  <span class="line">}));</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Consuming components — replace useContext(CartContext) with:</span></span>
+  <span class="line"><span class="ck">const</span> items = useCartStore((state) =&gt; state.items); <span class="cm">// only re-renders when "items" changes</span></span>
+          </div>
+          The migration removes the `&lt;CartProvider&gt;` wrapper entirely (Zustand doesn't require a Provider), and replaces every `useContext(CartContext)` call with a selector-based `useCartStore(state => state.someField)` call, which gives the SAME shared-state capability but with proper fine-grained subscriptions built in.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the significance of Recoil's origin at Meta, and does that make it the "safest" choice?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Recoil was built by engineers on Meta's React team, which historically gave it credibility as a React-idiomatic design (its atomic model closely mirrors ideas that influenced React's own concurrent features). However, ORIGIN alone doesn't guarantee long-term safety — Recoil's public maintenance pace and community momentum have visibly slowed in recent years compared to Jotai, which has a very similar atomic philosophy but currently more active development. For a NEW project today, this makes Recoil a less safe long-term bet despite its pedigree — a nuance worth stating explicitly rather than assuming "built by the React team" automatically implies it's the current best choice.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is it often a mistake to use one of these libraries to manage server/API data, rather than a dedicated data-fetching library?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Server state has fundamentally different characteristics from client state: it can become STALE (the server's data may have changed since you fetched it), often needs caching/deduplication across multiple components requesting the same data, benefits from automatic background revalidation, and needs retry/error-handling logic for network failures. Redux/Zustand/Jotai/Recoil are general-purpose CLIENT state containers — they don't inherently provide any of these server-state-specific behaviors, meaning you'd end up manually re-implementing caching, staleness tracking, and revalidation logic that dedicated libraries like React Query or SWR already provide out of the box, well-tested and optimized for exactly that purpose.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you recommend NOT adopting any of these libraries at all, and just using React's built-in state?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the app's shared-state needs are genuinely small — a handful of values needed by a shallow, limited part of the component tree (like a single page's local UI state, or a theme value used by only a few components) — plain `useState` lifted to a common ancestor, or a single well-scoped Context (with the memoization/splitting techniques applied as needed), is often entirely sufficient. Introducing an external state management library adds a new dependency, a learning curve for the team, and additional architectural decisions to maintain — costs that should be justified by an ACTUAL complexity/performance need, not adopted preemptively just because "that's what serious apps use."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you structure an answer if asked to justify a state management choice for a scenario you're given live in an interview?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Identify the KEY characteristics of the scenario that actually matter for this decision: team size/experience, the SHAPE of the state (few global values vs. many independent pieces), performance sensitivity, and the project's expected lifespan/maintenance horizon.<br>
+          <strong>2.</strong> RULE OUT options explicitly, with a specific reason tied to the scenario — don't just pick a favorite; show you considered and dismissed alternatives for real reasons (e.g. "Redux's learning curve isn't justified here because...").<br>
+          <strong>3.</strong> State your pick and connect it DIRECTLY back to the scenario's specific details, not generic library marketing points (e.g. "because this UI has dozens of independent filters, an atomic model avoids needing to hand-write selectors for each one").<br>
+          <strong>4.</strong> Acknowledge a reasonable alternative or trade-off you're consciously accepting — this shows you understand the decision isn't objectively "solved," just well-reasoned for THIS specific context.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Redux · Zustand · Jotai · Recoil · State Management Trade-offs
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

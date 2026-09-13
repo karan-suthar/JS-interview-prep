@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compound Components, Render Props &amp; HOCs — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff79c6;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,121,198,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,121,198,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,121,198,0.1); color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff79c6 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,121,198,0.1); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4d9e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Pattern header cards ── */
+  .pattern-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 3px solid var(--accent);
+  }
+  .pattern-sig { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+  .pattern-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 280px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(255,121,198,0.08); border: 1px solid rgba(255,121,198,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,121,198,0.12); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · Component Patterns</div>
+    <h1>Compound Components, Render Props &amp; HOCs</h1>
+    <p>Three Classic Composition Patterns and When Each Earns Its Place — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Why These Patterns Exist</a>
+    <a class="topic-pill" href="#s2">2. Compound Components</a>
+    <a class="topic-pill" href="#s3">3. Render Props</a>
+    <a class="topic-pill" href="#s4">4. Higher-Order Components</a>
+    <a class="topic-pill" href="#s5">5. Side-by-Side Comparison</a>
+    <a class="topic-pill" href="#s6">6. Decision Guide</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Pattern</th><th>Core idea</th><th>Modern status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Compound Components</td><td>Multiple components implicitly share state via Context, used together as a family</td><td>Widely used — the go-to for flexible, composable UI widgets</td></tr>
+      <tr><td>Render Props</td><td>A prop whose value is a FUNCTION that returns JSX, letting the consumer control rendering</td><td>Largely superseded by hooks, but still appears in some libraries</td></tr>
+      <tr><td>Higher-Order Components (HOC)</td><td>A function that takes a component and returns a new, enhanced component</td><td>Mostly replaced by hooks; still seen in older codebases and a few cross-cutting library APIs</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Why These Patterns Exist
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Why These Patterns Exist</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>All three patterns solve the SAME underlying problem: <strong>sharing logic/state across components without duplicating code</strong> — they predate (and in HOCs/render props' case, are largely superseded by) custom hooks, which solve much of the same problem more simply for STATEFUL LOGIC reuse specifically.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Problem being solved</th><th>Pre-hooks pattern</th><th>Modern equivalent</th></tr></thead>
+      <tbody>
+        <tr><td>Reusing stateful logic across components</td><td>HOC or Render Props</td><td>Custom hooks (usually simpler)</td></tr>
+        <tr><td>Building flexible, composable UI widgets (tabs, accordions, selects)</td><td>Compound Components</td><td>Compound Components — still the best fit, hooks don't replace this</td></tr>
+        <tr><td>Injecting cross-cutting concerns (auth checks, logging, theming)</td><td>HOC</td><td>Hooks + explicit composition, or Context</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Compound Components did NOT get replaced by hooks</strong> — hooks solve LOGIC reuse, while Compound Components solve a different problem: expressing a flexible PARENT-CHILD UI relationship declaratively in JSX. This is why Compound Components remain the standard choice for widget-style components even in fully hooks-based, modern codebases.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Compound Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Compound Components</h2>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-sig">&lt;Tabs&gt;&lt;Tabs.List&gt;&lt;Tabs.Tab /&gt;&lt;/Tabs.List&gt;&lt;Tabs.Panel /&gt;&lt;/Tabs&gt;</div>
+      <div class="pattern-desc">A set of components designed to be used TOGETHER, implicitly sharing state (usually via Context) so the consumer can compose and rearrange them freely, without manually wiring props between every piece.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Implicit state sharing via Context — no manual prop wiring between siblings</div>
+      <svg class="diagram-svg" viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg">
+        <rect x="250" y="20" width="200" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="47" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">&lt;Tabs&gt; (Context.Provider)</text>
+
+        <path d="M320 65 L200 105" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlueA)"/>
+        <path d="M380 65 L500 105" stroke="#6ab0ff" stroke-width="1.5" fill="none" marker-end="url(#arrowBlueA)"/>
+
+        <rect x="100" y="105" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="200" y="132" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">&lt;Tabs.List&gt; reads context</text>
+
+        <rect x="400" y="105" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="500" y="132" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">&lt;Tabs.Panel&gt; reads context</text>
+
+        <text x="350" y="185" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">No "activeTab" prop threading needed between List and Panel —</text>
+        <text x="350" y="200" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">both read the SAME shared context provided by the parent &lt;Tabs&gt;</text>
+
+        <defs>
+          <marker id="arrowBlueA" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Full implementation of a compound Tabs component</span></span>
+  <span class="line"><span class="ck">import</span> { createContext, useContext, useState } <span class="ck">from</span> <span class="cs">"react"</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> TabsContext = createContext(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Tabs</span>({ children, defaultTab }) {</span>
+  <span class="line">  <span class="ck">const</span> [activeTab, setActiveTab] = useState(defaultTab);</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">TabsContext.Provider</span> <span class="ca">value</span>={{ activeTab, setActiveTab }}&gt;</span>
+  <span class="line">      &lt;<span class="ct">div</span> <span class="ca">className</span>=<span class="cs">"tabs"</span>&gt;{children}&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">TabsContext.Provider</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">TabList</span>({ children }) {</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span> <span class="ca">role</span>=<span class="cs">"tablist"</span>&gt;{children}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Tab</span>({ id, children }) {</span>
+  <span class="line">  <span class="ck">const</span> { activeTab, setActiveTab } = useContext(TabsContext); <span class="cm">// reads shared state</span></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">button</span></span>
+  <span class="line">      <span class="ca">className</span>={activeTab === id ? <span class="cs">"active"</span> : <span class="cs">""</span>}</span>
+  <span class="line">      <span class="ca">onClick</span>={() =&gt; setActiveTab(id)}</span>
+  <span class="line">    &gt;</span>
+  <span class="line">      {children}</span>
+  <span class="line">    &lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">TabPanel</span>({ id, children }) {</span>
+  <span class="line">  <span class="ck">const</span> { activeTab } = useContext(TabsContext); <span class="cm">// same shared context</span></span>
+  <span class="line">  <span class="ck">return</span> activeTab === id ? &lt;<span class="ct">div</span>&gt;{children}&lt;/<span class="ct">div</span>&gt; : <span class="ck">null</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Attach as static properties for the ergonomic dot-notation API</span></span>
+  <span class="line">Tabs.List = TabList;</span>
+  <span class="line">Tabs.Tab = Tab;</span>
+  <span class="line">Tabs.Panel = TabPanel;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">export default</span> Tabs;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage — the consumer freely composes/reorders pieces ──</span></span>
+  <span class="line">&lt;<span class="ct">Tabs</span> <span class="ca">defaultTab</span>=<span class="cs">"profile"</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Tabs.List</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">Tabs.Tab</span> <span class="ca">id</span>=<span class="cs">"profile"</span>&gt;Profile&lt;/<span class="ct">Tabs.Tab</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">Tabs.Tab</span> <span class="ca">id</span>=<span class="cs">"settings"</span>&gt;Settings&lt;/<span class="ct">Tabs.Tab</span>&gt;</span>
+  <span class="line">  &lt;/<span class="ct">Tabs.List</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Tabs.Panel</span> <span class="ca">id</span>=<span class="cs">"profile"</span>&gt;Profile content&lt;/<span class="ct">Tabs.Panel</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Tabs.Panel</span> <span class="ca">id</span>=<span class="cs">"settings"</span>&gt;Settings content&lt;/<span class="ct">Tabs.Panel</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">Tabs</span>&gt;</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Where compound components truly shine:</strong> the consumer can freely REORDER, OMIT, or wrap individual pieces (e.g. add a custom wrapper div around one specific `Tab`) without the parent needing to know or care — a single monolithic `&lt;Tabs items={[...]} /&gt;` API would need extra render-prop-style escape hatches to offer the same flexibility.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Render Props
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Render Props</h2>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-sig">&lt;DataProvider render={(data) =&gt; &lt;Chart data={data} /&gt;} /&gt;</div>
+      <div class="pattern-desc">A component accepts a PROP whose value is a function — instead of rendering fixed JSX itself, it calls that function (passing whatever internal state/data it manages) and renders WHATEVER that function returns, giving the consumer full control over the output.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// A render-prop component that tracks mouse position</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">MouseTracker</span>({ render }) {</span>
+  <span class="line">  <span class="ck">const</span> [position, setPosition] = useState({ x: <span class="cn">0</span>, y: <span class="cn">0</span> });</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">function</span> <span class="cf">handleMouseMove</span>(e) {</span>
+  <span class="line">    setPosition({ x: e.clientX, y: e.clientY });</span>
+  <span class="line">  }</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span> <span class="ca">onMouseMove</span>={handleMouseMove} <span class="ca">style</span>={{ height: <span class="cs">"100vh"</span> }}&gt;</span>
+  <span class="line">      {render(position)} <span class="cm">{/* the CONSUMER decides what to render with this data */}</span></span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage — different consumers render totally different UI from the same logic ──</span></span>
+  <span class="line">&lt;<span class="ct">MouseTracker</span> <span class="ca">render</span>={(pos) =&gt; &lt;<span class="ct">p</span>&gt;Mouse at ({pos.x}, {pos.y})&lt;/<span class="ct">p</span>&gt;} /&gt;</span>
+  <span class="line"></span>
+  <span class="line">&lt;<span class="ct">MouseTracker</span> <span class="ca">render</span>={(pos) =&gt; (</span>
+  <span class="line">  &lt;<span class="ct">Cursor</span> <span class="ca">style</span>={{ left: pos.x, top: pos.y }} /&gt;</span>
+  <span class="line">)} /&gt;</span>
+  <span class="line"><span class="cm">// The SAME MouseTracker logic drives two COMPLETELY different visual outputs</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// A common variant: using "children" itself as the function (no separate "render" prop needed)</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">MouseTracker</span>({ children }) {</span>
+  <span class="line">  <span class="cm">// ...same logic...</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span> <span class="ca">onMouseMove</span>={handleMouseMove}&gt;{children(position)}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line">&lt;<span class="ct">MouseTracker</span>&gt;{(pos) =&gt; &lt;<span class="ct">p</span>&gt;{pos.x}, {pos.y}&lt;/<span class="ct">p</span>&gt;}&lt;/<span class="ct">MouseTracker</span>&gt;</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Why this pattern has faded:</strong> the SAME "share this stateful logic across multiple UI shapes" goal is now typically solved more simply with a CUSTOM HOOK (e.g. `useMousePosition()`) — no wrapper component, no extra nesting in the JSX tree, no unusual "function as a child" syntax. Render props still appear in some older or highly generic libraries, but hooks are the more idiomatic modern default.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Higher-Order Components
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Higher-Order Components (HOCs)</h2>
+    </div>
+
+    <div class="pattern-card">
+      <div class="pattern-sig">const EnhancedComponent = withAuth(MyComponent)</div>
+      <div class="pattern-desc">A FUNCTION that takes a component as input and returns a NEW component with extra behavior/props layered on top — a way to reuse "wrapping" logic across many different components.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">A HOC wraps a component, injecting extra props/behavior</div>
+      <svg class="diagram-svg" viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="55" width="180" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="84" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5">MyComponent</text>
+
+        <path d="M200 80 L250 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGray7)"/>
+        <text x="225" y="70" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">withAuth(...)</text>
+
+        <rect x="250" y="30" width="260" height="100" rx="10" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="380" y="52" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">EnhancedComponent</text>
+        <text x="380" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">checks auth, injects "user" prop</text>
+
+        <rect x="290" y="85" width="180" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="380" y="107" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">renders MyComponent inside</text>
+
+        <path d="M510 80 L570 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGray7)"/>
+
+        <rect x="570" y="55" width="110" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="625" y="84" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5">Ready to use</text>
+
+        <defs>
+          <marker id="arrowGray7" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// A HOC that injects authentication state as a prop</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">withAuth</span>(WrappedComponent) {</span>
+  <span class="line">  <span class="ck">return</span> <span class="ck">function</span> <span class="cf">AuthenticatedComponent</span>(props) {</span>
+  <span class="line">    <span class="ck">const</span> user = <span class="cf">useCurrentUser</span>(); <span class="cm">// some auth-checking logic</span></span>
+  <span class="line"></span>
+  <span class="line">    <span class="ck">if</span> (!user) {</span>
+  <span class="line">      <span class="ck">return</span> &lt;<span class="ct">LoginPrompt</span> /&gt;;</span>
+  <span class="line">    }</span>
+  <span class="line"></span>
+  <span class="line">    <span class="ck">return</span> &lt;<span class="ct">WrappedComponent</span> {...props} <span class="ca">user</span>={user} /&gt;; <span class="cm">{/* injects "user" as a prop */}</span></span>
+  <span class="line">  };</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Usage ──</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">Dashboard</span>({ user }) {</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">h1</span>&gt;Welcome, {user.name}!&lt;/<span class="ct">h1</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> ProtectedDashboard = <span class="cf">withAuth</span>(Dashboard);</span>
+  <span class="line"></span>
+  <span class="line">&lt;<span class="ct">ProtectedDashboard</span> /&gt; <span class="cm">{/* automatically gets "user" injected, or shows LoginPrompt */}</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// The SAME withAuth HOC can wrap MANY different components, reusing the</span></span>
+  <span class="line"><span class="cm">// auth-checking logic without duplicating it in each one</span></span>
+  <span class="line"><span class="ck">const</span> ProtectedSettings = <span class="cf">withAuth</span>(SettingsPage);</span>
+  <span class="line"><span class="ck">const</span> ProtectedProfile = <span class="cf">withAuth</span>(ProfilePage);</span>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>HOC pain points that led to their decline:</strong> "wrapper hell" (deeply nested component trees when stacking multiple HOCs — `withAuth(withTheme(withLogging(MyComponent)))`), unclear/colliding prop names (multiple HOCs injecting differently-named or conflicting props with no visibility from the consuming component's code), and difficulty with static type inference in TypeScript for the wrapped component's final prop shape.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Side-by-Side Comparison
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Side-by-Side Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Compound Components</th><th>Render Props</th><th>HOC</th></tr></thead>
+      <tbody>
+        <tr><td>Primary use case</td><td>Flexible, composable UI widgets</td><td>Sharing stateful logic across different UI shapes</td><td>Injecting cross-cutting props/behavior into many components</td></tr>
+        <tr><td>Adds extra nesting in JSX tree?</td><td class="no">✗ No (siblings, not wrappers)</td><td class="yes">✓ Yes — wrapper component per use</td><td class="yes">✓ Yes — wrapper component in the tree</td></tr>
+        <tr><td>Superseded by hooks?</td><td class="no">✗ No — still the best fit for its use case</td><td class="yes">✓ Largely, yes</td><td class="yes">✓ Largely, yes</td></tr>
+        <tr><td>"Wrapper hell" risk when stacking multiple</td><td class="no">✗ N/A</td><td>Moderate (nested render-prop calls)</td><td class="yes">✓ High — a common, real complaint</td></tr>
+        <tr><td>Prop origin traceability</td><td>Clear — explicit context/component names</td><td>Clear — explicit function parameter</td><td class="no">✗ Can be unclear — injected props aren't visible in the consumer's own JSX</td></tr>
+        <tr><td>Still commonly seen in modern codebases</td><td class="yes">✓ Yes, frequently</td><td>Occasionally, in specific libraries</td><td>Rarely for new code; sometimes in older/legacy code or specific library APIs (e.g. some Redux/routing patterns)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Decision Guide
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Decision Guide</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Walk through in order</div>
+      <div class="decision-step">
+        <div class="decision-q">Are you sharing STATEFUL LOGIC (not UI structure) across components?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Custom Hook (default modern choice)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are you building a widget with multiple related, flexibly-composable pieces (tabs, accordion, select, modal)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Compound Components</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Do you need a component to control EXACTLY what gets rendered from shared logic, and a hook alone won't fit the API shape?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">Render Props (rare in new code — usually a hook is simpler)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Are you working in/extending an older codebase, or a library API that's already HOC-based (e.g. some routing/store connections)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">HOC (for consistency with existing patterns)</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>For NEW code today:</strong> reach for custom hooks by default for logic reuse, and Compound Components for flexible widget composition. Render Props and HOCs are important to RECOGNIZE and understand (for reading existing code, libraries, and for interviews), but are rarely the right choice to introduce fresh in a modern codebase.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Claiming hooks "replaced" Compound Components is a common but incorrect oversimplification</strong> — hooks solve LOGIC reuse; Compound Components solve a structural/composition problem hooks don't address. They coexist and are often used TOGETHER (Compound Components internally implemented using hooks like useContext/useState).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Compound Components implemented via React.cloneElement (an older technique) are fragile</strong> — they break if the consumer wraps a child in an extra `&lt;div&gt;` or fragment, since cloning relies on direct parent-child element structure; the CONTEXT-based approach shown above is more robust and is the modern standard.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Render props can cause unnecessary re-renders if the render function is defined inline</strong> — a NEW function reference on every parent render, passed as a prop, can defeat `React.memo` on the receiving component, same as any other inline callback prop.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Stacking multiple HOCs creates "wrapper hell" in React DevTools</strong> — a component wrapped in `withAuth(withTheme(withLogging(MyComponent)))` shows several nested, often unhelpfully-named wrapper layers in the component tree, making debugging harder.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>HOCs must correctly forward refs to be fully transparent</strong> — without explicit `React.forwardRef` support inside the HOC, a `ref` placed on the ENHANCED component won't reach the underlying wrapped component's DOM node, a frequently-missed detail in hand-rolled HOCs.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>HOCs should not mutate the component they receive</strong> — a correct HOC returns a brand NEW component that renders the original, rather than directly modifying the passed-in component's prototype/definition, which can cause unpredictable side effects across every usage of the original component.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Naming collisions between multiple HOC-injected props are a real, hard-to-debug issue</strong> — if two different HOCs in a stack both inject a prop called `data` (for different purposes), the LAST one applied silently overwrites the other, with no compiler/runtime warning.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Compound Components relying on Context still re-render ALL consumers when the context value changes</strong> — same caveat as any Context usage; splitting state into multiple smaller contexts, or using a state-management library internally, can mitigate this for performance-sensitive compound widgets with many parts.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A HOC's displayName should be set explicitly for good debugging</strong> — without `EnhancedComponent.displayName = \`withAuth(${WrappedComponent.displayName || WrappedComponent.name})\`;`, React DevTools shows an unhelpful generic name for the wrapper, making the component tree harder to navigate.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>None of these patterns are mutually exclusive</strong> — a real component library might use Compound Components for its public widget API, WHILE internally implementing shared logic via custom hooks, and might even still expose a legacy HOC wrapper for backward compatibility with older consumer code — recognizing they can coexist shows deeper practical understanding.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4d9e);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>These patterns test whether you understand React's EVOLUTION and can reason about trade-offs across component design choices — not just whether you can recite a definition.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a compound component, precisely?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A compound component is a set of related components DESIGNED to be used together as a family (like `Tabs`, `Tabs.List`, `Tabs.Tab`, `Tabs.Panel`), where the pieces implicitly SHARE state — typically via React Context provided by the top-level parent — rather than requiring the consumer to manually thread props between every sibling. This lets the consumer freely compose, reorder, or omit individual pieces in their JSX while the components automatically coordinate behind the scenes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why do compound components remain relevant even in a codebase that has otherwise fully moved to hooks?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Hooks solve the problem of reusing STATEFUL LOGIC across components — they don't address how to structure a flexible, multi-part UI WIDGET in JSX. Compound components solve a fundamentally different, structural problem: letting a consumer compose several related pieces (a tab list, individual tabs, panels) in whatever order/nesting makes sense for their specific use case, without the top-level component needing a giant, inflexible configuration-object API (like `items={[{id, label, content}, ...]}`) to achieve the same flexibility. These are complementary concerns — a compound component's INTERNAL implementation is often built using hooks (`useState`, `useContext`), while the EXTERNAL composition pattern remains a compound component regardless.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you actually choose to write a render props component today, instead of a custom hook?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Genuinely rare in new code — but one case is when you need the SHARED LOGIC to also control something about WHERE/HOW it's mounted in the DOM tree (e.g. a component that needs to measure its own children's rendered size, requiring an actual wrapper element in the DOM, not just a hook's returned values). Another case is maintaining compatibility with, or extending, an existing library that already exposes a render-prop API. Outside of these situations, a custom hook returning the same data typically achieves the identical logic-sharing goal with less nesting and a more familiar API shape for other developers.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you refactor a render-props MouseTracker component into a custom hook?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// Before — render props</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">MouseTracker</span>({ render }) {</span>
+  <span class="line">  <span class="ck">const</span> [position, setPosition] = useState({ x: <span class="cn">0</span>, y: <span class="cn">0</span> });</span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> <span class="cf">handleMove</span> = (e) =&gt; setPosition({ x: e.clientX, y: e.clientY });</span>
+  <span class="line">    window.addEventListener(<span class="cs">"mousemove"</span>, handleMove);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; window.removeEventListener(<span class="cs">"mousemove"</span>, handleMove);</span>
+  <span class="line">  }, []);</span>
+  <span class="line">  <span class="ck">return</span> render(position);</span>
+  <span class="line">}</span>
+  <span class="line">&lt;<span class="ct">MouseTracker</span> <span class="ca">render</span>={(pos) =&gt; &lt;<span class="ct">p</span>&gt;{pos.x}, {pos.y}&lt;/<span class="ct">p</span>&gt;} /&gt;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// After — custom hook, same logic, no wrapper component needed</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">useMousePosition</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [position, setPosition] = useState({ x: <span class="cn">0</span>, y: <span class="cn">0</span> });</span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="ck">const</span> <span class="cf">handleMove</span> = (e) =&gt; setPosition({ x: e.clientX, y: e.clientY });</span>
+  <span class="line">    window.addEventListener(<span class="cs">"mousemove"</span>, handleMove);</span>
+  <span class="line">    <span class="ck">return</span> () =&gt; window.removeEventListener(<span class="cs">"mousemove"</span>, handleMove);</span>
+  <span class="line">  }, []);</span>
+  <span class="line">  <span class="ck">return</span> position;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">MyComponent</span>() {</span>
+  <span class="line">  <span class="ck">const</span> pos = <span class="cf">useMousePosition</span>(); <span class="cm">// no wrapper component, no extra JSX nesting</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">p</span>&gt;{pos.x}, {pos.y}&lt;/<span class="ct">p</span>&gt;;</span>
+  <span class="line">}</span>
+          </div>
+          The underlying stateful logic is IDENTICAL — only the API shape for consuming it changes, from "wrap your JSX in a component and receive data via a function argument" to "call a hook directly inside your component body and use the returned value like any other variable."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is a Higher-Order Component, and what problem was it originally designed to solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A Higher-Order Component (HOC) is a FUNCTION that takes a component as an argument and returns a NEW component with additional behavior or injected props layered around the original — conceptually similar to a higher-order FUNCTION in general JavaScript (a function that takes/returns other functions). It was designed to solve the problem of reusing "wrapping" cross-cutting logic — like checking authentication before rendering, injecting theme values, or subscribing to an external data store — across MANY different components without duplicating that wrapping logic in each one individually.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why has "wrapper hell" specifically been such a common complaint about the HOC pattern?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Because HOCs compose by NESTING — applying multiple HOCs to a single component (`withAuth(withTheme(withLogging(MyComponent)))`) results in several additional wrapper component layers stacked around the original in the actual rendered component tree. In React DevTools, this shows up as a deep chain of often generically-named wrapper components, making it hard to visually locate the ACTUAL component you're trying to inspect or debug, and making it unclear (without reading each HOC's source) exactly which wrapper is responsible for injecting which prop into the final component.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When might you still legitimately encounter or need to write a HOC today?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Maintaining or extending an OLDER codebase that already uses HOCs extensively, where introducing a completely different pattern for just one new piece of functionality would create inconsistency. Using a third-party library whose public API is HOC-based (some older Redux `connect()`-style patterns, certain older routing libraries, or specific higher-order utilities from UI libraries) — in this case, you use the HOC because the library requires it, not because you're independently choosing the pattern. For entirely new, independent logic-reuse needs in a modern codebase, a custom hook is almost always the simpler, more idiomatic choice today.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a HOC that doesn't correctly forward a ref to the wrapped component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Wrap the HOC's returned component definition in `React.forwardRef`, explicitly passing the received `ref` down to the wrapped component:
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="cm">// ✗ Before — ref placed on the enhanced component is silently dropped</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">withAuth</span>(WrappedComponent) {</span>
+  <span class="line">  <span class="ck">return</span> <span class="ck">function</span> (props) {</span>
+  <span class="line">    <span class="ck">const</span> user = <span class="cf">useCurrentUser</span>();</span>
+  <span class="line">    <span class="ck">return</span> &lt;<span class="ct">WrappedComponent</span> {...props} <span class="ca">user</span>={user} /&gt;;</span>
+  <span class="line">  };</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ After — forwardRef makes the HOC "ref-transparent"</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">withAuth</span>(WrappedComponent) {</span>
+  <span class="line">  <span class="ck">return</span> React.forwardRef(<span class="ck">function</span> (props, ref) {</span>
+  <span class="line">    <span class="ck">const</span> user = <span class="cf">useCurrentUser</span>();</span>
+  <span class="line">    <span class="ck">return</span> &lt;<span class="ct">WrappedComponent</span> {...props} <span class="ca">user</span>={user} <span class="ca">ref</span>={ref} /&gt;;</span>
+  <span class="line">  });</span>
+  <span class="line">}</span>
+          </div>
+          Now a `ref` placed on the component returned by `withAuth(MyComponent)` correctly passes through to `MyComponent` itself (assuming `MyComponent` is either a DOM element or itself supports refs via its own `forwardRef`), rather than being silently discarded by the intermediate wrapper.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · Compound Components · Render Props · Higher-Order Components
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
