@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Render-Blocking, Async/Defer &amp; Resource Hints — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 280px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(255,184,108,0.08); border: 1px solid rgba(255,184,108,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Resource Loading</div>
+    <h1>Render-Blocking, Async/Defer &amp; Resource Hints</h1>
+    <p>CSS/JS Loading Strategies · preload vs prefetch vs preconnect — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What "Render-Blocking" Means</a>
+    <a class="topic-pill" href="#s2">2. CSS as a Render-Blocker</a>
+    <a class="topic-pill" href="#s3">3. Script Loading — Default/Async/Defer</a>
+    <a class="topic-pill" href="#s4">4. Resource Hints</a>
+    <a class="topic-pill" href="#s5">5. Full Comparison Table</a>
+    <a class="topic-pill" href="#s6">6. Decision Guide</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Render-Blocking Means
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What "Render-Blocking" Actually Means</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A <strong>render-blocking resource</strong> is anything the browser insists on fully downloading (and sometimes executing) BEFORE it will paint any pixels to the screen. The browser does this deliberately — painting with incomplete information would mean immediately having to repaint, causing a visible flash/flicker.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Resource type</th><th>Blocks what, by default?</th></tr></thead>
+      <tbody>
+        <tr><td>CSS (&lt;link rel="stylesheet"&gt;)</td><td>Rendering/painting (but NOT HTML parsing itself)</td></tr>
+        <tr><td>Synchronous &lt;script&gt; (no async/defer)</td><td>BOTH HTML parsing AND rendering</td></tr>
+        <tr><td>Fonts (@font-face)</td><td>Text rendering for elements using that font (browser-dependent behavior/timeout)</td></tr>
+        <tr><td>Images</td><td>Nothing by default — non-blocking, though layout shift can occur if dimensions aren't reserved</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — CSS as a Render-Blocker
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>CSS as a Render-Blocking Resource</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Why CSS blocks paint but not HTML parsing</div>
+      <svg class="diagram-svg" viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="180" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">HTML parsing continues</text>
+
+        <rect x="20" y="95" width="180" height="45" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="110" y="122" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">Painting is WITHHELD</text>
+
+        <rect x="260" y="60" width="180" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="87" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">CSSOM being built</text>
+
+        <path d="M440 82 L490 82" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenZ)"/>
+
+        <rect x="490" y="60" width="190" height="45" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="585" y="82" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">CSSOM complete</text>
+        <text x="585" y="97" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">→ painting can finally begin</text>
+
+        <text x="350" y="150" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Parsing keeps building the DOM in the background — only PAINTING waits for the full CSSOM,</text>
+        <text x="350" y="165" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">specifically to avoid painting with incomplete styles and having to immediately repaint</text>
+
+        <defs>
+          <marker id="arrowGreenZ" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Standard render-blocking stylesheet</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span> <span class="ca">href</span>=<span class="cs">"styles.css"</span> /&gt;</span>
+<span class="line"><span class="cm">// Blocks rendering until fully downloaded and parsed into the CSSOM</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Non-blocking for a SPECIFIC media condition that doesn't currently apply</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span> <span class="ca">href</span>=<span class="cs">"print.css"</span> <span class="ca">media</span>=<span class="cs">"print"</span> /&gt;</span>
+<span class="line"><span class="cm">// Still downloads, but does NOT block initial rendering, since "print" media</span></span>
+<span class="line"><span class="cm">// doesn't apply to the current (screen) rendering context</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// The "print.css" swap-in technique — load non-blocking, then apply</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span> <span class="ca">href</span>=<span class="cs">"non-critical.css"</span> <span class="ca">media</span>=<span class="cs">"print"</span></span>
+<span class="line">      <span class="ca">onload</span>=<span class="cs">"this.media='all'"</span> /&gt;</span>
+<span class="line"><span class="cm">// Downloads without blocking (browser treats "print" as low priority/non-blocking),</span></span>
+<span class="line"><span class="cm">// then switches to apply to ALL media once loaded — a common non-blocking CSS pattern</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Script Loading: Default vs Async vs Defer
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Script Loading — Default vs async vs defer</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Timeline comparison — when does each script download and execute?</div>
+      <svg class="diagram-svg" viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="20" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">Default (no attribute)</text>
+        <rect x="20" y="28" width="250" height="22" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="145" y="43" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">HTML parsing</text>
+        <rect x="270" y="28" width="90" height="22" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="315" y="43" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">download+exec (BLOCKS)</text>
+        <rect x="360" y="28" width="200" height="22" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="460" y="43" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">HTML parsing resumes</text>
+
+        <text x="20" y="85" fill="#ffb86c" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">async</text>
+        <rect x="20" y="93" width="540" height="22" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="290" y="108" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">HTML parsing continues, uninterrupted</text>
+        <rect x="150" y="120" width="90" height="20" rx="4" fill="#2a2010" stroke="#ffb86c" stroke-width="1"/>
+        <text x="195" y="134" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="7.5">download (parallel)</text>
+        <rect x="240" y="120" width="40" height="20" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="260" y="134" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7">exec!</text>
+        <text x="330" y="134" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">executes IMMEDIATELY when ready — interrupts parsing at an unpredictable point</text>
+
+        <text x="20" y="165" fill="#5cffb0" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">defer</text>
+        <rect x="20" y="173" width="540" height="22" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="290" y="188" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">HTML parsing continues, uninterrupted, all the way to completion</text>
+        <rect x="150" y="200" width="90" height="20" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="195" y="214" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7.5">download (parallel)</text>
+        <path d="M560 195 L575 210" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenZZ)"/>
+        <rect x="575" y="200" width="50" height="20" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="600" y="214" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7">exec</text>
+        <text x="330" y="214" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">executes AFTER parsing finishes, in document order</text>
+
+        <defs>
+          <marker id="arrowGreenZZ" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Default — blocks HTML parsing, executes IMMEDIATELY once downloaded</span></span>
+<span class="line">&lt;<span class="ct">script</span> <span class="ca">src</span>=<span class="cs">"main.js"</span>&gt;&lt;/<span class="ct">script</span>&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// async — downloads in PARALLEL with parsing, executes AS SOON AS ready</span></span>
+<span class="line"><span class="cm">// (may interrupt parsing at an unpredictable point; order vs other scripts NOT guaranteed)</span></span>
+<span class="line">&lt;<span class="ct">script</span> <span class="ca">async</span> <span class="ca">src</span>=<span class="cs">"analytics.js"</span>&gt;&lt;/<span class="ct">script</span>&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// defer — downloads in PARALLEL with parsing, executes AFTER parsing completes,</span></span>
+<span class="line"><span class="cm">// in DOCUMENT ORDER relative to other deferred scripts</span></span>
+<span class="line">&lt;<span class="ct">script</span> <span class="ca">defer</span> <span class="ca">src</span>=<span class="cs">"app.js"</span>&gt;&lt;/<span class="ct">script</span>&gt;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Attribute</th><th>Blocks parsing?</th><th>Execution timing</th><th>Order guaranteed?</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td>(none)</td><td class="no">✗ Yes, blocks</td><td>Immediately upon download</td><td class="yes">✓ Yes</td><td>Legacy code, or when execution order strictly matters and no better option is set up</td></tr>
+        <tr><td>async</td><td class="yes">✓ No</td><td>As soon as downloaded (unpredictable point)</td><td class="no">✗ No</td><td>Independent scripts with no DOM dependency — analytics, ads, tracking pixels</td></tr>
+        <tr><td>defer</td><td class="yes">✓ No</td><td>After parsing completes</td><td class="yes">✓ Yes (document order)</td><td>Application scripts that need the DOM ready and/or a specific execution order</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Resource Hints
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Resource Hints — preload, prefetch, preconnect, dns-prefetch</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Resource hints let you tell the browser about network needs it can't otherwise infer early enough — giving it a head start on connections or downloads BEFORE it would naturally discover the need for them while parsing.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// preload — "I WILL need this resource for THIS page, very soon. Start now, high priority."</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preload"</span> <span class="ca">href</span>=<span class="cs">"hero-image.webp"</span> <span class="ca">as</span>=<span class="cs">"image"</span> /&gt;</span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preload"</span> <span class="ca">href</span>=<span class="cs">"critical-font.woff2"</span> <span class="ca">as</span>=<span class="cs">"font"</span> <span class="ca">crossorigin</span> /&gt;</span>
+<span class="line"><span class="cm">// Use for: hero images, critical fonts, or a critical script/stylesheet the browser</span></span>
+<span class="line"><span class="cm">// wouldn't otherwise discover early (e.g. a font referenced only inside CSS)</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// prefetch — "I MIGHT need this for a FUTURE navigation. Fetch it when idle, low priority."</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"prefetch"</span> <span class="ca">href</span>=<span class="cs">"/next-page-bundle.js"</span> /&gt;</span>
+<span class="line"><span class="cm">// Use for: resources likely needed on the NEXT page the user will probably visit</span></span>
+<span class="line">(e.g. hovering over a link, or a checkout flow's next step)</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// preconnect — "I'll need to talk to THIS origin soon. Do the DNS+TCP+TLS handshake now."</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preconnect"</span> <span class="ca">href</span>=<span class="cs">"https://fonts.gstatic.com"</span> <span class="ca">crossorigin</span> /&gt;</span>
+<span class="line"><span class="cm">// Use for: third-party origins you know you'll fetch from (font CDNs, API hosts,</span></span>
+<span class="line"><span class="cm">// analytics endpoints) — saves the connection setup round-trip time later</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// dns-prefetch — the "lightest" hint: just resolve the DOMAIN NAME early</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"dns-prefetch"</span> <span class="ca">href</span>=<span class="cs">"https://third-party.example.com"</span> /&gt;</span>
+<span class="line"><span class="cm">// Cheaper than preconnect (skips the TCP/TLS setup) — good for origins you MIGHT</span></span>
+<span class="line"><span class="cm">// use, where a full preconnect would be overkill/wasteful if unused</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Hint</th><th>What it does</th><th>Priority</th><th>Certainty needed</th></tr></thead>
+      <tbody>
+        <tr><td>preload</td><td>Fetches the actual resource now</td><td>High</td><td>You're SURE you need it, very soon, for this page</td></tr>
+        <tr><td>prefetch</td><td>Fetches the actual resource, for later</td><td>Low (idle time)</td><td>You THINK you'll need it for a likely next navigation</td></tr>
+        <tr><td>preconnect</td><td>DNS + TCP + TLS handshake only, no resource fetched</td><td>High</td><td>You know you'll request SOMETHING from this origin soon</td></tr>
+        <tr><td>dns-prefetch</td><td>DNS resolution ONLY</td><td>Low</td><td>You MIGHT need this origin; cheapest possible hint</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Full Comparison Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Full Comparison — Everything Side by Side</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Mechanism</th><th>Blocks parsing</th><th>Blocks paint</th><th>Timing control</th></tr></thead>
+      <tbody>
+        <tr><td>&lt;link rel="stylesheet"&gt; (default CSS)</td><td class="no">✗ No</td><td class="yes">✓ Yes</td><td>N/A — always render-blocking unless media doesn't match</td></tr>
+        <tr><td>&lt;script&gt; (default)</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes (indirectly, by blocking parsing)</td><td>Immediate execution on download</td></tr>
+        <tr><td>&lt;script async&gt;</td><td class="no">✗ No</td><td class="no">✗ No</td><td>As soon as downloaded (unpredictable)</td></tr>
+        <tr><td>&lt;script defer&gt;</td><td class="no">✗ No</td><td class="no">✗ No</td><td>After parsing, in order</td></tr>
+        <tr><td>preload</td><td class="no">✗ No</td><td class="no">✗ No</td><td>Fetches early; doesn't execute/apply anything by itself</td></tr>
+        <tr><td>prefetch</td><td class="no">✗ No</td><td class="no">✗ No</td><td>Fetches during idle time, for a future navigation</td></tr>
+        <tr><td>preconnect / dns-prefetch</td><td class="no">✗ No</td><td class="no">✗ No</td><td>Only sets up the connection — no resource fetched at all</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Decision Guide
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Decision Guide</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">For a given script or resource, walk through in order</div>
+      <div class="decision-step">
+        <div class="decision-q">Does this script need to run in a specific order relative to others, or touch the DOM once it's ready?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">defer</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this script totally independent (analytics, ads) with no DOM dependency or ordering need?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">async</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this a resource this SPECIFIC page definitely needs very soon (hero image, critical font)?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">preload</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this something the user will PROBABLY need on their likely next navigation?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">prefetch</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Do you know you'll fetch SOMETHING from a third-party origin soon, but not exactly what yet?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">preconnect (or dns-prefetch if even less certain)</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>async scripts do NOT guarantee execution order relative to each other</strong> — two `async` scripts might execute in whichever order they happen to finish downloading, NOT the order they appear in the HTML; if order matters, use `defer` instead.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>defer scripts still execute BEFORE the DOMContentLoaded event fires</strong> — a common misconception is that defer delays execution indefinitely; it actually guarantees execution happens right after parsing completes, but still before that event.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>preload without a matching "as" attribute (or a mismatched one) can cause the resource to be fetched TWICE</strong> — the browser may not recognize the preloaded resource as satisfying the later actual request if the `as` value doesn't correctly describe the resource type, wasting the bandwidth savings entirely.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An unused preloaded resource triggers a console warning and wastes bandwidth/priority</strong> — preload is a promise to the browser that the resource WILL be used soon; over-preloading things that end up unused can actually hurt performance by competing for bandwidth with resources that ARE needed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>preconnect has a real cost if the connection ends up unused</strong> — browsers will close an idle preconnected connection after roughly 10 seconds if unused, and excessive preconnects to origins you don't end up needing waste the client's and possibly the server's resources for no benefit.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSS with a non-matching "media" attribute still DOWNLOADS, just doesn't block rendering</strong> — e.g. `media="print"` CSS is fetched at (typically) low priority in the background regardless of whether the page is ever printed, it just doesn't hold up the initial paint.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Putting a synchronous script at the very end of &lt;body&gt; still blocks the FINAL bit of rendering</strong> — it's an improvement over putting it in `&lt;head&gt;` (content above it renders first), but it doesn't eliminate blocking entirely; `defer` is generally a cleaner solution that also keeps the script conveniently declarable in `&lt;head&gt;`.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Modern type="module" scripts are deferred by DEFAULT</strong> — `&lt;script type="module"&gt;` behaves like `defer` automatically, without needing the explicit attribute, which can surprise developers expecting default synchronous blocking behavior.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Resource hints are HINTS, not guarantees</strong> — the browser may deprioritize or ignore a `prefetch`/`preconnect` under memory pressure, data-saver mode, or other heuristics; they influence but don't strictly command the browser's network behavior.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Font-loading render-blocking behavior varies by browser and has its own dedicated controls</strong> — the CSS `font-display` property (e.g. `font-display: swap`) specifically controls whether/how long text waits for a custom font before falling back to a system font, a related but distinct concern from the general render-blocking topics here.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is directly actionable performance knowledge — interviewers often ask this to see if you can translate understanding into concrete, real HTML changes, not just describe the concepts abstractly.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between async and defer for script loading?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Both download the script in PARALLEL with HTML parsing, without blocking it — the difference is in EXECUTION timing. `async` executes the script AS SOON AS it finishes downloading, which can interrupt HTML parsing at an unpredictable point, and does NOT guarantee execution order relative to other scripts. `defer` waits to execute the script until AFTER HTML parsing has fully completed, and guarantees multiple deferred scripts execute in the ORDER they appear in the document — making it the safer choice when a script needs the DOM to be ready or needs to run in a specific sequence relative to other scripts.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does CSS block rendering but not HTML parsing, while a plain script blocks both?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          CSS never modifies the DOM's STRUCTURE — it only affects visual presentation — so the browser can safely continue PARSING the HTML and building the DOM while CSS downloads in the background; it just won't PAINT anything until the CSSOM is complete, to avoid painting with incomplete styles and immediately needing to repaint. A plain, synchronous `&lt;script&gt;` tag, however, COULD call `document.write()` or otherwise modify the DOM the parser hasn't finished building — so the browser can't safely continue parsing past that script tag without first running it, in case it changes what comes next. This is the fundamental reason JS carries the stricter default blocking behavior of the two.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use preload versus prefetch for the same type of resource?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use `preload` when you're CERTAIN the current page needs the resource very soon — e.g. a hero image visible immediately above the fold, or a font referenced inside CSS that the browser wouldn't otherwise discover until it parses that CSS (too late for optimal loading). This fetches at HIGH priority, competing with other critical resources. Use `prefetch` when the resource is for a LIKELY FUTURE navigation, not the current page — e.g. prefetching the JS bundle for a page the user will probably visit next, based on hovering over a link or a predictable user flow (like a multi-step checkout). This fetches at LOW priority, only during idle time, so it doesn't compete with resources the CURRENT page actually needs right now.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you optimize a page that loads a large, non-critical CSS file synchronously in the head, causing a slow first paint?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="cm">// Before — blocks first paint on the ENTIRE stylesheet</span></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span> <span class="ca">href</span>=<span class="cs">"all-styles.css"</span> /&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// After — inline only the CRITICAL (above-the-fold) CSS, load the rest non-blocking</span></span>
+<span class="line">&lt;<span class="ct">style</span>&gt;</span>
+<span class="line">  <span class="cm">/* minimal styles needed for the initial visible viewport */</span></span>
+<span class="line">&lt;/<span class="ct">style</span>&gt;</span>
+<span class="line"></span>
+<span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preload"</span> <span class="ca">href</span>=<span class="cs">"all-styles.css"</span> <span class="ca">as</span>=<span class="cs">"style"</span></span>
+<span class="line">      <span class="ca">onload</span>=<span class="cs">"this.onload=null;this.rel='stylesheet'"</span> /&gt;</span>
+<span class="line">&lt;<span class="ct">noscript</span>&gt;&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span> <span class="ca">href</span>=<span class="cs">"all-styles.css"</span> /&gt;&lt;/<span class="ct">noscript</span>&gt;</span>
+          </div>
+          This preloads the full stylesheet at high priority WITHOUT letting it block rendering, then swaps it to an active stylesheet once loaded — meanwhile the inlined critical CSS lets the browser paint the initial visible content immediately, without waiting on the full (possibly large, mostly below-the-fold) stylesheet. The `&lt;noscript&gt;` fallback ensures the styles still load normally for users with JavaScript disabled.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between preconnect and dns-prefetch?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `dns-prefetch` performs ONLY the DNS lookup for a domain early — resolving the domain name to an IP address ahead of time, which is the cheapest possible resource hint. `preconnect` does the DNS lookup AND establishes the full connection — the TCP handshake, and for HTTPS, the TLS negotiation too — essentially completing everything needed before the browser can send an actual request, except the request itself. `preconnect` saves MORE time when actually used (skips more round trips), but costs more if the connection ends up unused (the browser may need to tear down an idle connection); `dns-prefetch` is a lighter-weight, safer bet when you're less certain a given origin will actually be used.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can preloading too many resources actually hurt performance instead of helping it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `preload` fetches at HIGH priority, competing directly with other genuinely critical resources (the main HTML, critical CSS, critical JS) for the browser's limited concurrent connection slots and available bandwidth. If too many resources are marked as `preload`, the browser can't meaningfully prioritize between them — everything looks "urgent," which defeats the purpose of prioritization and can end up DELAYING the resources that are truly needed first, slowing down the initial render instead of speeding it up. `preload` should be reserved for a SMALL number of genuinely critical, otherwise-late-discovered resources — not applied broadly to everything on a page.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would a synchronous (unattributed) script tag still be the correct choice, despite its blocking downsides?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the script's execution genuinely needs to happen IMMEDIATELY and SYNCHRONOUSLY at that exact point in the document, and subsequent HTML content's rendering actually DEPENDS on it having run first — for example, a small, deliberately-blocking script that sets a critical class on `&lt;html&gt;` or `&lt;body&gt;` early to prevent a flash of incorrectly-themed content (a "dark mode" flash-prevention snippet is a common real-world example). These cases are relatively rare and usually involve very small, fast-executing inline scripts (not large external files) placed deliberately early in the document specifically because their synchronous, blocking nature is the DESIRED behavior, not an accidental cost.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you decide whether to use preconnect or preload for a web font loaded from a third-party CDN (like Google Fonts)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Often BOTH, together, addressing two different parts of the delay: <strong>(1)</strong> `preconnect` to the font CDN's origin (e.g. `fonts.gstatic.com`) gets the DNS/TCP/TLS connection set up EARLY, before the browser even knows exactly which font FILE it needs (which it typically only discovers after parsing the CSS that references it) — this removes the connection-setup latency from the critical path. <strong>(2)</strong> If you know the EXACT font file URL in advance (not just the CDN's stylesheet endpoint), `preload` with `as="font"` and the correct `type`/`crossorigin` attributes fetches the actual font FILE itself early, rather than waiting for the CSS to be parsed and only then discovering the font needs to be fetched. Using preconnect alone still saves connection time even if you can't predict the exact file URL for a preload; using both together (when the exact file IS known) removes the maximum amount of latency from the font-loading critical path.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Render-Blocking Resources · async/defer · preload/prefetch/preconnect
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimistic Updates with React Query — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #ff6b6b;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #ff6b6b 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Step cards ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .step-num-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    background: rgba(92,255,176,0.1); border: 1px solid rgba(92,255,176,0.25);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .step-card .code-block { margin: 8px 0 0; }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">React Interview Prep · React Query</div>
+    <h1>Optimistic Updates &amp; Rollback</h1>
+    <p>The Full Mutation Lifecycle · Cancel, Snapshot, Update, Rollback — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Is an Optimistic Update?</a>
+    <a class="topic-pill" href="#s2">2. The Mutation Lifecycle</a>
+    <a class="topic-pill" href="#s3">3. Full Implementation</a>
+    <a class="topic-pill" href="#s4">4. Success vs Failure Flow</a>
+    <a class="topic-pill" href="#s5">5. Handling Race Conditions</a>
+    <a class="topic-pill" href="#s6">6. Practical Example — Todo Toggle</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Is an Optimistic Update
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Is an Optimistic Update?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>An <strong>optimistic update</strong> immediately updates the UI to reflect what you EXPECT the result of a mutation to be — BEFORE the server actually confirms it succeeded. If the server request fails, the UI is rolled back to its previous state. This makes interactions feel instant, at the cost of occasionally needing to "undo" a UI change.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Approach</th><th>User sees update</th><th>Feels like</th></tr></thead>
+      <tbody>
+        <tr><td>Normal (pessimistic) mutation</td><td>Only AFTER the server responds successfully</td><td>A brief delay/spinner on every action</td></tr>
+        <tr><td>Optimistic update</td><td>IMMEDIATELY, before the server even responds</td><td>Instant, snappy — like a native app</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The trade-off:</strong> optimistic updates are best suited for actions that are HIGHLY LIKELY to succeed (liking a post, checking off a todo, toggling a follow) — for actions with a meaningful failure rate or serious consequences (submitting a payment, deleting an account), showing a normal loading state until real confirmation is usually the safer, more honest choice.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Mutation Lifecycle
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The React Query Mutation Lifecycle</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>React Query's <ic>useMutation</ic> exposes lifecycle callbacks that fire at specific points — <ic>onMutate</ic> (before the request fires), <ic>onError</ic> (if it fails), <ic>onSuccess</ic> (if it succeeds), and <ic>onSettled</ic> (always, regardless of outcome). Optimistic updates are built by hooking into ALL of these.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The full mutation lifecycle, in order</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="150" height="55" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="95" y="53" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">mutate() called</text>
+        <text x="95" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">user clicks something</text>
+
+        <path d="M170 57 L220 57" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayX)"/>
+
+        <rect x="220" y="30" width="150" height="55" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="295" y="53" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">onMutate</text>
+        <text x="295" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">snapshot + apply optimistic UI</text>
+
+        <path d="M370 57 L420 57" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayX)"/>
+
+        <rect x="420" y="30" width="150" height="55" rx="8" fill="#131b28" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="495" y="53" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">Request in flight</text>
+        <text x="495" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">actual server call</text>
+
+        <path d="M495 85 L400 140" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenX)"/>
+        <text x="420" y="115" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5">success</text>
+
+        <path d="M545 85 L620 140" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRedX)"/>
+        <text x="580" y="115" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5">failure</text>
+
+        <rect x="300" y="140" width="150" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="375" y="163" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">onSuccess</text>
+        <text x="375" y="178" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">(keep optimistic UI)</text>
+
+        <rect x="540" y="140" width="150" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="615" y="163" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">onError</text>
+        <text x="615" y="178" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">ROLL BACK using snapshot</text>
+
+        <path d="M375 190 L450 205" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGrayX)"/>
+        <path d="M615 190 L500 205" stroke="#555a6e" stroke-width="1.5" fill="none" marker-end="url(#arrowGrayX)"/>
+
+        <rect x="380" y="200" width="180" height="20" rx="10" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="470" y="214" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">onSettled — always runs, refetch</text>
+
+        <defs>
+          <marker id="arrowGrayX" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+          <marker id="arrowGreenX" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowRedX" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Callback</th><th>When it fires</th><th>Role in an optimistic update</th></tr></thead>
+      <tbody>
+        <tr><td>onMutate</td><td>BEFORE the mutation function runs</td><td>Cancel conflicting queries, snapshot current data, apply the optimistic change</td></tr>
+        <tr><td>onError</td><td>If the mutation throws/rejects</td><td>Roll back to the snapshot taken in onMutate</td></tr>
+        <tr><td>onSuccess</td><td>If the mutation resolves successfully</td><td>Optional — often just leave the optimistic UI as-is</td></tr>
+        <tr><td>onSettled</td><td>ALWAYS, after either onSuccess or onError</td><td>Refetch/invalidate to reconcile with the true server state</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Full Implementation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Full Implementation — Step by Step</h2>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 1</span>Cancel outgoing refetches</div>
+      <div class="code-block">
+<span class="line">onMutate: <span class="ck">async</span> (newTodo) =&gt; {</span>
+<span class="line">  <span class="cm">// prevents an in-flight background refetch from overwriting our</span></span>
+<span class="line">  <span class="cm">// optimistic update with STALE server data that hasn't caught up yet</span></span>
+<span class="line">  <span class="ck">await</span> queryClient.cancelQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+      </div>
+      <div class="step-desc">If a background refetch happens to resolve right after we apply our optimistic change, it could overwrite our change with data that doesn't yet reflect it — cancelling first prevents this race.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 2</span>Snapshot the current data</div>
+      <div class="code-block">
+<span class="line">  <span class="cm">// save the CURRENT cached value so we can restore it if the mutation fails</span></span>
+<span class="line">  <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+      </div>
+      <div class="step-desc">This is the "undo point" — without it, there's nothing to roll BACK to if the request fails.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 3</span>Apply the optimistic update</div>
+      <div class="code-block">
+<span class="line">  <span class="cm">// manually update the cache to reflect what we EXPECT after success</span></span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt; [...old, newTodo]);</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// return the snapshot as "context" — passed to onError/onSettled below</span></span>
+<span class="line">  <span class="ck">return</span> { previousTodos };</span>
+<span class="line">},</span>
+      </div>
+      <div class="step-desc">This is what makes the UI feel instant — the cache (and therefore anything reading it) updates immediately, before the server has even responded.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 4</span>Roll back on failure</div>
+      <div class="code-block">
+<span class="line">onError: (err, newTodo, context) =&gt; {</span>
+<span class="line">  <span class="cm">// restore the EXACT snapshot taken before we optimistically changed anything</span></span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], context.previousTodos);</span>
+<span class="line">},</span>
+      </div>
+      <div class="step-desc">The `context` object returned from `onMutate` is automatically passed here — this is React Query's built-in mechanism for threading the snapshot through to the failure handler.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 5</span>Reconcile with the server, always</div>
+      <div class="code-block">
+<span class="line">onSettled: () =&gt; {</span>
+<span class="line">  <span class="cm">// refetch regardless of success/failure, to guarantee the cache EXACTLY</span></span>
+<span class="line">  <span class="cm">// matches the server's true state (our optimistic guess might be slightly</span></span>
+<span class="line">  <span class="cm">// off even on success — e.g. server-generated IDs, timestamps)</span></span>
+<span class="line">  queryClient.invalidateQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">},</span>
+      </div>
+      <div class="step-desc">This is a critical safety net — it corrects any small discrepancies between our OPTIMISTIC guess and the server's ACTUAL result, even in the success case.</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// ── The complete useMutation call, all steps combined ──</span></span>
+<span class="line"><span class="ck">import</span> { useMutation, useQueryClient } <span class="ck">from</span> <span class="cs">"@tanstack/react-query"</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="ck">function</span> <span class="cf">useAddTodo</span>() {</span>
+<span class="line">  <span class="ck">const</span> queryClient = useQueryClient();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> useMutation({</span>
+<span class="line">    mutationFn: <span class="cf">addTodoToServer</span>, <span class="cm">// the actual API call</span></span>
+<span class="line"></span>
+<span class="line">    onMutate: <span class="ck">async</span> (newTodo) =&gt; {</span>
+<span class="line">      <span class="ck">await</span> queryClient.cancelQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">      <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+<span class="line">      queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt; [...old, newTodo]);</span>
+<span class="line">      <span class="ck">return</span> { previousTodos };</span>
+<span class="line">    },</span>
+<span class="line"></span>
+<span class="line">    onError: (err, newTodo, context) =&gt; {</span>
+<span class="line">      queryClient.setQueryData([<span class="cs">"todos"</span>], context.previousTodos);</span>
+<span class="line">    },</span>
+<span class="line"></span>
+<span class="line">    onSettled: () =&gt; {</span>
+<span class="line">      queryClient.invalidateQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">    },</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Success vs Failure Flow
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Success vs Failure — Side by Side</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">What the user actually SEES in each case</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">SUCCESS case</text>
+        <rect x="30" y="35" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="95" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">click "Like"</text>
+        <path d="M160 52 L200 52" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenY)"/>
+        <rect x="200" y="35" width="150" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="275" y="57" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">❤️ shown INSTANTLY</text>
+        <text x="200" y="90" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">Server confirms in background — no visible change, UI already correct</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">FAILURE case</text>
+        <rect x="380" y="35" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="445" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">click "Like"</text>
+        <path d="M510 52 L550 52" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenY)"/>
+        <rect x="550" y="35" width="130" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="615" y="57" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">❤️ shown INSTANTLY</text>
+
+        <path d="M615 70 L615 110" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRedY)"/>
+        <text x="670" y="95" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">network fails</text>
+        <rect x="550" y="110" width="130" height="35" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="615" y="132" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">🤍 reverted</text>
+
+        <text x="550" y="170" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">A brief "flash" of the wrong state — this is the honest trade-off</text>
+        <text x="550" y="185" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">of optimism: instant feedback, occasionally corrected</text>
+
+        <defs>
+          <marker id="arrowGreenY" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowRedY" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Best practice on failure:</strong> beyond just rolling back the UI, show a brief, non-intrusive error notification (a toast) explaining what happened — silently reverting with NO explanation can feel confusing or buggy to the user, who saw their action "work" for a moment before it disappeared.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Handling Race Conditions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Handling Race Conditions</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The exact race condition <ic>cancelQueries</ic> prevents:</strong> if a background refetch (triggered by React Query's automatic refetch-on-window-focus, or a previous invalidation) is ALREADY in flight when you apply an optimistic update, that refetch could resolve AFTER your optimistic change and silently overwrite it with old, pre-optimistic data.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Without cancelQueries — a subtle, hard-to-reproduce bug</span></span>
+<span class="line">onMutate: <span class="ck">async</span> (newTodo) =&gt; {</span>
+<span class="line">  <span class="cm">// 🐛 if a background refetch is ALREADY in flight right now...</span></span>
+<span class="line">  <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt; [...old, newTodo]); <span class="cm">// our optimistic update</span></span>
+<span class="line">  <span class="ck">return</span> { previousTodos };</span>
+<span class="line">  <span class="cm">// ...that in-flight refetch can resolve microseconds later and OVERWRITE</span></span>
+<span class="line">  <span class="cm">// our optimistic change with the OLD data it fetched BEFORE our update</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ✓ With cancelQueries — the in-flight refetch is aborted FIRST</span></span>
+<span class="line">onMutate: <span class="ck">async</span> (newTodo) =&gt; {</span>
+<span class="line">  <span class="ck">await</span> queryClient.cancelQueries({ queryKey: [<span class="cs">"todos"</span>] }); <span class="cm">// stops the race before it can happen</span></span>
+<span class="line">  <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt; [...old, newTodo]);</span>
+<span class="line">  <span class="ck">return</span> { previousTodos };</span>
+<span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>This is precisely WHY <ic>onMutate</ic> is declared <ic>async</ic> and the cancellation is <ic>await</ic>ed</strong> — without awaiting it, the cancellation might not have actually taken effect before the optimistic `setQueryData` call runs, reopening the same race window this step exists to close.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Practical Example: Todo Toggle
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Practical Example — Toggling a Todo's Completed State</h2>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// A complete, self-contained example: toggling a single todo item's "completed" flag</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">useToggleTodo</span>() {</span>
+<span class="line">  <span class="ck">const</span> queryClient = useQueryClient();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> useMutation({</span>
+<span class="line">    mutationFn: ({ id, completed }) =&gt;</span>
+<span class="line">      fetch(`/api/todos/${id}`, {</span>
+<span class="line">        method: <span class="cs">"PATCH"</span>,</span>
+<span class="line">        body: JSON.stringify({ completed }),</span>
+<span class="line">      }),</span>
+<span class="line"></span>
+<span class="line">    onMutate: <span class="ck">async</span> ({ id, completed }) =&gt; {</span>
+<span class="line">      <span class="ck">await</span> queryClient.cancelQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">      <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+<span class="line"></span>
+<span class="line">      <span class="cm">// find and flip ONLY the specific todo being toggled</span></span>
+<span class="line">      queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt;</span>
+<span class="line">        old.map((todo) =&gt;</span>
+<span class="line">          todo.id === id ? { ...todo, completed } : todo</span>
+<span class="line">        )</span>
+<span class="line">      );</span>
+<span class="line"></span>
+<span class="line">      <span class="ck">return</span> { previousTodos };</span>
+<span class="line">    },</span>
+<span class="line"></span>
+<span class="line">    onError: (err, variables, context) =&gt; {</span>
+<span class="line">      queryClient.setQueryData([<span class="cs">"todos"</span>], context.previousTodos);</span>
+<span class="line">      toast.error(<span class="cs">"Couldn't update the todo — reverted."</span>); <span class="cm">// inform the user!</span></span>
+<span class="line">    },</span>
+<span class="line"></span>
+<span class="line">    onSettled: () =&gt; {</span>
+<span class="line">      queryClient.invalidateQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">    },</span>
+<span class="line">  });</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ── Usage in a component ──</span></span>
+<span class="line"><span class="ck">function</span> <span class="cf">TodoItem</span>({ todo }) {</span>
+<span class="line">  <span class="ck">const</span> toggleTodo = <span class="cf">useToggleTodo</span>();</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">input</span></span>
+<span class="line">      <span class="ca">type</span>=<span class="cs">"checkbox"</span></span>
+<span class="line">      <span class="ca">checked</span>={todo.completed}</span>
+<span class="line">      <span class="ca">onChange</span>={(e) =&gt;</span>
+<span class="line">        toggleTodo.mutate({ id: todo.id, completed: e.target.checked })</span>
+<span class="line">      }</span>
+<span class="line">    /&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// The checkbox visually updates the INSTANT it's clicked — no waiting for</span></span>
+<span class="line"><span class="cm">// the PATCH request, with automatic rollback + error toast if it fails</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Forgetting to cancel outgoing queries in onMutate reintroduces a real race condition</strong> — an in-flight background refetch can silently overwrite your optimistic update with stale data, a subtle bug that's easy to miss in casual testing but shows up under real network conditions.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting to return the snapshot from onMutate means onError has nothing to roll back to</strong> — `context` will be `undefined`, and `context.previousTodos` will throw, rather than gracefully restoring the prior state.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Mutating the cached data directly (instead of returning a new array/object) can cause subtle bugs</strong> — always use the functional updater form of `setQueryData` and return NEW objects/arrays, treating cached data as immutable, just like React state.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Skipping onSettled's invalidation means small discrepancies between your optimistic guess and the server's actual result never get corrected</strong> — e.g. a server-generated ID, timestamp, or computed field that your optimistic version approximated differently.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Applying optimistic updates for high-stakes or failure-prone actions (payments, irreversible deletions) is a poor product decision, even though it's technically implementable</strong> — a brief flash of "success" for something that then fails and gets reverted can feel worse than a normal loading state for actions with real consequences.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Silently rolling back without informing the user is a common UX mistake</strong> — the user saw their action "succeed" for a moment, and if it just reverts with no explanation, it looks like a bug rather than a legitimate failure; always pair rollback with a visible error message.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Optimistic updates for LIST operations (adding/removing items) need to construct a plausible temporary item</strong> — e.g. a temporary client-generated ID for a new todo before the server assigns its real one — and this temporary data needs to be reconciled once the real response arrives (handled by the onSettled invalidation).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Multiple rapid mutations on the SAME query key can compound the snapshot/rollback logic in tricky ways</strong> — e.g. rapidly toggling the same checkbox multiple times before any request resolves; robust implementations sometimes need to think carefully about which snapshot is "correct" to roll back to if an earlier request fails after a later one has already succeeded.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The mutationFn itself should not access the optimistic cache directly</strong> — it should just perform the real API call; all the cache manipulation belongs in the onMutate/onError/onSettled callbacks, keeping the "what actually happens on the server" logic cleanly separated from the "how we fake it locally" logic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every mutation needs to be optimistic</strong> — introducing this pattern adds real complexity (snapshotting, rollback, race handling); reserve it for interactions where the perceived responsiveness genuinely matters to the user experience, not as a default for every single mutation in an app.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a favorite "show me you can implement something non-trivial end to end" question — interviewers want to see the FULL lifecycle (cancel, snapshot, update, rollback, reconcile), not just the happy path.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is an optimistic update, and what are the essential pieces needed to implement one correctly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          An optimistic update immediately reflects an EXPECTED result in the UI before the server confirms it, making the interaction feel instant. Implementing it correctly with React Query requires: <strong>(1)</strong> cancelling any conflicting in-flight queries to avoid a race condition, <strong>(2)</strong> snapshotting the current cache data so there's something to restore, <strong>(3)</strong> applying the optimistic change to the cache, <strong>(4)</strong> rolling back to the snapshot if the mutation fails, and <strong>(5)</strong> reconciling with the server's true state afterward (regardless of success or failure) via invalidation.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is it necessary to call cancelQueries inside onMutate, rather than just applying the optimistic update directly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If a background refetch (triggered by something like React Query's automatic refetch-on-window-focus, or an earlier invalidation) happens to already be in flight when the optimistic update is applied, that refetch could resolve AFTER the optimistic change and silently overwrite it with the OLD, pre-optimistic data it fetched earlier — a race condition that would make the optimistic update appear to randomly "undo itself" for no visible reason. `cancelQueries` aborts any such in-flight request first, closing this race window before the optimistic update is applied.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is an optimistic update the right choice, versus a normal loading-state mutation?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Optimistic updates work best for actions that are HIGH FREQUENCY, LOW STAKES, and HIGHLY LIKELY to succeed — liking a post, checking off a todo, toggling a follow/favorite, reordering a list. These are exactly the interactions where perceived responsiveness matters most (they happen often, so any lag is noticeable) and where an occasional rollback is a minor, low-consequence inconvenience. A normal loading-state mutation is more appropriate for actions with real consequences on failure, meaningful failure rates, or where users need clear confirmation before proceeding — payments, account deletion, submitting a form with significant downstream effects — where a brief "flash of success" followed by a revert could be confusing or costly.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement rollback for a mutation that adds a NEW item to a list (rather than toggling an existing one)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line">onMutate: <span class="ck">async</span> (newTodoText) =&gt; {</span>
+<span class="line">  <span class="ck">await</span> queryClient.cancelQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">  <span class="ck">const</span> previousTodos = queryClient.getQueryData([<span class="cs">"todos"</span>]);</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// construct a PLAUSIBLE temporary item, including a temporary client-side ID</span></span>
+<span class="line">  <span class="ck">const</span> optimisticTodo = {</span>
+<span class="line">    id: `temp-${Date.now()}`, <span class="cm">// placeholder — server will assign the REAL id</span></span>
+<span class="line">    text: newTodoText,</span>
+<span class="line">    completed: <span class="ck">false</span>,</span>
+<span class="line">  };</span>
+<span class="line"></span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], (old) =&gt; [...old, optimisticTodo]);</span>
+<span class="line">  <span class="ck">return</span> { previousTodos };</span>
+<span class="line">},</span>
+<span class="line"></span>
+<span class="line">onError: (err, newTodoText, context) =&gt; {</span>
+<span class="line">  <span class="cm">// simply restore the ENTIRE previous list — the temp item disappears with it</span></span>
+<span class="line">  queryClient.setQueryData([<span class="cs">"todos"</span>], context.previousTodos);</span>
+<span class="line">},</span>
+<span class="line"></span>
+<span class="line">onSettled: () =&gt; {</span>
+<span class="line">  <span class="cm">// on success, this replaces the "temp-..." item with the server's REAL data</span></span>
+<span class="line">  <span class="cm">// (including its real ID) once the invalidated query refetches</span></span>
+<span class="line">  queryClient.invalidateQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">},</span>
+          </div>
+          The key addition compared to toggling an existing item is constructing a REASONABLE placeholder for the new item (including a temporary, clearly-fake ID), and relying on the `onSettled` refetch to replace that temporary item with the server's authoritative version once the real request completes.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What role does the "context" object play in the mutation lifecycle?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whatever value is RETURNED from `onMutate` is automatically passed as the third argument to both `onError` and `onSuccess` (and available in `onSettled` too) — this is React Query's built-in mechanism for threading data captured at the START of the mutation (like the snapshot of previous data) through to the callbacks that run LATER, once the outcome is known. Without this, there'd be no clean way to access "what the data looked like before we optimistically changed it" from inside the `onError` handler, since that handler runs in a separate callback invocation.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is calling invalidateQueries in onSettled still necessary even when the mutation succeeds — isn't the optimistic data already correct?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The optimistic update is a GUESS based on what the client expects the result to be — it can be slightly wrong even on success, particularly for fields the SERVER determines (auto-generated IDs, computed timestamps, server-side validation/normalization of the submitted data, or fields affected by business logic the client doesn't fully replicate). Invalidating and refetching in `onSettled` guarantees the cache is eventually reconciled with the SERVER's authoritative version of the data, correcting any such small discrepancies — treating the optimistic update purely as a temporary, best-effort placeholder rather than a permanent substitute for the real server response.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you skip the rollback step and just let onSettled's refetch fix things up?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Skipping the explicit rollback and relying solely on the `onSettled` refetch to "self-correct" is technically possible, but generally NOT advisable — it means the UI shows the INCORRECT optimistic state for however long the refetch takes to complete, which could be a noticeable delay on a slow connection, rather than immediately reverting the instant the failure is known. Explicit rollback in `onError` gives the fastest, most accurate correction the moment failure is confirmed, while the `onSettled` refetch serves as a secondary, more thorough reconciliation step afterward — the two are complementary, not substitutes for each other, and skipping rollback is rarely the right trade-off.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you also show the user an error message on rollback, integrating with a toast notification system?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Add the toast call directly inside the `onError` handler, alongside the rollback logic:
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="ck">import</span> { toast } <span class="ck">from</span> <span class="cs">"react-hot-toast"</span>; <span class="cm">// or any toast library</span></span>
+<span class="line"></span>
+<span class="line">useMutation({</span>
+<span class="line">  mutationFn: updateTodo,</span>
+<span class="line">  onMutate: <span class="ck">async</span> (newTodo) =&gt; { <span class="cm">/* ...snapshot + optimistic update... */</span> },</span>
+<span class="line"></span>
+<span class="line">  onError: (err, newTodo, context) =&gt; {</span>
+<span class="line">    queryClient.setQueryData([<span class="cs">"todos"</span>], context.previousTodos); <span class="cm">// roll back</span></span>
+<span class="line">    toast.error(`Couldn't save your change: ${err.message}`); <span class="cm">// inform the user</span></span>
+<span class="line">  },</span>
+<span class="line"></span>
+<span class="line">  onSettled: () =&gt; {</span>
+<span class="line">    queryClient.invalidateQueries({ queryKey: [<span class="cs">"todos"</span>] });</span>
+<span class="line">  },</span>
+<span class="line">});</span>
+          </div>
+          This ensures the user gets both the CORRECTED UI (via rollback) and a clear EXPLANATION of what happened — avoiding the confusing experience of an action silently reverting with no visible reason.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    React Interview Prep · React Query · Optimistic Updates · Rollback · Mutation Lifecycle
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browser Rendering Pipeline — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #f1fa8c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #f1fa8c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Phase cards ── */
+  .phase-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem; margin-bottom: 1rem; border-top: 3px solid transparent;
+  }
+  .phase-card-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .phase-icon-badge {
+    width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 13px; font-weight: 700; color: #0d0f14; flex-shrink: 0;
+  }
+  .phase-card-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .phase-card .code-block { margin: 0; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Browser Internals</div>
+    <h1>The Browser Rendering Pipeline</h1>
+    <p>From URL Enter to Pixels on Screen — Network, Parsing, Layout, Paint, Composite — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Big Picture</a>
+    <a class="topic-pill" href="#s2">2. Network Phase</a>
+    <a class="topic-pill" href="#s3">3. Parsing — DOM &amp; CSSOM</a>
+    <a class="topic-pill" href="#s4">4. Render Tree</a>
+    <a class="topic-pill" href="#s5">5. Layout (Reflow)</a>
+    <a class="topic-pill" href="#s6">6. Paint</a>
+    <a class="topic-pill" href="#s7">7. Composite</a>
+    <a class="topic-pill" href="#s8">8. Optimizing the Path</a>
+    <a class="topic-pill" href="#s9">9. Gotchas</a>
+    <a class="topic-pill" href="#s10">10. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Big Picture
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Big Picture — End to End</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Getting pixels on screen from a typed URL involves roughly SIX major stages: <strong>Network</strong> (fetch the HTML) → <strong>Parsing</strong> (build the DOM and CSSOM) → <strong>Render Tree</strong> (combine them) → <strong>Layout</strong> (compute geometry) → <strong>Paint</strong> (fill in pixels) → <strong>Composite</strong> (assemble layers on the GPU).</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The full pipeline, left to right</div>
+      <svg class="diagram-svg" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="55" width="100" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="60" y="76" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Network</text>
+        <text x="60" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">DNS/TCP/HTTP</text>
+
+        <path d="M110 80 L125 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowPipe)"/>
+
+        <rect x="125" y="55" width="100" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="175" y="76" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Parse</text>
+        <text x="175" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">DOM + CSSOM</text>
+
+        <path d="M225 80 L240 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowPipe)"/>
+
+        <rect x="240" y="55" width="100" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="290" y="76" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Render Tree</text>
+        <text x="290" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">DOM ∩ CSSOM</text>
+
+        <path d="M340 80 L355 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowPipe)"/>
+
+        <rect x="355" y="55" width="100" height="50" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="405" y="76" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Layout</text>
+        <text x="405" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">geometry/position</text>
+
+        <path d="M455 80 L470 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowPipe)"/>
+
+        <rect x="470" y="55" width="100" height="50" rx="8" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="520" y="76" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Paint</text>
+        <text x="520" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">fill in pixels</text>
+
+        <path d="M570 80 L585 80" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowPipe)"/>
+
+        <rect x="585" y="55" width="105" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="637" y="76" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Composite</text>
+        <text x="637" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">GPU assembles layers</text>
+
+        <text x="350" y="135" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Later stages (Layout/Paint/Composite) can be RE-TRIGGERED selectively by JS/CSS changes, without redoing everything from scratch</text>
+
+        <defs>
+          <marker id="arrowPipe" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Network Phase
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Network Phase — Getting the HTML</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#6ab0ff">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#6ab0ff,#4d84cc)">N</div>
+        From typed URL to the first bytes of HTML arriving
+      </div>
+      <div class="phase-card-sub">DNS lookup → TCP handshake → TLS negotiation (HTTPS) → HTTP request/response</div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Step</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td>1. DNS lookup</td><td>Translates the human-readable domain (example.com) into an IP address — checked against browser cache, OS cache, router, then ISP/recursive DNS servers if not already known</td></tr>
+        <tr><td>2. TCP handshake</td><td>A 3-way handshake (SYN, SYN-ACK, ACK) establishes a reliable connection between the browser and the server at that IP</td></tr>
+        <tr><td>3. TLS negotiation (HTTPS)</td><td>An additional handshake to establish an encrypted channel — exchanging certificates, agreeing on encryption parameters, before any actual data is sent</td></tr>
+        <tr><td>4. HTTP request sent</td><td>The browser sends a GET request for the page, including headers (cookies, cache validators, accepted content types)</td></tr>
+        <tr><td>5. Server responds</td><td>The server sends back an HTTP response — a status code, response headers, and the HTML document body, often streamed in chunks rather than all at once</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>HTML parsing can start BEFORE the full response finishes downloading</strong> — the browser streams and incrementally parses HTML as bytes arrive, rather than waiting for the entire document. This is part of why a fast Time To First Byte (TTFB) matters so much for perceived load speed.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Parsing: DOM and CSSOM
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Parsing — Building the DOM and CSSOM</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#bd93f9">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#bd93f9,#7c4fd1)">P</div>
+        Turning raw HTML/CSS text into structured, in-memory tree objects
+      </div>
+      <div class="phase-card-sub">HTML → DOM tree (structure/content). CSS → CSSOM tree (styling rules)</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Two SEPARATE trees, built in parallel from two different sources</div>
+      <svg class="diagram-svg" viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#6ab0ff" font-family="Inter, sans-serif" font-size="11" font-weight="600">HTML → DOM</text>
+        <rect x="130" y="30" width="90" height="30" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="175" y="50" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">html</text>
+        <path d="M175 60 L120 90" stroke="#6ab0ff" stroke-width="1" fill="none"/>
+        <path d="M175 60 L230 90" stroke="#6ab0ff" stroke-width="1" fill="none"/>
+        <rect x="75" y="90" width="90" height="28" rx="5" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="120" y="108" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8">head</text>
+        <rect x="185" y="90" width="90" height="28" rx="5" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="230" y="108" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8">body</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#bd93f9" font-family="Inter, sans-serif" font-size="11" font-weight="600">CSS → CSSOM</text>
+        <rect x="480" y="30" width="90" height="30" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="525" y="50" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">body { }</text>
+        <path d="M525 60 L470 90" stroke="#bd93f9" stroke-width="1" fill="none"/>
+        <path d="M525 60 L580 90" stroke="#bd93f9" stroke-width="1" fill="none"/>
+        <rect x="425" y="90" width="90" height="28" rx="5" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="470" y="108" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="8">p { color }</text>
+        <rect x="535" y="90" width="90" height="28" rx="5" fill="var(--bg2)" stroke="#bd93f9" stroke-width="1"/>
+        <text x="580" y="108" text-anchor="middle" fill="#d9c0ff" font-family="JetBrains Mono, monospace" font-size="8">.btn { }</text>
+
+        <text x="350" y="155" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">CSS is render-blocking — the browser won't paint until it has the FULL CSSOM,</text>
+        <text x="350" y="170" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">to avoid a "flash of unstyled content" it would otherwise have to immediately repaint over</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The classic parser-blocking script rule:</strong> a plain <ic>&lt;script&gt;</ic> tag (no <ic>async</ic>/<ic>defer</ic>) PAUSES HTML parsing entirely while it downloads and executes — because the script might use <ic>document.write()</ic> or otherwise need to modify the DOM the parser hasn't finished building yet. This is why scripts are traditionally placed at the end of <ic>&lt;body&gt;</ic>, or given <ic>async</ic>/<ic>defer</ic> attributes.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Script loading</th><th>Blocks HTML parsing?</th><th>Execution timing</th></tr></thead>
+      <tbody>
+        <tr><td>&lt;script src="..."&gt;&lt;/script&gt; (default)</td><td class="no">✗ Yes, blocks</td><td>Immediately, as soon as downloaded — parsing pauses to wait</td></tr>
+        <tr><td>&lt;script defer src="..."&gt;&lt;/script&gt;</td><td class="yes">✓ No, downloads in parallel</td><td>After parsing completes, in document order</td></tr>
+        <tr><td>&lt;script async src="..."&gt;&lt;/script&gt;</td><td class="yes">✓ No, downloads in parallel</td><td>As soon as it's downloaded — may interrupt parsing at an arbitrary point, order not guaranteed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Render Tree
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Render Tree — Combining DOM + CSSOM</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#ff6b6b">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#ff6b6b,#cc4545)">R</div>
+        The browser merges DOM structure with CSSOM styles into ONE tree of visually renderable nodes
+      </div>
+      <div class="phase-card-sub">Only VISIBLE nodes are included — elements with display:none are excluded entirely</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// This element exists in the DOM...</span></span>
+<span class="line">&lt;<span class="ct">div</span> <span class="ca">style</span>=<span class="cs">"display: none"</span>&gt;Hidden content&lt;/<span class="ct">div</span>&gt;</span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ...but is EXCLUDED entirely from the Render Tree — it takes up no space,</span></span>
+<span class="line"><span class="cm">// gets no layout box, and is never painted at all</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Contrast with visibility: hidden — this DOES get a render tree node</span></span>
+<span class="line"><span class="cm">// and STILL occupies its layout space, it's just not painted/visible</span></span>
+<span class="line">&lt;<span class="ct">div</span> <span class="ca">style</span>=<span class="cs">"visibility: hidden"</span>&gt;Invisible but still takes up space&lt;/<span class="ct">div</span>&gt;</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>This is the classic interview distinction between <ic>display: none</ic> and <ic>visibility: hidden</ic> — the FIRST is excluded from the render tree entirely (no space reserved); the SECOND still gets a layout box and reserves space, just isn't painted.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Layout (Reflow)
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Layout (a.k.a. Reflow)</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#ffb86c">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#ffb86c,#cc8a3d)">L</div>
+        Computing the EXACT size and position of every render tree node
+      </div>
+      <div class="phase-card-sub">Given the viewport size, box model rules, and each element's styles — where exactly does everything go?</div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Layout is expensive because it can CASCADE</strong> — changing one element's size/position can ripple outward, requiring the browser to recompute the geometry of sibling, parent, and even distant elements affected by the change (e.g. content reflowing around a resized image).</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Properties that trigger LAYOUT when changed — expensive</span></span>
+<span class="line">element.style.width = <span class="cs">"500px"</span>;</span>
+<span class="line">element.style.height = <span class="cs">"300px"</span>;</span>
+<span class="line">element.style.top = <span class="cs">"20px"</span>;</span>
+<span class="line">element.style.fontSize = <span class="cs">"18px"</span>; <span class="cm">// changes text metrics, cascades to layout</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Reading certain properties FORCES a synchronous layout recalculation too —</span></span>
+<span class="line"><span class="cm">// a classic performance footgun called "layout thrashing"</span></span>
+<span class="line"><span class="ck">const</span> width = element.offsetWidth; <span class="cm">// forces layout to be computed RIGHT NOW to answer this</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Paint
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Paint</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#ff79c6">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#ff79c6,#cc4d9e)">P</div>
+        Filling in actual PIXELS — colors, text, borders, shadows, images
+      </div>
+      <div class="phase-card-sub">Once geometry (Layout) is known, the browser draws the visual appearance of each element onto one or more "layers"</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Properties that trigger PAINT (but NOT layout) when changed — moderately expensive</span></span>
+<span class="line">element.style.backgroundColor = <span class="cs">"red"</span>;</span>
+<span class="line">element.style.color = <span class="cs">"blue"</span>;</span>
+<span class="line">element.style.boxShadow = <span class="cs">"0 0 10px black"</span>;</span>
+<span class="line"><span class="cm">// These don't change any element's SIZE or POSITION, so layout is skipped —</span></span>
+<span class="line"><span class="cm">// but the browser still needs to re-draw the affected pixels</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Composite
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Composite</h2>
+    </div>
+
+    <div class="phase-card" style="border-top-color:#5cffb0">
+      <div class="phase-card-title">
+        <div class="phase-icon-badge" style="background:linear-gradient(135deg,#5cffb0,#2db87a)">C</div>
+        Assembling separately-painted layers together, on the GPU, into the final image
+      </div>
+      <div class="phase-card-sub">The cheapest, fastest stage — some CSS properties can update WITHOUT touching Layout or Paint at all</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Properties that ONLY trigger Composite — the cheapest, GPU-accelerated path</span></span>
+<span class="line">element.style.transform = <span class="cs">"translateX(100px)"</span>;</span>
+<span class="line">element.style.opacity = <span class="cs">"0.5"</span>;</span>
+<span class="line"><span class="cm">// Neither changes layout geometry NOR requires re-painting pixel content —</span></span>
+<span class="line"><span class="cm">// the GPU just repositions/blends an already-painted layer</span></span>
+<span class="line"><span class="cm">// This is WHY "transform" and "opacity" are the go-to properties for</span></span>
+<span class="line"><span class="cm">// smooth, performant CSS animations</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Changing this property...</th><th>Layout</th><th>Paint</th><th>Composite</th></tr></thead>
+      <tbody>
+        <tr><td>width, height, top, left, font-size</td><td class="no">✓ Triggered</td><td class="no">✓ Triggered</td><td class="no">✓ Triggered</td></tr>
+        <tr><td>background-color, color, box-shadow</td><td class="yes">✗ Skipped</td><td class="no">✓ Triggered</td><td class="no">✓ Triggered</td></tr>
+        <tr><td>transform, opacity</td><td class="yes">✗ Skipped</td><td class="yes">✗ Skipped</td><td class="no">✓ Triggered ONLY</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>This table is one of the single most useful things to memorize for a performance interview</strong> — "prefer transform/opacity for animations, since they skip Layout AND Paint entirely" is a concrete, well-known optimization technique directly explained by understanding this pipeline.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Optimizing the Path
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Optimizing the Critical Rendering Path</h2>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Render-blocking CSS deep in &lt;head&gt;</div>
+        <div class="code-block">
+<span class="line">&lt;<span class="ct">head</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"stylesheet"</span></span>
+<span class="line">        <span class="ca">href</span>=<span class="cs">"huge-all-styles.css"</span> /&gt;</span>
+<span class="line">&lt;/<span class="ct">head</span>&gt;</span>
+<span class="line"><span class="cm">// Blocks ALL rendering until this</span></span>
+<span class="line"><span class="cm">// entire (possibly huge) file downloads</span></span>
+<span class="line"><span class="cm">// and parses, even for content that</span></span>
+<span class="line"><span class="cm">// doesn't need most of these styles yet</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Inline critical CSS, defer the rest</div>
+        <div class="code-block">
+<span class="line">&lt;<span class="ct">head</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">style</span>&gt;/* just above-the-fold */&lt;/<span class="ct">style</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preload"</span> <span class="ca">as</span>=<span class="cs">"style"</span></span>
+<span class="line">        <span class="ca">href</span>=<span class="cs">"rest.css"</span></span>
+<span class="line">        <span class="ca">onload</span>=<span class="cs">"this.rel='stylesheet'"</span> /&gt;</span>
+<span class="line">&lt;/<span class="ct">head</span>&gt;</span>
+<span class="line"><span class="cm">// First paint happens fast, using only</span></span>
+<span class="line"><span class="cm">// the minimal CSS actually needed</span></span>
+<span class="line"><span class="cm">// immediately; the rest loads without</span></span>
+<span class="line"><span class="cm">// blocking the initial render</span></span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Technique</th><th>What it improves</th></tr></thead>
+      <tbody>
+        <tr><td>Minimize render-blocking CSS/JS</td><td>Faster First Contentful Paint (FCP)</td></tr>
+        <tr><td>defer/async non-critical scripts</td><td>HTML parsing isn't paused waiting for scripts that don't need to run immediately</td></tr>
+        <tr><td>Inline critical, above-the-fold CSS</td><td>First paint doesn't wait on an entire external stylesheet</td></tr>
+        <tr><td>Preload key resources (fonts, hero images)</td><td>Browser starts fetching high-priority assets earlier, in parallel</td></tr>
+        <tr><td>Prefer transform/opacity for animations</td><td>Skips Layout and Paint — only Composite runs, on the GPU</td></tr>
+        <tr><td>Batch DOM reads and writes separately</td><td>Avoids "layout thrashing" from interleaved reads/writes forcing repeated synchronous layouts</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>CSS is render-blocking by default</strong> — the browser deliberately withholds painting ANYTHING until it has the complete CSSOM, specifically to avoid a "flash of unstyled content" (FOUC) it would otherwise need to immediately repaint over.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>JavaScript can be render-AND-parser-blocking</strong> — a plain synchronous `&lt;script&gt;` tag halts HTML parsing until it downloads and fully executes, since the script could use `document.write()` or otherwise need to modify the still-incomplete DOM.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Reflow" and "Layout" are the same concept, just different names</strong> — used somewhat interchangeably in different contexts/browsers' documentation; don't be thrown if an interviewer uses one term or the other.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Reading certain DOM properties FORCES a synchronous layout recalculation</strong> ("layout thrashing") — properties like `offsetWidth`, `offsetHeight`, `getBoundingClientRect()`, and `scrollTop` force the browser to flush any pending layout changes immediately to give an accurate answer, which can be a serious performance problem if done repeatedly in a loop, interleaved with writes.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>display:none removes an element from the render tree ENTIRELY</strong> (no layout box, zero space reserved) — this is different from `visibility:hidden`, which still occupies its layout space but isn't painted, and different again from `opacity:0`, which is fully painted (and still interactive/clickable!) but simply invisible.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every CSS/JS change triggers ALL three of Layout, Paint, and Composite</strong> — knowing which properties trigger which subset (the table in Section 7) is one of the most concrete, practically useful pieces of knowledge from this whole topic for real performance work.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The DOM and CSSOM are built independently and in parallel</strong> from two different sources (HTML and CSS respectively) — they are NOT the same tree, and are only combined together into the Render Tree afterward.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Preloading, prefetching, and preconnecting are three DIFFERENT optimization hints, not interchangeable</strong> — `preload` fetches a resource needed for THIS page soon; `prefetch` speculatively fetches something likely needed for a FUTURE navigation; `preconnect` just establishes the DNS/TCP/TLS connection early, without fetching any specific resource yet.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Modern browsers use a "speculative"/"preload" scanner</strong> that scans ahead in the raw HTML response (even while the main parser might be blocked by a synchronous script) to discover and start downloading other resources (images, stylesheets, other scripts) early — a real optimization that somewhat softens the "parser-blocking script" problem, though it doesn't eliminate it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>This pipeline runs again, PARTIALLY, for updates after the initial load</strong> — not every DOM/CSS change requires redoing the ENTIRE pipeline from Network/Parsing; JS-driven UI updates typically only re-trigger Layout/Paint/Composite (or some subset), which is exactly why understanding which specific stages a given change touches matters for performance.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 10 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a foundational systems question interviewers use to check whether you understand the browser as a real, physical process — not just how to write code that runs inside it. Concrete, stage-by-stage reasoning beats a vague "the browser renders the page" answer.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the major stages between entering a URL and seeing pixels on screen?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          At a high level: <strong>(1) Network</strong> — DNS lookup, TCP/TLS handshake, HTTP request/response to fetch the HTML. <strong>(2) Parsing</strong> — the browser builds a DOM tree from the HTML and a CSSOM tree from the CSS, in parallel. <strong>(3) Render Tree construction</strong> — combining the DOM and CSSOM into one tree of visually renderable nodes (excluding anything with `display:none`). <strong>(4) Layout</strong> (a.k.a. Reflow) — computing the exact size and position of every node. <strong>(5) Paint</strong> — filling in actual pixel colors/text/images for each node. <strong>(6) Composite</strong> — the GPU assembles separately-painted layers into the final image shown on screen.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does CSS block rendering, while some JavaScript can also block HTML parsing — and why are these separate concerns?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          CSS blocks RENDERING (specifically, painting) because the browser needs the COMPLETE CSSOM before it can accurately determine each element's final visual styling — painting with incomplete styles would mean immediately having to repaint once the rest of the CSS arrives, causing a visible "flash of unstyled content." JavaScript can additionally block HTML PARSING itself (a stricter, earlier-stage block) because a `&lt;script&gt;` tag might call `document.write()` or otherwise manipulate the DOM the parser is still in the middle of constructing — the browser can't safely continue parsing past a script tag until it knows whether that script is going to modify the document. These are separate concerns because CSS never modifies the DOM's structure, while JS potentially can, which is why JS carries the STRICTER default blocking behavior.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you specifically choose to animate using transform/opacity instead of properties like width/top/left?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whenever building an animation where SMOOTHNESS (consistently hitting 60fps) matters — which is nearly always for animations users will actually perceive, like transitions, hover effects, or moving elements. `transform` and `opacity` changes skip BOTH the Layout and Paint stages entirely, going straight to Composite, which runs on the GPU and is dramatically cheaper than triggering a full Layout recalculation (which can cascade to affect other elements) followed by a Paint pass. Animating `width`, `top`, `left`, or similar geometry-affecting properties forces the browser through the full, expensive Layout → Paint → Composite pipeline on every single animation frame, which is far more likely to drop frames and appear janky, especially on less powerful devices.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you diagnose and fix "layout thrashing" caused by interleaved DOM reads and writes in a loop?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Diagnose:</strong> use the browser's Performance tab in DevTools to record the interaction — repeated, small "Layout" (purple) blocks tightly interleaved with script execution in the timeline is the classic signature of layout thrashing.<br><br>
+          <strong>Fix — batch all reads together, then all writes together:</strong>
+          <div class="code-block" style="margin-top:8px">
+<span class="line"><span class="cm">// ✗ Before — interleaved reads/writes force a layout recalculation EVERY iteration</span></span>
+<span class="line">boxes.forEach((box) =&gt; {</span>
+<span class="line">  <span class="ck">const</span> height = box.offsetHeight; <span class="cm">// READ — forces layout to flush</span></span>
+<span class="line">  box.style.height = height * <span class="cn">2</span> + <span class="cs">"px"</span>; <span class="cm">// WRITE — invalidates layout again</span></span>
+<span class="line">}); <span class="cm">// each iteration: read forces a flush of the PREVIOUS write — N layouts for N boxes!</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// ✓ After — all reads first, then all writes, in two separate passes</span></span>
+<span class="line"><span class="ck">const</span> heights = boxes.map((box) =&gt; box.offsetHeight); <span class="cm">// ALL reads — one layout flush total</span></span>
+<span class="line">boxes.forEach((box, i) =&gt; {</span>
+<span class="line">  box.style.height = heights[i] * <span class="cn">2</span> + <span class="cs">"px"</span>; <span class="cm">// ALL writes — batched, applied together</span></span>
+<span class="line">});</span>
+          </div>
+          Separating reads and writes into two distinct passes means the browser only needs to compute layout ONCE (to answer all the reads) instead of once per iteration, dramatically reducing the number of forced synchronous layout recalculations.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between display:none, visibility:hidden, and opacity:0?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `display:none` removes the element from the Render Tree ENTIRELY — it gets no layout box, occupies zero space, and is never painted; sibling elements behave as if it doesn't exist at all. `visibility:hidden` still gets a layout box and reserves its normal space in the page's layout, but is not painted/visible, and does not receive mouse/click interactions. `opacity:0` is fully laid out AND fully painted (just rendered fully transparent) — meaning it still occupies space AND remains interactive/clickable, which is a common source of confusing bugs (an "invisible" element still intercepting clicks).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is it generally recommended to place render-blocking script tags at the end of the body, or use async/defer?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A plain `&lt;script&gt;` tag in the `&lt;head&gt;` (or anywhere before the content it depends on) blocks HTML PARSING while it downloads and executes — meaning nothing after it in the document can be parsed, built into the DOM, or displayed until that script finishes. Placing scripts at the END of `&lt;body&gt;` means the browser has already parsed and can display the actual page CONTENT before it even reaches the blocking script, improving perceived load speed. The `defer` attribute achieves a similar (often better) effect while keeping the script in `&lt;head&gt;` — it downloads in parallel with parsing WITHOUT blocking it, then executes only after parsing completes, in document order. `async` also downloads in parallel, but executes as soon as it's ready, potentially interrupting parsing at an unpredictable point — appropriate for independent scripts (like analytics) that don't depend on or need to run in a specific order relative to the page's own content.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does a browser need to redo the ENTIRE rendering pipeline versus just a subset of it, after the initial page load?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The Network and full Parsing stages (fetching and parsing the ENTIRE HTML document from scratch) only happen once, for the initial navigation (or a full page reload/different-page navigation) — they are NOT re-run for every subsequent DOM/CSS change made by JavaScript. Instead, a JS-driven UI update triggers only the LATER stages needed for what actually changed: if an element's geometry-affecting property changed, Layout runs (followed by Paint and Composite); if only a visual property like color changed, Layout is skipped and just Paint + Composite run; if only `transform`/`opacity` changed, ONLY Composite runs. Understanding exactly which subset of stages a given change triggers is the core practical knowledge this topic provides for real-world performance optimization.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain, step by step, what happens differently when you change an element's background-color vs. its width via JavaScript?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Changing background-color:</strong> the browser detects this only affects a PAINT-level visual property, not geometry — it skips Layout entirely, re-paints just the affected element's pixels with the new color, and then runs Composite to assemble the updated layer(s) into the final displayed frame.<br><br>
+          <strong>Changing width:</strong> the browser must first run LAYOUT — recomputing this element's size, and potentially the position/size of sibling and parent elements affected by the change (since a resized element can push neighboring content around) — before it can even know what to Paint. Only after Layout completes does it Paint the now-correctly-sized element (and anything else affected), then Composite the result. This is strictly MORE expensive than the background-color case, since it involves an additional, potentially cascading computation step before painting can even begin.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Browser Rendering Pipeline · Network · Parsing · Layout · Paint · Composite
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
