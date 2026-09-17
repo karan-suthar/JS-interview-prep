@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP Caching — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Directive cards ── */
+  .directive-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .directive-name { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 6px; }
+  .directive-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Recipe cards ── */
+  .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .recipe-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.85rem 1rem; border-left: 3px solid transparent; transition: border-color 0.2s;
+  }
+  .recipe-card:hover { border-left-color: var(--accent); }
+  .recipe-title { font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: 6px; font-weight: 500; }
+  .recipe-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+  .recipe-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · HTTP Caching</div>
+    <h1>HTTP Caching Fundamentals</h1>
+    <p>Cache-Control · ETag · max-age · no-cache vs no-store — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Why HTTP Caching Exists</a>
+    <a class="topic-pill" href="#s2">2. Cache-Control Directives</a>
+    <a class="topic-pill" href="#s3">3. no-cache vs no-store</a>
+    <a class="topic-pill" href="#s4">4. ETag &amp; Validation</a>
+    <a class="topic-pill" href="#s5">5. The Full Decision Flow</a>
+    <a class="topic-pill" href="#s6">6. Practical Recipes</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Why HTTP Caching Exists
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Why HTTP Caching Exists</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>HTTP caching lets a browser (or intermediate proxy/CDN) REUSE a previously-fetched response instead of re-requesting it from the server — saving network round-trips, server load, and making repeat page loads dramatically faster. The server controls caching behavior via <strong>response headers</strong>, primarily <ic>Cache-Control</ic>.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Without caching</th><th>With caching</th></tr></thead>
+      <tbody>
+        <tr><td>Every request re-downloads the FULL resource, every time</td><td>Repeat requests can be served instantly from local disk/memory, or with a tiny "still valid?" check</td></tr>
+        <tr><td>Server handles every single request at full cost</td><td>Server load reduced — many requests never even reach it</td></tr>
+        <tr><td>Slower repeat visits, more bandwidth used</td><td>Near-instant repeat visits for unchanged resources</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Cache-Control Directives
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Cache-Control Directives, Deep Dive</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// A response header — the server tells the browser HOW to cache this response</span></span>
+  <span class="line">Cache-Control: max-age=<span class="cn">3600</span>, public</span>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">max-age=&lt;seconds&gt;</div>
+      <div class="directive-desc">How long (in seconds) the response is considered FRESH — usable directly from cache with NO network request at all, not even a validation check. `max-age=3600` means "trust this cached copy completely for the next hour."</div>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">no-cache</div>
+      <div class="directive-desc">Confusingly named — this does NOT mean "don't cache." It means: cache the response, but ALWAYS revalidate with the server before using it (typically a fast conditional request using ETag). Effectively "max-age=0, must-revalidate."</div>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">no-store</div>
+      <div class="directive-desc">The TRUE "don't cache anything" directive — the response must NOT be stored in any cache at all, anywhere, under any circumstances. Used for sensitive data (banking info, private user data) that should never persist on disk.</div>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">must-revalidate</div>
+      <div class="directive-desc">Once the response becomes STALE (past its max-age), it MUST be revalidated with the server before use — the cache is not allowed to serve stale content even if the server is unreachable (unlike default behavior, which may serve stale content in some fallback scenarios).</div>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">public / private</div>
+      <div class="directive-desc">`public` allows ANY cache (browser, CDN, shared proxy) to store the response — appropriate for content that's the same for every user. `private` restricts caching to the individual user's OWN browser cache only — appropriate for user-specific content that a shared/intermediate cache shouldn't store.</div>
+    </div>
+
+    <div class="directive-card">
+      <div class="directive-name">immutable</div>
+      <div class="directive-desc">Tells the browser this resource will NEVER change for the duration of its freshness — skips even the (fast) revalidation check on a page refresh. Commonly paired with content-hashed filenames (e.g. `app.a3f9c1.js`) where a changed file simply gets a new URL entirely.</div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Directives combine.</strong> A typical strong-caching header for a hashed static asset looks like: <ic>Cache-Control: public, max-age=31536000, immutable</ic> — cacheable by anyone, fresh for a full year, and never needs even a revalidation check, because a content change would produce a different filename/URL entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — no-cache vs no-store
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>no-cache vs no-store — The Classic Confusion</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span>This naming is genuinely confusing and a favorite interview trap: <ic>no-cache</ic> STILL CACHES the response — it just forces revalidation every time before use. <ic>no-store</ic> is the ONLY directive that truly prevents caching altogether.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">What actually happens on the SECOND request, for each directive</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ffb86c" font-family="Inter, sans-serif" font-size="11" font-weight="600">no-cache</text>
+        <rect x="60" y="35" width="120" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="120" y="60" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">Response CACHED</text>
+        <path d="M120 75 L120 105" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayQ)"/>
+        <rect x="30" y="105" width="180" height="45" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="120" y="125" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">2nd request: ALWAYS</text>
+        <text x="120" y="140" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">revalidates with server</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">no-store</text>
+        <rect x="410" y="35" width="120" height="40" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="470" y="60" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">NEVER cached</text>
+        <path d="M470 75 L470 105" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayQ)"/>
+        <rect x="380" y="105" width="180" height="45" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="470" y="125" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">2nd request: FULL fetch,</text>
+        <text x="470" y="140" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">no cache involved at all</text>
+
+        <text x="350" y="180" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">no-cache still saves bandwidth on a 304 — no-store re-downloads the ENTIRE response every time</text>
+
+        <defs>
+          <marker id="arrowGrayQ" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Directive</th><th>Stored in cache?</th><th>Used without contacting server?</th><th>Typical use case</th></tr></thead>
+      <tbody>
+        <tr><td>no-cache</td><td class="yes">✓ Yes</td><td class="no">✗ No — always revalidates first</td><td>Content that changes often but benefits from fast 304 responses (e.g. an HTML page)</td></tr>
+        <tr><td>no-store</td><td class="no">✗ No</td><td class="no">✗ No — not cached at all</td><td>Sensitive data: banking pages, private user data, auth tokens</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — ETag and Validation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>ETag &amp; Validation — Conditional Requests</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>An <strong>ETag</strong> is a unique fingerprint (hash) of a resource's current content. On a REVALIDATION request (like after `no-cache` or once `max-age` expires), the browser sends the cached ETag back — if the server's current ETag still matches, it replies with a tiny <ic>304 Not Modified</ic> instead of re-sending the full response body.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The conditional request / 304 flow</div>
+      <svg class="diagram-svg" viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="140" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="90" y="47" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Browser</text>
+
+        <path d="M160 45 L280 45" stroke="#6ab0ff" stroke-width="1.5" marker-end="url(#arrowBlueQ)"/>
+        <text x="220" y="35" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">If-None-Match: "abc123"</text>
+
+        <rect x="280" y="20" width="150" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="355" y="47" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">Server checks ETag</text>
+
+        <path d="M355 65 L200 110" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenQ)"/>
+        <text x="240" y="95" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">matches!</text>
+        <rect x="60" y="110" width="220" height="45" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="170" y="132" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">304 Not Modified</text>
+        <text x="170" y="147" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">no body sent — use cached copy</text>
+
+        <path d="M400 65 L550 110" stroke="#ffb86c" stroke-width="1.5" marker-end="url(#arrowAmberQ)"/>
+        <text x="500" y="95" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">changed!</text>
+        <rect x="430" y="110" width="220" height="45" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="540" y="132" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">200 OK</text>
+        <text x="540" y="147" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">full new body + NEW ETag sent</text>
+
+        <text x="350" y="190" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">304 is a small, fast round-trip — a real bandwidth/latency saving compared to re-downloading the full resource</text>
+
+        <defs>
+          <marker id="arrowBlueQ" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6ab0ff"/></marker>
+          <marker id="arrowGreenQ" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowAmberQ" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb86c"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// ── First response from the server ──</span></span>
+  <span class="line">HTTP/<span class="cn">1.1</span> <span class="cn">200</span> OK</span>
+  <span class="line">Cache-Control: no-cache</span>
+  <span class="line">ETag: <span class="cs">"abc123"</span></span>
+  <span class="line"></span>
+  <span class="line">... (full response body) ...</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── Browser's NEXT request for the same resource — sends the ETag back ──</span></span>
+  <span class="line">GET /data.json HTTP/<span class="cn">1.1</span></span>
+  <span class="line">If-None-Match: <span class="cs">"abc123"</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── If unchanged, server replies with an EMPTY body ──</span></span>
+  <span class="line">HTTP/<span class="cn">1.1</span> <span class="cn">304</span> Not Modified</span>
+  <span class="line"><span class="cm">// browser uses its LOCALLY cached copy — huge bandwidth savings</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── If changed, server replies normally, with a NEW ETag ──</span></span>
+  <span class="line">HTTP/<span class="cn">1.1</span> <span class="cn">200</span> OK</span>
+  <span class="line">ETag: <span class="cs">"xyz789"</span></span>
+  <span class="line">... (new full response body) ...</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Last-Modified is an older, simpler alternative validator to ETag</strong> — using a timestamp instead of a content hash. It's LESS precise (only second-level granularity, and can't distinguish "identical content re-saved" from "actually changed"), which is why ETag is generally the preferred, more accurate mechanism today.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — The Full Decision Flow
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>The Full Caching Decision Flow</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">What the browser does when it needs a resource it has cached</div>
+      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <rect x="270" y="15" width="160" height="40" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="39" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Need this resource</text>
+
+        <path d="M350 55 L350 85" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayR)"/>
+        <rect x="240" y="85" width="220" height="40" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="109" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9.5">In cache AND still fresh (max-age)?</text>
+
+        <path d="M300 125 L180 165" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenR)"/>
+        <text x="200" y="150" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">YES</text>
+        <rect x="40" y="165" width="220" height="45" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="150" y="187" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Use cache directly</text>
+        <text x="150" y="202" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">NO network request at all</text>
+
+        <path d="M400 125 L520 165" stroke="#ffb86c" stroke-width="1.5" marker-end="url(#arrowAmberR)"/>
+        <text x="500" y="150" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">NO (stale/no-cache)</text>
+        <rect x="420" y="165" width="240" height="45" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="540" y="187" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Send conditional request</text>
+        <text x="540" y="202" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">If-None-Match: ETag → 304 or 200</text>
+
+        <text x="350" y="245" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">"no-store" skips this whole flow entirely — always a full, unconditional network request</text>
+
+        <defs>
+          <marker id="arrowGrayR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+          <marker id="arrowGreenR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowAmberR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb86c"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Practical Recipes
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Practical Recipes — What to Actually Set</h2>
+    </div>
+
+    <div class="recipe-grid">
+      <div class="recipe-card">
+        <div class="recipe-title">Hashed static assets (app.a3f9.js)</div>
+        <div class="recipe-desc">Filename changes whenever content changes — safe to cache aggressively, forever.</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: public,</span>
+  <span class="line">  max-age=<span class="cn">31536000</span>, immutable</span>
+        </div>
+      </div>
+
+      <div class="recipe-card">
+        <div class="recipe-title">The main HTML document</div>
+        <div class="recipe-desc">Needs to always reflect the LATEST deploy — never serve a stale HTML shell.</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: no-cache</span>
+  <span class="line"><span class="cm">// (paired with ETag for fast</span></span>
+  <span class="line"><span class="cm">// 304 revalidation)</span></span>
+        </div>
+      </div>
+
+      <div class="recipe-card">
+        <div class="recipe-title">User-specific API response</div>
+        <div class="recipe-desc">Personal data that shouldn't be cached by shared/intermediate caches (CDNs, proxies).</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: private,</span>
+  <span class="line">  max-age=<span class="cn">0</span>, no-cache</span>
+        </div>
+      </div>
+
+      <div class="recipe-card">
+        <div class="recipe-title">Sensitive data (banking, auth)</div>
+        <div class="recipe-desc">Should never be written to disk cache at all, for security reasons.</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: no-store</span>
+        </div>
+      </div>
+
+      <div class="recipe-card">
+        <div class="recipe-title">A public blog post page (unhashed)</div>
+        <div class="recipe-desc">Content that changes occasionally — short freshness window, then revalidate.</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: public,</span>
+  <span class="line">  max-age=<span class="cn">300</span>, must-revalidate</span>
+        </div>
+      </div>
+
+      <div class="recipe-card">
+        <div class="recipe-title">A logo/favicon that rarely changes</div>
+        <div class="recipe-desc">Not hashed, but changes are rare and a brief staleness window is acceptable.</div>
+        <div class="code-block">
+  <span class="line">Cache-Control: public,</span>
+  <span class="line">  max-age=<span class="cn">86400</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>"no-cache means don't cache" is the single most common misconception</strong> — it's actively tested in interviews specifically because the name is misleading; always be explicit that `no-cache` STILL caches, it just forces revalidation.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A 304 Not Modified response has NO body</strong> — it's just a status code and headers confirming the cached copy is still valid; the actual content the browser displays is entirely the PREVIOUSLY cached version, not anything newly transmitted.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Setting a long max-age on a NON-hashed filename (like `/app.js` without a content hash) is dangerous</strong> — if you deploy a new version, users with a cached copy won't see the update until their cache expires, potentially serving broken/outdated code for a long time; this is exactly why hashed filenames + immutable caching is the standard pattern for build assets.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Browser cache and CDN/shared cache behavior can differ</strong> — the `private`/`public` directive specifically controls whether INTERMEDIATE shared caches (CDNs, corporate proxies) are allowed to store the response, separate from what the end user's own browser does.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The old Expires header and Pragma: no-cache are legacy HTTP/1.0 mechanisms</strong>, largely superseded by `Cache-Control`'s `max-age` and `no-cache` respectively — modern responses typically set both for backward compatibility with very old clients/proxies, but `Cache-Control` takes precedence when both are present.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Query strings can affect caching behavior unexpectedly across different caching layers</strong> — some caches treat `/image.jpg?v=2` as a completely different resource from `/image.jpg`, which is sometimes exploited deliberately for cache-busting, but can also cause unexpected caching MISSES if not handled consistently.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A hard refresh (Ctrl+Shift+R / Cmd+Shift+R) bypasses the cache entirely</strong> for that one request — this can mask real caching bugs during development, since testing with a hard refresh doesn't reflect how a REGULAR page load/navigation would actually behave for real users.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Service Workers introduce a SEPARATE, programmable caching layer</strong> that sits in front of (and can override) standard HTTP caching entirely — a Service Worker's `fetch` handler can serve cached responses (or apply entirely custom caching logic) regardless of what `Cache-Control` headers say, which is a distinct topic from standard HTTP caching but often confused with it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>ETags generated differently across multiple servers behind a load balancer can cause unnecessary cache misses</strong> — if each server computes a slightly different ETag for logically identical content (e.g. due to file-system metadata differences), clients may never get a matching ETag and always receive a full 200 response instead of an efficient 304.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>must-revalidate specifically affects behavior when the origin server is UNREACHABLE</strong> — without it, some caches (per spec) are permitted to serve stale content as a fallback rather than fail the request entirely; `must-revalidate` forbids this fallback, forcing an explicit failure instead of silently serving outdated data when the server can't be reached to confirm freshness.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>HTTP caching is a classic "sounds simple, has surprising depth" topic — the no-cache/no-store naming trap alone catches many candidates off guard, so precision in your answers matters a lot here.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the precise difference between no-cache and no-store?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `no-cache` DOES allow the response to be stored in a cache — but it forces the cache to REVALIDATE with the origin server (typically via a fast conditional request using ETag) before using that stored copy for any subsequent request, every single time. `no-store` is the true "do not cache this at all" directive — the response must not be saved in any cache, anywhere, under any circumstance, meaning every request for that resource always results in a full, uncached fetch from the server.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why would you choose no-cache instead of a short max-age for something like the main HTML document?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A short `max-age` (like 60 seconds) means the browser will serve the CACHED copy directly, with zero network involvement, for up to that window — potentially showing an outdated version of the page for up to a minute after a new deploy, with no way to detect the change during that window. `no-cache` instead ALWAYS makes at least a lightweight round-trip to check freshness (via ETag), guaranteeing every page load reflects the current server state, while still getting the bandwidth benefit of a fast 304 response when nothing has actually changed. For content where correctness/freshness matters more than eliminating even the small round-trip cost, `no-cache` is the safer choice.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it appropriate to use a very long max-age (like a full year) on a resource?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Specifically when the resource's URL/filename is CONTENT-HASHED — meaning any change to the file's content automatically produces a DIFFERENT filename/URL (e.g. `app.a3f9c1.js`). In this setup, caching the old filename forever is completely safe, because a genuine content update simply results in a NEW URL that the browser has never seen before and will fetch fresh — there's no scenario where the browser would incorrectly keep serving stale content under the SAME URL. This pattern (long max-age + immutable + content hashing) is the standard, aggressive caching strategy for build-output static assets in modern web apps.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How does the browser use an ETag to avoid re-downloading an unchanged resource?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> The server includes an `ETag` header (a fingerprint/hash of the current content) in its response, alongside the actual content, and the browser stores both together in its cache.<br>
+          <strong>2.</strong> When the cached copy needs revalidation (because it's stale, or because `Cache-Control: no-cache` demands it every time), the browser sends a new request including an `If-None-Match: "&lt;the-stored-ETag&gt;"` header.<br>
+          <strong>3.</strong> The server recomputes the CURRENT ETag for that resource and compares it to the one the browser sent.<br>
+          <strong>4.</strong> If they MATCH (content hasn't changed), the server responds with a `304 Not Modified` status and NO body — the browser then uses its existing cached copy.<br>
+          <strong>5.</strong> If they DON'T match (content has changed), the server responds normally with `200 OK`, the full new content, and a NEW ETag value for future validation.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does the public vs private directive actually control?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It controls WHICH types of caches are allowed to store the response. `public` permits ANY cache — the end user's own browser, but ALSO shared/intermediate caches like CDNs and corporate proxy servers that might be serving MANY different users — to store and reuse the response. `private` restricts caching to ONLY the individual end user's own browser cache; shared/intermediate caches must NOT store it. This matters for correctness and privacy: a response containing one specific user's personal data must be marked `private` so a shared proxy or CDN doesn't accidentally cache and serve that same personal data to a DIFFERENT user who happens to request the same URL.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why might a login page or banking transaction page specifically use no-store rather than just a short max-age or no-cache?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Both `max-age` and `no-cache` still result in the response's content being WRITTEN TO DISK (or memory) somewhere as a stored cache entry, even if it's revalidated before reuse — for highly sensitive data, this is itself a security concern: that cached copy could potentially be recovered from disk by someone with physical or forensic access to the machine, especially on a shared or public computer. `no-store` prevents the response from ever being persisted in ANY cache in the first place, eliminating this specific risk entirely — the browser simply never has a stored copy to protect or worry about, which is the appropriate, conservative choice for authentication pages, financial data, and similarly sensitive content.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would ETag-based validation NOT actually save meaningful time or bandwidth, compared to a longer max-age?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the content changes so RARELY that the vast majority of revalidation round-trips return "unchanged" (a 304) — in that case, you're still paying the LATENCY cost of a network round-trip on every single load (even though you save the bandwidth of re-downloading the body), when a sufficiently long `max-age` could have skipped the network entirely for that period with zero risk of ever actually serving stale content. ETag-based revalidation earns its keep specifically for content that changes somewhat unpredictably and where CORRECTNESS matters more than shaving off that small round-trip cost — for genuinely rarely-changing, hash-versioned content, aggressive `max-age` without even a validation check is strictly more efficient.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you diagnose a bug where users report seeing an outdated version of a deployed web app after a new release?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Check the `Cache-Control` header actually being sent for the main HTML document — if it has a long `max-age` (rather than `no-cache`), browsers could legitimately be serving a stale cached HTML shell that still references OLD (possibly now-deleted) hashed asset filenames.<br>
+          <strong>2.</strong> Verify that JS/CSS bundle filenames are properly content-hashed on each build — if they're NOT hashed, and instead use a fixed filename with a long `max-age`, updated code would silently fail to reach users until their existing cache entry naturally expires.<br>
+          <strong>3.</strong> Check whether a CDN or reverse proxy in front of the app has its OWN separate caching configuration/TTL that might be serving a stale cached copy independent of the origin server's own headers.<br>
+          <strong>4.</strong> Confirm via browser DevTools' Network tab (with caching enabled, NOT a hard-refresh test) whether the actual response for a real user's page load is coming from cache (a `(disk cache)` or `(memory cache)` indicator) versus the network — this pinpoints whether the issue is browser-side caching, an intermediate CDN, or something else entirely (like a deployment/rollout issue on the server itself).
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · HTTP Caching · Cache-Control · ETag · no-cache vs no-store
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

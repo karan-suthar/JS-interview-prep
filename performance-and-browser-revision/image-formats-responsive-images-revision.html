@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Formats, Lazy Loading &amp; srcset — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Format cards ── */
+  .format-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .format-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .format-tagline { font-size: 11.5px; color: var(--text3); margin-bottom: 8px; font-style: italic; }
+  .format-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Decision tree ── */
+  .decision-diagram {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .decision-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .decision-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; flex-wrap: wrap; }
+  .decision-q { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 12px; color: var(--text); min-width: 260px; }
+  .decision-yes { color: var(--teal); font-size: 11px; }
+  .decision-result { background: rgba(189,147,249,0.08); border: 1px solid rgba(189,147,249,0.25); border-radius: 6px; padding: 6px 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Images</div>
+    <h1>Image Formats &amp; Responsive Images</h1>
+    <p>JPEG vs PNG vs WebP vs AVIF · Lazy Loading · srcset/sizes — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Lossy vs Lossless</a>
+    <a class="topic-pill" href="#s2">2. The Four Formats</a>
+    <a class="topic-pill" href="#s3">3. Format Comparison</a>
+    <a class="topic-pill" href="#s4">4. Choosing a Format</a>
+    <a class="topic-pill" href="#s5">5. Lazy Loading</a>
+    <a class="topic-pill" href="#s6">6. Responsive Images — srcset/sizes</a>
+    <a class="topic-pill" href="#s7">7. &lt;picture&gt; for Format Fallback</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Lossy vs Lossless
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Lossy vs Lossless Compression</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Lossless</strong> compression shrinks a file WITHOUT discarding any information — decompressing it recovers the EXACT original pixels. <strong>Lossy</strong> compression discards some information permanently (based on what the human eye is less likely to notice) to achieve much smaller file sizes, at the cost of some quality/accuracy.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Type</th><th>File size</th><th>Quality</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td>Lossless</td><td>Larger</td><td>Perfect, pixel-exact</td><td>Screenshots, logos, diagrams, images needing sharp edges/text</td></tr>
+        <tr><td>Lossy</td><td>Much smaller (often 5-10x)</td><td>Slightly degraded (often imperceptible at reasonable quality settings)</td><td>Photographs, complex real-world images with lots of color/detail</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Four Formats
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The Four Formats</h2>
+    </div>
+
+    <div class="format-card" style="border-left-color:#ffb86c">
+      <div class="format-title">JPEG (.jpg)</div>
+      <div class="format-tagline">The old reliable — universally supported, lossy only</div>
+      <div class="format-desc">Lossy-only compression, no transparency (alpha channel) support, no animation. Extremely widely supported (every browser, every device, decades old). Still a very reasonable default for PHOTOGRAPHS where modern format support can't be guaranteed.</div>
+    </div>
+
+    <div class="format-card" style="border-left-color:#6ab0ff">
+      <div class="format-title">PNG (.png)</div>
+      <div class="format-tagline">Lossless with transparency — the go-to for graphics, not photos</div>
+      <div class="format-desc">Lossless-only compression, FULL alpha transparency support, great for images with sharp edges, text, or flat colors (logos, icons, screenshots, diagrams). Poor fit for photographs — produces much larger files than JPEG for the same photographic content, with no quality benefit for typical use.</div>
+    </div>
+
+    <div class="format-card" style="border-left-color:#bd93f9">
+      <div class="format-title">WebP</div>
+      <div class="format-tagline">Google's modern all-rounder — both lossy AND lossless, plus animation</div>
+      <div class="format-desc">Supports BOTH lossy and lossless compression in one format, alpha transparency, and animation (as a GIF replacement). Typically 25-35% smaller than equivalent-quality JPEG/PNG. Excellent, now near-universal browser support.</div>
+    </div>
+
+    <div class="format-card" style="border-left-color:#5cffb0">
+      <div class="format-title">AVIF</div>
+      <div class="format-tagline">The newest, most efficient format — even smaller than WebP</div>
+      <div class="format-desc">Based on the AV1 video codec's intra-frame compression. Typically 20-50% smaller than WebP at equivalent visual quality, supports transparency, animation, and wider color gamuts (HDR). Browser support is strong in modern browsers but slightly less universal than WebP, and encoding is computationally slower.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Roughly equivalent visual quality — relative file size comparison</div>
+      <svg class="diagram-svg" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">JPEG (baseline)</text>
+        <rect x="140" y="15" width="500" height="22" rx="4" fill="#2a2010" stroke="#ffb86c" stroke-width="1"/>
+        <text x="390" y="30" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">100% (reference size)</text>
+
+        <text x="20" y="60" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">PNG (same photo)</text>
+        <rect x="140" y="50" width="540" height="22" rx="4" fill="#131b28" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="410" y="65" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">~300-500%+ (much larger — wrong tool for photos)</text>
+
+        <text x="20" y="95" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">WebP</text>
+        <rect x="140" y="85" width="330" height="22" rx="4" fill="#1c1430" stroke="#bd93f9" stroke-width="1"/>
+        <text x="305" y="100" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">~65-75%</text>
+
+        <text x="20" y="130" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">AVIF</text>
+        <rect x="140" y="120" width="220" height="22" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="250" y="135" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">~40-50%</text>
+
+        <defs></defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>These percentages are ILLUSTRATIVE, not precise — actual savings vary significantly based on the specific image content, encoder settings, and quality target. The RELATIVE ordering (AVIF &lt; WebP &lt; JPEG for typical photos, with PNG being disproportionately large for photographic content) is the consistent, defensible pattern to cite.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Format Comparison Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Full Format Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Feature</th><th>JPEG</th><th>PNG</th><th>WebP</th><th>AVIF</th></tr></thead>
+      <tbody>
+        <tr><td>Lossy compression</td><td class="yes">✓</td><td class="no">✗</td><td class="yes">✓ (optional)</td><td class="yes">✓ (optional)</td></tr>
+        <tr><td>Lossless compression</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓ (optional)</td><td class="yes">✓ (optional)</td></tr>
+        <tr><td>Alpha transparency</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Animation support</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Typical file size vs JPEG (photos)</td><td>Baseline</td><td>Much larger</td><td>~25-35% smaller</td><td>~40-50% smaller</td></tr>
+        <tr><td>Browser support</td><td class="yes">✓ Universal</td><td class="yes">✓ Universal</td><td class="yes">✓ Near-universal (modern browsers)</td><td>Strong, slightly less universal than WebP</td></tr>
+        <tr><td>Encoding speed</td><td class="yes">Fast</td><td class="yes">Fast</td><td>Moderate</td><td>Slower (more compute-intensive)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Choosing a Format
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Choosing the Right Format</h2>
+    </div>
+
+    <div class="decision-diagram">
+      <div class="decision-title">Walk through in order</div>
+      <div class="decision-step">
+        <div class="decision-q">Need animation, and modern format support is acceptable?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">WebP or AVIF (replacing GIF)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this a photograph or complex, photo-like image?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">AVIF (best), WebP (great, wider support), JPEG (universal fallback)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Is this a logo, icon, screenshot, or graphic with sharp edges/text/flat colors?</div>
+        <div class="decision-yes">YES →</div>
+        <div class="decision-result">SVG (if vector-based/scalable) or PNG (if raster)</div>
+      </div>
+      <div class="decision-step">
+        <div class="decision-q">Need guaranteed universal support with zero fallback complexity?</div>
+        <div class="decision-yes">→</div>
+        <div class="decision-result">JPEG (photos) or PNG (graphics)</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The modern best practice:</strong> serve AVIF/WebP to browsers that support them, with a JPEG/PNG fallback for older browsers — achieved declaratively via the <ic>&lt;picture&gt;</ic> element (Section 7), rather than picking just ONE format for everyone.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Lazy Loading
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Lazy Loading Images</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Lazy loading</strong> defers downloading an image until it's about to actually enter the viewport (or nearly so), instead of downloading every image on the page immediately — saving bandwidth and speeding up initial load, especially for long pages with many images.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The native, declarative way — a single HTML attribute, no JS required</span></span>
+  <span class="line">&lt;<span class="ct">img</span> <span class="ca">src</span>=<span class="cs">"photo.jpg"</span> <span class="ca">loading</span>=<span class="cs">"lazy"</span> <span class="ca">alt</span>=<span class="cs">"A description"</span> /&gt;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// "loading" attribute values:</span></span>
+  <span class="line"><span class="cm">//   lazy  → defer loading until near the viewport</span></span>
+  <span class="line"><span class="cm">//   eager → load immediately (the default browser behavior)</span></span>
+  <span class="line"><span class="cm">//   auto  → let the browser decide (also effectively the default)</span></span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Eager (default) vs lazy loading — what downloads on initial page load</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">Without lazy loading</text>
+        <rect x="30" y="35" width="90" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="75" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">img 1 ✓ visible</text>
+        <rect x="130" y="35" width="90" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="175" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">img 2 downloads</text>
+        <rect x="230" y="35" width="90" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="275" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">img 3 downloads</text>
+        <text x="175" y="90" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">ALL images fight for bandwidth immediately, even ones far below the fold</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">With lazy loading</text>
+        <rect x="380" y="35" width="90" height="35" rx="5" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="425" y="57" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">img 1 ✓ downloads</text>
+        <rect x="480" y="35" width="90" height="35" rx="5" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="525" y="57" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">img 2 waits...</text>
+        <rect x="580" y="35" width="90" height="35" rx="5" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="625" y="57" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">img 3 waits...</text>
+        <text x="525" y="90" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">Only the VISIBLE image loads now — others fetch as the user scrolls near them</text>
+
+        <text x="350" y="140" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Lazy loading noticeably speeds up initial page load for pages with many images,</text>
+        <text x="350" y="155" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">at the cost of a brief load moment when scrolling to a not-yet-loaded image</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Never lazy-load the hero/above-the-fold image (especially the Largest Contentful Paint candidate)!</strong> Lazy loading an image the user sees IMMEDIATELY delays it unnecessarily and can actively HURT your LCP (Largest Contentful Paint) performance metric — only apply <ic>loading="lazy"</ic> to images that are genuinely off-screen on initial load.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Responsive Images with srcset/sizes
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Responsive Images — srcset and sizes</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><ic>srcset</ic> gives the browser MULTIPLE versions of an image at different resolutions, letting it pick the most appropriate one based on the user's actual screen size and pixel density — instead of forcing everyone to download one huge image sized for the largest possible display.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">&lt;img</span></span>
+  <span class="line">  <span class="ca">src</span>=<span class="cs">"photo-800w.jpg"</span></span>
+  <span class="line">  <span class="ca">srcset</span>=<span class="cs">"photo-400w.jpg 400w,</span></span>
+  <span class="line"><span class="cs">           photo-800w.jpg 800w,</span></span>
+  <span class="line"><span class="cs">           photo-1200w.jpg 1200w,</span></span>
+  <span class="line"><span class="cs">           photo-1600w.jpg 1600w"</span></span>
+  <span class="line">  <span class="ca">sizes</span>=<span class="cs">"(max-width: 600px) 100vw,</span></span>
+  <span class="line"><span class="cs">         (max-width: 1200px) 50vw,</span></span>
+  <span class="line"><span class="cs">         800px"</span></span>
+  <span class="line">  <span class="ca">alt</span>=<span class="cs">"A description of the image"</span></span>
+  <span class="line"><span class="ck">/&gt;</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Attribute</th><th>What it tells the browser</th></tr></thead>
+      <tbody>
+        <tr><td>srcset</td><td>A LIST of available image files, each labeled with its actual pixel WIDTH (using the "w" descriptor) — e.g. "photo-800w.jpg 800w" means this file is 800 pixels wide</td></tr>
+        <tr><td>sizes</td><td>A set of CSS-like media conditions describing how WIDE the image will actually be DISPLAYED at different viewport widths — this is what lets the browser calculate which srcset candidate is the best fit</td></tr>
+        <tr><td>src</td><td>A fallback for browsers that don't support srcset/sizes at all (very old browsers) — always still required</td></tr>
+      </tbody>
+    </table>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">How the browser picks a srcset candidate</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="45" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="120" y="42" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Viewport: 375px wide</text>
+        <text x="120" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">2x pixel density (Retina)</text>
+
+        <path d="M220 42 L260 42" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayS)"/>
+
+        <rect x="260" y="20" width="200" height="45" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="360" y="42" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9.5">sizes says: 100vw here</text>
+        <text x="360" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">→ needs ~750px (375 × 2)</text>
+
+        <path d="M460 42 L500 42" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowGrayS)"/>
+
+        <rect x="500" y="20" width="180" height="45" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="590" y="42" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Picks photo-800w.jpg</text>
+        <text x="590" y="58" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">smallest that still covers it</text>
+
+        <text x="350" y="110" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">A large desktop viewport showing the SAME image at 50vw might instead pick a SMALLER</text>
+        <text x="350" y="125" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">srcset candidate than a small mobile screen showing it at 100vw — display SIZE matters more than screen SIZE</text>
+
+        <defs>
+          <marker id="arrowGrayS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>This is the classic source of confusion: <ic>sizes</ic> describes DISPLAY width (how big it appears in the layout), while <ic>srcset</ic>'s "w" values describe the FILE's actual pixel width.</strong> The browser combines these with the device's pixel density to compute how many actual device pixels are needed, then picks the smallest srcset candidate that satisfies that requirement.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — <picture> for Format Fallback
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>&lt;picture&gt; — Format Fallback &amp; Art Direction</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>While <ic>srcset</ic> lets the browser choose between different SIZES of the SAME image, <ic>&lt;picture&gt;</ic> lets you offer entirely DIFFERENT formats (AVIF → WebP → JPEG fallback) or even different CROPS for different screen sizes ("art direction") — the browser picks the first <ic>&lt;source&gt;</ic> it supports/matches.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Modern format fallback — browser picks the FIRST format it supports</span></span>
+  <span class="line"><span class="ck">&lt;picture&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;source</span> <span class="ca">srcset</span>=<span class="cs">"photo.avif"</span> <span class="ca">type</span>=<span class="cs">"image/avif"</span> <span class="ck">/&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;source</span> <span class="ca">srcset</span>=<span class="cs">"photo.webp"</span> <span class="ca">type</span>=<span class="cs">"image/webp"</span> <span class="ck">/&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;img</span> <span class="ca">src</span>=<span class="cs">"photo.jpg"</span> <span class="ca">alt</span>=<span class="cs">"A description"</span> <span class="ck">/&gt;</span> <span class="cm">{/* universal fallback */}</span></span>
+  <span class="line"><span class="ck">&lt;/picture&gt;</span></span>
+  <span class="line"><span class="cm">// A browser supporting AVIF uses the first source. A browser supporting WebP but</span></span>
+  <span class="line"><span class="cm">// not AVIF skips to the second. Anything else falls back to the plain &lt;img&gt; JPEG.</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// "Art direction" — showing a DIFFERENT crop/composition on small screens,</span></span>
+  <span class="line"><span class="cm">// not just a resized version of the same image</span></span>
+  <span class="line"><span class="ck">&lt;picture&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;source</span> <span class="ca">media</span>=<span class="cs">"(max-width: 600px)"</span> <span class="ca">srcset</span>=<span class="cs">"photo-tight-crop.jpg"</span> <span class="ck">/&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;img</span> <span class="ca">src</span>=<span class="cs">"photo-wide-crop.jpg"</span> <span class="ca">alt</span>=<span class="cs">"A description"</span> <span class="ck">/&gt;</span></span>
+  <span class="line"><span class="ck">&lt;/picture&gt;</span></span>
+  <span class="line"><span class="cm">// On mobile, shows a TIGHTER crop (e.g. zoomed in on a subject's face) instead of</span></span>
+  <span class="line"><span class="cm">// just shrinking the same wide landscape photo, which might lose the subject entirely</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Mechanism</th><th>Solves</th></tr></thead>
+      <tbody>
+        <tr><td>srcset + sizes (on &lt;img&gt;)</td><td>Same image, different RESOLUTIONS — browser picks based on display size/density</td></tr>
+        <tr><td>&lt;picture&gt; + type</td><td>Different FORMATS — browser picks the first format it actually supports</td></tr>
+        <tr><td>&lt;picture&gt; + media</td><td>Different CROPS/compositions — "art direction" for different screen sizes</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Lazy-loading the LCP (Largest Contentful Paint) image actively hurts performance</strong> — a common, easy-to-make mistake is applying `loading="lazy"` blanket-wide to every image on a page, including the critical above-the-fold hero image, which delays exactly the resource that matters most for perceived load speed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>PNG is NOT a good default for photographs</strong> — a surprisingly common mistake (often from screenshot tools defaulting to PNG) that results in dramatically larger files than a properly-compressed JPEG/WebP/AVIF for the same photographic content, with no visible quality benefit.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>srcset's "w" descriptor is NOT the same as the "x" (pixel density) descriptor</strong> — `srcset="photo@2x.jpg 2x"` is a simpler, DIFFERENT syntax meaning "use this for 2x pixel density displays," typically used WITHOUT `sizes`; mixing up "w" and "x" descriptors in the same srcset list is invalid.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Without explicit width/height attributes (or aspect-ratio CSS), images cause Cumulative Layout Shift (CLS)</strong> — the browser doesn't know how much space to reserve before the image loads, causing surrounding content to visibly jump once it arrives; always specify dimensions (even when using responsive images).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>&lt;picture&gt;'s &lt;source&gt; elements are evaluated TOP TO BOTTOM, and order matters</strong> — put the most preferred format FIRST (AVIF, then WebP, then the universal fallback `&lt;img&gt;` last), since the browser uses the first matching/supported source it finds.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The `&lt;img&gt;` tag inside `&lt;picture&gt;` is REQUIRED, not optional</strong> — it serves as both the fallback for browsers that don't support any of the listed formats AND the element that actually receives `alt` text, sizing behavior, and CSS styling; `&lt;picture&gt;` itself is just a wrapper with no visual rendering of its own.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Native lazy loading (`loading="lazy"`) has less precise control than JavaScript-based intersection-observer solutions</strong> — the exact "how far before entering the viewport" threshold is browser-determined and not currently configurable via the HTML attribute alone, unlike custom JS implementations which can fine-tune this.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>AVIF encoding is significantly slower than JPEG/WebP</strong> — this affects BUILD/processing time (generating the images), not runtime/decoding performance for the end user, but is worth mentioning if asked about AVIF's trade-offs beyond just file size and browser support.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Responsive images (srcset) address BANDWIDTH efficiency, not necessarily FORMAT efficiency</strong> — these are complementary, separate optimizations; a truly optimized image pipeline typically combines BOTH multiple resolutions (srcset) AND multiple formats (picture/type), not just one or the other.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>SVG is often the better choice over PNG/WebP/AVIF for genuinely vector content</strong> (logos, icons, simple illustrations) — it's resolution-independent (scales perfectly to any size/density with no quality loss) and often produces a smaller file than a rasterized equivalent for simple graphics, a detail easy to overlook when the conversation is framed purely around JPEG/PNG/WebP/AVIF.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Image optimization is one of the highest-leverage, most concrete performance topics — images are frequently the LARGEST portion of a typical page's total weight, so interviewers value precise, actionable answers here.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the key trade-off between JPEG, PNG, WebP, and AVIF?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          JPEG is lossy-only, universally supported, no transparency — a safe, small default for photos. PNG is lossless-only with full transparency support — ideal for graphics/logos/screenshots, but a poor fit for photographs (much larger files with no benefit). WebP supports both lossy AND lossless plus animation, typically 25-35% smaller than equivalent JPEG/PNG, with near-universal modern browser support. AVIF is the newest and most efficient (typically 40-50% smaller than JPEG), supports transparency/animation/HDR, but has slightly less universal support and slower encoding time. The general trade-off curve is: newer format = smaller files, but marginally less guaranteed support and slower to produce.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is PNG a poor choice for photographs, even though it's a perfectly good format in general?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          PNG's lossless compression algorithm works well for images with LARGE areas of flat, repeated, or simply-patterned color (like logos, icons, or screenshots with sharp edges and text) — but photographs have continuous, complex gradients of color and fine detail throughout, which don't compress efficiently under a lossless algorithm designed around detecting repetition. Because PNG offers NO lossy option to discard visually-imperceptible detail (unlike JPEG/WebP/AVIF), it ends up preserving far more raw information than a human eye would ever notice missing, resulting in a dramatically larger file for the SAME apparent visual quality as a well-compressed lossy format.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When should you avoid using loading="lazy" on an image?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Avoid it for any image visible in the INITIAL viewport on page load — especially the image likely to be the page's Largest Contentful Paint (LCP) candidate, such as a hero banner or a prominent above-the-fold photo. Lazy loading defers the image's download until it's about to enter the viewport; applying it to something ALREADY in the viewport at load time means the browser deliberately delays fetching it, which can noticeably worsen perceived load speed and directly hurt the LCP performance metric, which specifically measures how quickly the largest visible content element renders.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you set up an image to serve AVIF to supporting browsers, WebP as a fallback, and JPEG as the universal fallback, while also being responsive to screen size?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Combine `&lt;picture&gt;` (for format fallback) with `srcset`/`sizes` on each `&lt;source&gt;` AND the final `&lt;img&gt;` (for resolution responsiveness):
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">&lt;picture&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;source</span></span>
+  <span class="line">    <span class="ca">type</span>=<span class="cs">"image/avif"</span></span>
+  <span class="line">    <span class="ca">srcset</span>=<span class="cs">"photo-400.avif 400w, photo-800.avif 800w, photo-1200.avif 1200w"</span></span>
+  <span class="line">    <span class="ca">sizes</span>=<span class="cs">"(max-width: 600px) 100vw, 800px"</span> <span class="ck">/&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;source</span></span>
+  <span class="line">    <span class="ca">type</span>=<span class="cs">"image/webp"</span></span>
+  <span class="line">    <span class="ca">srcset</span>=<span class="cs">"photo-400.webp 400w, photo-800.webp 800w, photo-1200.webp 1200w"</span></span>
+  <span class="line">    <span class="ca">sizes</span>=<span class="cs">"(max-width: 600px) 100vw, 800px"</span> <span class="ck">/&gt;</span></span>
+  <span class="line">  <span class="ck">&lt;img</span></span>
+  <span class="line">    <span class="ca">src</span>=<span class="cs">"photo-800.jpg"</span></span>
+  <span class="line">    <span class="ca">srcset</span>=<span class="cs">"photo-400.jpg 400w, photo-800.jpg 800w, photo-1200.jpg 1200w"</span></span>
+  <span class="line">    <span class="ca">sizes</span>=<span class="cs">"(max-width: 600px) 100vw, 800px"</span></span>
+  <span class="line">    <span class="ca">alt</span>=<span class="cs">"A description"</span> <span class="ck">/&gt;</span></span>
+  <span class="line"><span class="ck">&lt;/picture&gt;</span></span>
+          </div>
+          The browser first picks a FORMAT it supports (checking `&lt;source&gt;` elements top to bottom), then WITHIN that chosen format's srcset, picks the best-fitting RESOLUTION based on `sizes` and the device's actual display characteristics — achieving both format and resolution optimization together.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between the "w" descriptor and the "x" descriptor in srcset?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The "w" descriptor (e.g. `photo-800.jpg 800w`) describes the image file's actual intrinsic pixel WIDTH — used together with the `sizes` attribute, which tells the browser how wide the image will be DISPLAYED at various viewport widths, letting it calculate the best-fitting candidate. The "x" descriptor (e.g. `photo@2x.jpg 2x`) instead directly describes pixel DENSITY — "use this file for 2x-density displays" — a simpler syntax typically used WITHOUT `sizes`, appropriate when the image is always displayed at a FIXED size regardless of viewport (unlike "w", which is meant for images that resize fluidly with the layout). The two descriptor types cannot be mixed within the same `srcset` list.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does the browser need BOTH srcset and sizes to make a good decision — wouldn't srcset alone be enough?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `srcset` alone only tells the browser what FILES are available and their raw pixel widths — it has NO information about how large the image will actually be rendered on the page, which depends entirely on the page's CSS layout (the image might be full-width on mobile, but only occupy a third of the width in a desktop grid layout, for instance). Without `sizes`, the browser would have to GUESS or default to assuming full-viewport-width, often resulting in downloading a LARGER image than actually needed for images that are deliberately laid out smaller than the viewport. `sizes` explicitly tells the browser "at this viewport width, this image will be displayed at THIS width," letting it accurately match against the available `srcset` candidates and choose the smallest one that still looks sharp at the actual DISPLAYED size.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use "art direction" (different image crops per screen size) instead of just responsively resizing the same image?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When simply shrinking a wide/landscape image down for a narrow mobile viewport would make the important subject too small to see clearly, or would awkwardly crop out key content due to the aspect ratio mismatch — for example, a wide group photo that reads fine at desktop width but becomes tiny and hard to make out at mobile width, versus a purposefully tighter, re-composed crop focusing on the key subject for mobile. Plain `srcset`/`sizes` only changes RESOLUTION (same image, different pixel dimensions) — it can't change the actual COMPOSITION/crop. `&lt;picture&gt;` with `media` conditions on its `&lt;source&gt;` elements is specifically designed for this "art direction" need, serving genuinely different image files (different crops, not just different sizes) at different breakpoints.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you prevent layout shift (CLS) caused by images loading asynchronously, especially with responsive srcset images of varying sizes?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Always specify `width` and `height` attributes on the `&lt;img&gt;` tag (using the image's INTRINSIC aspect ratio, even though the actual rendered size may be controlled by CSS/srcset) — modern browsers use these attributes to calculate and reserve the correct ASPECT RATIO for the space before the image finishes loading, preventing surrounding content from jumping once it arrives, regardless of which specific srcset candidate ultimately gets chosen.
+          <div class="code-block" style="margin-top:8px">
+  <span class="line"><span class="ck">&lt;img</span></span>
+  <span class="line">  <span class="ca">src</span>=<span class="cs">"photo-800.jpg"</span></span>
+  <span class="line">  <span class="ca">srcset</span>=<span class="cs">"photo-400.jpg 400w, photo-800.jpg 800w, photo-1200.jpg 1200w"</span></span>
+  <span class="line">  <span class="ca">sizes</span>=<span class="cs">"(max-width: 600px) 100vw, 800px"</span></span>
+  <span class="line">  <span class="ca">width</span>=<span class="cs">"1200"</span> <span class="ca">height</span>=<span class="cs">"800"</span> <span class="cm">{/* intrinsic aspect ratio — browser reserves 3:2 space regardless of final rendered size */}</span></span>
+  <span class="line">  <span class="ca">alt</span>=<span class="cs">"A description"</span></span>
+  <span class="line"><span class="ck">/&gt;</span></span>
+          </div>
+          The browser uses `width`/`height` purely to compute the ASPECT RATIO to reserve, not necessarily the exact final rendered pixel size (which CSS and `sizes` can still override) — this decouples "prevent layout shift" from "control exact display size," letting both work together correctly.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Image Formats · Lazy Loading · srcset/sizes · picture
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

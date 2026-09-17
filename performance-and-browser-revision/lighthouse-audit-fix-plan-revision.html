@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lighthouse Audits &amp; Fix Plans — Interview Practice Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Category cards ── */
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .category-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem; text-align: center; border-top: 3px solid transparent;
+  }
+  .category-score { font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .category-name { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Step cards ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .step-num-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    background: rgba(255,184,108,0.1); border: 1px solid rgba(255,184,108,0.25);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .step-card .code-block { margin: 8px 0 0; }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Fix plan table ── */
+  .plan-table {
+    width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .plan-table th {
+    font-family: var(--font-body); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text3); padding: 8px 10px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .plan-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  .plan-table tr:last-child td { border-bottom: none; }
+  .plan-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .priority-p0 { color: var(--red); font-weight: 600; font-family: var(--font-mono); font-size: 11px; }
+  .priority-p1 { color: var(--amber); font-weight: 600; font-family: var(--font-mono); font-size: 11px; }
+  .priority-p2 { color: var(--teal); font-weight: 600; font-family: var(--font-mono); font-size: 11px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Practical Auditing</div>
+    <h1>Lighthouse Audits &amp; Fix Plans</h1>
+    <p>How to Run, Diagnose, and Turn Results into a Structured Fix Plan — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Lighthouse Audits</a>
+    <a class="topic-pill" href="#s2">2. How to Run It</a>
+    <a class="topic-pill" href="#s3">3. Reading the Report</a>
+    <a class="topic-pill" href="#s4">4. Worked Example</a>
+    <a class="topic-pill" href="#s5">5. Writing a Fix Plan</a>
+    <a class="topic-pill" href="#s6">6. Sample Fix Plan</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Lighthouse Audits
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Lighthouse Actually Audits</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Lighthouse</strong> is an automated auditing tool (built into Chrome DevTools, also available via CLI/CI) that loads a page in a controlled environment and scores it across FIVE categories, each producing a 0-100 score plus a list of specific, actionable findings.</span>
+    </div>
+
+    <div class="category-grid">
+      <div class="category-card" style="border-top-color:#ff6b6b">
+        <div class="category-score" style="color:#ff6b6b">Performance</div>
+        <div class="category-name">Load speed, responsiveness, Core Web Vitals proxies</div>
+      </div>
+      <div class="category-card" style="border-top-color:#6ab0ff">
+        <div class="category-score" style="color:#6ab0ff">Accessibility</div>
+        <div class="category-name">Screen readers, contrast, semantic HTML, ARIA usage</div>
+      </div>
+      <div class="category-card" style="border-top-color:#bd93f9">
+        <div class="category-score" style="color:#bd93f9">Best Practices</div>
+        <div class="category-name">Security, modern API usage, console errors, image aspect ratios</div>
+      </div>
+      <div class="category-card" style="border-top-color:#5cffb0">
+        <div class="category-score" style="color:#5cffb0">SEO</div>
+        <div class="category-name">Crawlability, meta tags, mobile-friendliness</div>
+      </div>
+      <div class="category-card" style="border-top-color:#ffb86c">
+        <div class="category-score" style="color:#ffb86c">PWA</div>
+        <div class="category-name">(Legacy/optional) Installability, offline support</div>
+      </div>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Lighthouse's Performance score is a <strong>LAB</strong> measurement — a simulated run under controlled (often throttled) conditions — NOT the same as real-world field data from actual users. It's excellent for catching regressions and diagnosing specific issues, but shouldn't be treated as a guarantee of real-world Core Web Vitals scores.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — How to Run It
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>How to Run a Lighthouse Audit</h2>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Method 1</span>Chrome DevTools (quickest, most common)</div>
+      <div class="step-desc">Open DevTools (F12) → "Lighthouse" tab → select categories and device type (Mobile/Desktop) → click "Analyze page load." Best for a quick, one-off check during development.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Method 2</span>PageSpeed Insights (pagespeed.web.dev)</div>
+      <div class="step-desc">A hosted version of Lighthouse that ALSO shows real field data (CrUX) alongside the lab results — the best option when you want both lab AND field data for a publicly accessible URL, without any local setup.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Method 3</span>Lighthouse CLI / CI integration</div>
+      <div class="code-block">
+  <span class="line"><span class="cm"># Install and run from the command line</span></span>
+  <span class="line">npm install -g lighthouse</span>
+  <span class="line">lighthouse https://example.com --view</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm"># Useful for CI pipelines — fail a build if scores drop below a threshold</span></span>
+  <span class="line">lighthouse https://example.com --output=json --output-path=./report.json</span>
+      </div>
+      <div class="step-desc">Best for AUTOMATED, repeatable checks — running as part of a CI/CD pipeline to catch performance regressions before they reach production.</div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Method</th><th>Best for</th><th>Includes field data?</th></tr></thead>
+      <tbody>
+        <tr><td>DevTools</td><td>Quick, one-off manual checks during development</td><td class="no">✗ No — lab only</td></tr>
+        <tr><td>PageSpeed Insights</td><td>Public URLs, wanting both lab AND field data</td><td class="yes">✓ Yes, if enough real-user traffic exists</td></tr>
+        <tr><td>CLI / CI</td><td>Automated, repeatable checks; regression detection</td><td class="no">✗ No — lab only</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Reading the Report
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Reading the Report — What Each Section Means</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Report section</th><th>What it tells you</th></tr></thead>
+      <tbody>
+        <tr><td>Category scores (0-100)</td><td>A weighted composite score — NOT a simple average; some metrics (like LCP-related ones) are weighted more heavily than others</td></tr>
+        <tr><td>Metrics (top of Performance)</td><td>The raw numbers: LCP, TBT (Total Blocking Time — a lab proxy for INP), CLS, Speed Index, FCP</td></tr>
+        <tr><td>"Opportunities"</td><td>Specific suggestions estimated to IMPROVE load performance, each with an estimated time savings</td></tr>
+        <tr><td>"Diagnostics"</td><td>Additional findings that don't have a precise time-savings estimate, but still indicate real issues</td></tr>
+        <tr><td>Passed audits</td><td>Checks the page already satisfies — useful to confirm nothing regressed, not just what's broken</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Always start diagnosis from the "Opportunities" section</strong> — it's specifically curated and sorted by ESTIMATED IMPACT, giving you a natural, defensible starting point for prioritization rather than guessing which of dozens of findings matters most.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Worked Example
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Worked Example — Diagnosing a Sample Report</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1rem;">
+      <span class="callout-icon">📋</span>
+      <span>Below is a representative (illustrative) audit summary for a mid-sized e-commerce product page, of the kind you'd see after running a real audit — use this as a template for how to structure your OWN diagnosis of an actual report.</span>
+    </div>
+
+    <div class="category-grid">
+      <div class="category-card" style="border-top-color:#ff6b6b">
+        <div class="category-score" style="color:#ff6b6b">42</div>
+        <div class="category-name">Performance</div>
+      </div>
+      <div class="category-card" style="border-top-color:#ffb86c">
+        <div class="category-score" style="color:#ffb86c">78</div>
+        <div class="category-name">Accessibility</div>
+      </div>
+      <div class="category-card" style="border-top-color:#5cffb0">
+        <div class="category-score" style="color:#5cffb0">92</div>
+        <div class="category-name">Best Practices</div>
+      </div>
+      <div class="category-card" style="border-top-color:#5cffb0">
+        <div class="category-score" style="color:#5cffb0">88</div>
+        <div class="category-name">SEO</div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Finding (from "Opportunities")</th><th>Est. savings</th><th>Root cause</th></tr></thead>
+      <tbody>
+        <tr><td>Properly size images</td><td>~2.1s</td><td>Product images served at native resolution (2400px) but displayed at 400px — no srcset/responsive sizing</td></tr>
+        <tr><td>Eliminate render-blocking resources</td><td>~0.8s</td><td>A large, unminified CSS file loaded synchronously in &lt;head&gt;, blocking first paint</td></tr>
+        <tr><td>Reduce unused JavaScript</td><td>~0.6s</td><td>A large third-party analytics/chat-widget bundle loaded synchronously, mostly unused on initial load</td></tr>
+        <tr><td>Avoid large layout shifts</td><td>CLS: 0.34 (Poor)</td><td>Product image gallery and a promotional banner load without reserved dimensions</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Diagnosis summary:</strong> this page's LOW Performance score is driven almost entirely by unoptimized images (the single largest opportunity) and render-blocking resources delaying first paint — both classic, well-understood, and fixable issues rather than anything exotic. The Accessibility score, while not failing, has real room for improvement too.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Writing a Structured Fix Plan
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Writing a Structured Fix Plan</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A good fix plan doesn't just list findings — it PRIORITIZES them using a clear framework, so a team knows what to tackle FIRST. The most common, defensible framework is <strong>Impact vs Effort</strong>: high-impact/low-effort fixes go first, low-impact/high-effort fixes go last (or get cut).</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The Impact vs Effort prioritization matrix</div>
+      <svg class="diagram-svg" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="20" x2="60" y2="230" stroke="#555a6e" stroke-width="1.5"/>
+        <line x1="60" y1="230" x2="660" y2="230" stroke="#555a6e" stroke-width="1.5"/>
+        <text x="30" y="30" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10" transform="rotate(-90 30 30)">High Impact</text>
+        <text x="30" y="220" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10" transform="rotate(-90 30 220)">Low Impact</text>
+        <text x="80" y="250" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">Low Effort</text>
+        <text x="580" y="250" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">High Effort</text>
+
+        <rect x="75" y="30" width="270" height="90" rx="8" fill="rgba(92,255,176,0.08)" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="210" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">DO FIRST</text>
+        <text x="210" y="75" text-anchor="middle" fill="#9affd4" font-family="JetBrains Mono, monospace" font-size="9">e.g. add width/height attrs,</text>
+        <text x="210" y="90" text-anchor="middle" fill="#9affd4" font-family="JetBrains Mono, monospace" font-size="9">compress images, add defer</text>
+
+        <rect x="365" y="30" width="270" height="90" rx="8" fill="rgba(255,184,108,0.08)" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="500" y="55" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">PLAN CAREFULLY</text>
+        <text x="500" y="75" text-anchor="middle" fill="#ffd49a" font-family="JetBrains Mono, monospace" font-size="9">e.g. migrate to a CDN,</text>
+        <text x="500" y="90" text-anchor="middle" fill="#ffd49a" font-family="JetBrains Mono, monospace" font-size="9">restructure image pipeline</text>
+
+        <rect x="75" y="140" width="270" height="90" rx="8" fill="rgba(106,176,255,0.08)" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="210" y="165" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">QUICK WINS</text>
+        <text x="210" y="185" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="9">nice, but check they're</text>
+        <text x="210" y="200" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="9">actually worth doing</text>
+
+        <rect x="365" y="140" width="270" height="90" rx="8" fill="rgba(255,107,107,0.08)" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="500" y="165" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">DEPRIORITIZE / CUT</text>
+        <text x="500" y="185" text-anchor="middle" fill="#ffaaaa" font-family="JetBrains Mono, monospace" font-size="9">not worth the</text>
+        <text x="500" y="200" text-anchor="middle" fill="#ffaaaa" font-family="JetBrains Mono, monospace" font-size="9">engineering cost right now</text>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Fix plan section</th><th>What to include</th></tr></thead>
+      <tbody>
+        <tr><td>Summary</td><td>Current scores, 1-2 sentence overall diagnosis of the biggest problem areas</td></tr>
+        <tr><td>Prioritized findings</td><td>Each issue, its ROOT CAUSE (not just symptom), estimated impact, and estimated effort</td></tr>
+        <tr><td>Recommended fix per issue</td><td>A SPECIFIC, actionable change — not vague advice like "optimize images"</td></tr>
+        <tr><td>Priority tier (P0/P1/P2)</td><td>Explicit tiering so stakeholders can see what's urgent vs nice-to-have</td></tr>
+        <tr><td>Success criteria</td><td>How you'll verify the fix worked (e.g. "LCP drops below 2.5s in a re-run")</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Sample Fix Plan
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Sample Fix Plan — Based on the Worked Example</h2>
+    </div>
+
+    <table class="plan-table">
+      <thead><tr><th>Priority</th><th>Issue</th><th>Root Cause</th><th>Recommended Fix</th><th>Success Criteria</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="priority-p0">P0</span></td>
+          <td>Oversized product images</td>
+          <td>2400px images displayed at 400px, no responsive sizing</td>
+          <td>Generate responsive image sets (400w/800w/1200w) via build pipeline; add srcset+sizes; convert to WebP/AVIF</td>
+          <td>LCP drops from current value to &lt; 2.5s; "Opportunities" savings drop to near zero</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p0">P0</span></td>
+          <td>Layout shift from gallery/banner</td>
+          <td>No reserved dimensions for dynamically-loaded image gallery and banner</td>
+          <td>Add explicit width/height (or aspect-ratio CSS) to all gallery images; reserve min-height for banner container</td>
+          <td>CLS drops from 0.34 to &lt; 0.1</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p1">P1</span></td>
+          <td>Render-blocking CSS</td>
+          <td>Full, unminified stylesheet loaded synchronously in &lt;head&gt;</td>
+          <td>Minify CSS; inline critical above-the-fold styles; defer/async-load the rest via the preload+onload swap pattern</td>
+          <td>"Eliminate render-blocking resources" opportunity resolved; FCP improves measurably</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p1">P1</span></td>
+          <td>Unused third-party JS on load</td>
+          <td>Chat widget script loaded synchronously and eagerly, mostly unused until user opens it</td>
+          <td>Load the chat widget script with `defer`, or lazily initialize it only when the user clicks the chat trigger</td>
+          <td>Total JS bundle size on initial load reduced by the widget's footprint; TBT decreases</td>
+        </tr>
+        <tr>
+          <td><span class="priority-p2">P2</span></td>
+          <td>Accessibility: color contrast on secondary buttons</td>
+          <td>Secondary button text color fails WCAG AA contrast ratio against its background</td>
+          <td>Adjust secondary button text/background colors to meet a 4.5:1 contrast ratio</td>
+          <td>Accessibility score's contrast-related audit passes; manual contrast checker confirms ratio</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Notice the pattern:</strong> P0 items are HIGH IMPACT (they're the biggest scoring/UX problems) and reasonably LOW-TO-MEDIUM effort — the "quick wins that matter." P1 items still matter but are slightly lower impact or require a bit more restructuring. P2 is a real but lower-severity issue that shouldn't block a release but should still be tracked and fixed.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Lighthouse scores can vary meaningfully between runs, even on the same machine/page</strong> — network conditions, CPU throttling variance, and background processes all introduce noise; running MULTIPLE audits and looking at the median/consistent findings is more reliable than trusting a single run.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Mobile and Desktop audits can produce very different scores for the SAME page</strong> — mobile audits apply CPU/network throttling to simulate a mid-tier mobile device, which often reveals performance problems invisible on a fast desktop connection; always check BOTH, since mobile is frequently the more revealing (and more representative) test.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A high Lighthouse score doesn't guarantee good real-world Core Web Vitals</strong> — lab conditions are controlled and don't reflect the full diversity of real user devices/networks; always cross-check with field data (CrUX/PageSpeed Insights) when available, especially for a site with real traffic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Browser extensions can significantly skew local DevTools Lighthouse results</strong> — ad blockers, password managers, and other extensions injecting scripts into the page can add noise or artificially inflate/deflate scores; running in Incognito mode (with extensions disabled) gives a cleaner result.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A "fix plan" that just lists findings without prioritization is a weak deliverable</strong> — a senior-level answer explicitly reasons about IMPACT and EFFORT for each item, not just transcribes what Lighthouse reported.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The root cause is often NOT what the finding's title suggests at first glance</strong> — "Reduce unused JavaScript" might point to a THIRD-PARTY script, not your own application code; always dig into WHICH specific resource is responsible before proposing a fix.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Some findings have trade-offs that Lighthouse doesn't account for</strong> — e.g. Lighthouse might flag a large third-party analytics script as "unused JS," but removing/deferring it could conflict with a genuine business requirement to track events as early as possible; a good fix plan acknowledges such trade-offs rather than blindly following every suggestion.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Authenticated/logged-in pages require special handling to audit</strong> — a plain Lighthouse run can't access pages behind a login wall by default; this requires either testing a public equivalent page, using Lighthouse's authenticated-audit configuration options, or manually navigating to the authenticated state before triggering the audit via DevTools.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every audit finding is worth fixing</strong> — some flagged issues may have a genuinely low real-world impact for the specific site's actual traffic/users; a thoughtful fix plan explicitly calls out and justifies DEPRIORITIZED items, not just the ones being acted on.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Re-running the audit AFTER applying fixes is a required step, not optional</strong> — an interview answer that stops at "here's my fix plan" without mentioning verification/re-measurement is incomplete; always close the loop by confirming the fix actually achieved its intended effect.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a hands-on, practical exercise question — interviewers are evaluating your PROCESS (how you investigate, prioritize, and communicate) as much as your knowledge of any single Lighthouse finding.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between Lighthouse's "Opportunities" and "Diagnostics" sections?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          "Opportunities" are specific suggestions where Lighthouse can calculate an ESTIMATED time savings if you implement the fix (e.g. "Properly size images — potential savings of 2.1s") — these come with a concrete, quantified impact estimate. "Diagnostics" are additional findings and best-practice checks that indicate a real issue but WITHOUT a precise time-savings calculation (e.g. "Avoid an excessive DOM size," or "Minimize main-thread work") — still valuable signals, just less directly quantifiable in terms of exact performance impact.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why should you run a Lighthouse audit in Incognito mode with extensions disabled, rather than your regular browser profile?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Browser extensions (ad blockers, password managers, various dev tools, VPN extensions) often inject their own scripts or modify network requests on every page you visit — this extra activity gets swept into the SAME performance measurement Lighthouse is taking, contaminating the results with noise that has nothing to do with the actual page being tested. Running in Incognito mode (where extensions are disabled by default, unless explicitly allowed) gives a cleaner, more representative measurement of the page's OWN performance characteristics, isolated from your personal browser configuration.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you prioritize fixing an Accessibility finding over a Performance finding with a larger numeric score gap?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the accessibility issue represents a genuine BARRIER preventing some users from using the site AT ALL — e.g. a missing form label making a checkout flow impossible to complete via screen reader, or insufficient color contrast making critical text illegible for users with low vision — versus a performance issue that "merely" makes the experience somewhat slower for everyone. Complete inability to use a feature is generally a more severe user-impact problem than a few extra seconds of load time, even if the numeric Lighthouse score gap suggests otherwise; score magnitude alone shouldn't be the only factor in prioritization — actual USER IMPACT and legal/compliance considerations (accessibility often has real legal requirements) matter too.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you structure your investigation process when handed a Lighthouse report with a dozen findings and limited time?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Start with the category SCORES to get the big picture — which category is worst, and by how much?<br>
+          <strong>2.</strong> Within the worst-scoring category, sort "Opportunities" by their ESTIMATED SAVINGS — this gives an objective, built-in starting point for what matters most.<br>
+          <strong>3.</strong> For the top 2-3 opportunities, dig into the ROOT CAUSE — click through to see which SPECIFIC resource/element is responsible, rather than assuming from the finding's generic title.<br>
+          <strong>4.</strong> Cross-reference against EFFORT — a fix requiring a one-line CSS change should generally be tackled before a fix requiring a multi-week infrastructure migration, even if the migration has a larger theoretical ceiling.<br>
+          <strong>5.</strong> Write up the prioritized list (Impact vs Effort framework) as a fix plan, explicitly noting which lower-priority findings are being consciously DEFERRED and why, so nothing looks like an oversight.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What should a well-structured fix plan actually contain, beyond just a list of Lighthouse's raw findings?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A strong fix plan includes: a brief SUMMARY of overall scores and the biggest problem areas; each issue's ROOT CAUSE (not just the symptom Lighthouse reported); a SPECIFIC, actionable recommended fix (not vague advice); an explicit PRIORITY tier (e.g. P0/P1/P2) reflecting impact-vs-effort reasoning; and SUCCESS CRITERIA for each fix — a concrete way to verify afterward that the change actually achieved its intended effect (like "LCP drops below 2.5s on re-audit"). Simply pasting Lighthouse's own finding titles into a list, without this additional structure and reasoning, doesn't demonstrate the prioritization and communication skills the exercise is actually testing for.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why might you choose to explicitly deprioritize or reject a Lighthouse suggestion, even though it's technically a valid finding?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Lighthouse doesn't have context about BUSINESS requirements, real user behavior, or trade-offs specific to your situation — it flags issues purely based on generic best-practice heuristics. A finding might be technically valid but have low real-world impact for your ACTUAL traffic (e.g. an opportunity that only matters for users on very old devices, if your analytics show virtually none exist), or fixing it might conflict with a genuine business need (e.g. deferring an analytics script that stakeholders specifically need to fire as early as possible for accurate tracking). A thoughtful engineer weighs Lighthouse's generic suggestions against this real-world context, rather than treating every single finding as an unconditional mandate to fix.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use Lighthouse CI instead of manually running audits during development?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Once a team wants ONGOING protection against performance REGRESSIONS, rather than periodic manual spot-checks — integrating Lighthouse into a CI/CD pipeline means every pull request or deployment automatically gets audited, and the build can be configured to FAIL if scores drop below a defined threshold. This catches regressions immediately, at the point they're introduced (when it's cheapest and easiest to fix), rather than discovering degraded performance weeks later during an occasional manual audit, by which point the responsible change may be much harder to identify among many subsequent commits.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you verify that a fix you implemented based on a Lighthouse finding actually worked, beyond just re-running the audit once?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Re-run the Lighthouse audit MULTIPLE times (not just once) after deploying the fix, since individual runs have natural variance — look for a CONSISTENT improvement across runs, not a single lucky result.<br>
+          <strong>2.</strong> Check that the SPECIFIC finding that motivated the fix has actually resolved or improved as expected (e.g. the "Properly size images" opportunity should show near-zero estimated savings now, not just a vaguely higher overall score).<br>
+          <strong>3.</strong> If the site has real traffic, monitor FIELD data (via PageSpeed Insights/CrUX, or your own Real User Monitoring) over the following days/weeks to confirm the improvement holds up under actual, diverse real-world conditions, not just the controlled lab environment.<br>
+          <strong>4.</strong> Watch for any REGRESSIONS in other metrics the fix might have inadvertently caused (e.g. optimizing images aggressively for size might occasionally introduce visible quality degradation, or deferring a script might introduce a new interaction bug) — a fix that "improves" one number while quietly breaking something else isn't actually a net win.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Lighthouse Audits · Diagnosis · Structured Fix Plans
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

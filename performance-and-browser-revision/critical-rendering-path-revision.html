@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Critical Rendering Path — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Step cards ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem; margin-bottom: 1rem; border-top: 3px solid transparent;
+  }
+  .step-card-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .step-num-badge {
+    width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700; color: #0d0f14; flex-shrink: 0;
+  }
+  .step-card-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Critical Rendering Path</div>
+    <h1>The Critical Rendering Path</h1>
+    <p>DOM → CSSOM → Render Tree → Layout → Paint → Composite, Step by Step — with a Full Worked Example and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The 6 Steps Overview</a>
+    <a class="topic-pill" href="#s2">2. Step 1 — DOM</a>
+    <a class="topic-pill" href="#s3">3. Step 2 — CSSOM</a>
+    <a class="topic-pill" href="#s4">4. Step 3 — Render Tree</a>
+    <a class="topic-pill" href="#s5">5. Step 4 — Layout</a>
+    <a class="topic-pill" href="#s6">6. Step 5 — Paint</a>
+    <a class="topic-pill" href="#s7">7. Step 6 — Composite</a>
+    <a class="topic-pill" href="#s8">8. Full Worked Example</a>
+    <a class="topic-pill" href="#s9">9. How JS Re-enters the Pipeline</a>
+    <a class="topic-pill" href="#s10">10. Gotchas</a>
+    <a class="topic-pill" href="#s11">11. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The 6 Steps Overview
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The 6 Steps, Overview</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The <strong>Critical Rendering Path</strong> is the exact sequence of steps a browser takes to convert HTML, CSS, and JS into pixels on screen. Understanding EACH step precisely — not just the names — is what lets you reason about WHY a specific change is expensive or cheap.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The pipeline, step by step</div>
+      <svg class="diagram-svg" viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="40" width="100" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="60" y="62" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">1. DOM</text>
+        <text x="60" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">from HTML</text>
+
+        <path d="M110 65 L125 65" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCP)"/>
+
+        <rect x="125" y="40" width="100" height="50" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="175" y="62" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">2. CSSOM</text>
+        <text x="175" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">from CSS</text>
+
+        <path d="M225 65 L240 65" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCP)"/>
+
+        <rect x="240" y="40" width="100" height="50" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="290" y="58" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">3. Render</text>
+        <text x="290" y="70" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">Tree</text>
+
+        <path d="M340 65 L355 65" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCP)"/>
+
+        <rect x="355" y="40" width="100" height="50" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="405" y="62" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">4. Layout</text>
+        <text x="405" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">geometry</text>
+
+        <path d="M455 65 L470 65" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCP)"/>
+
+        <rect x="470" y="40" width="100" height="50" rx="8" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="520" y="62" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">5. Paint</text>
+        <text x="520" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">pixels</text>
+
+        <path d="M570 65 L585 65" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCP)"/>
+
+        <rect x="585" y="40" width="105" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="637" y="62" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">6. Composite</text>
+        <text x="637" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">GPU assembly</text>
+
+        <defs>
+          <marker id="arrowCP" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Step</th><th>Input</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td>1. DOM</td><td>Raw HTML bytes</td><td>A tree of DOM nodes representing document structure/content</td></tr>
+        <tr><td>2. CSSOM</td><td>Raw CSS bytes (all sources: external, internal, inline)</td><td>A tree of CSSOM nodes representing computed style rules</td></tr>
+        <tr><td>3. Render Tree</td><td>DOM + CSSOM</td><td>A tree of only VISIBLE nodes, each with its resolved styles attached</td></tr>
+        <tr><td>4. Layout</td><td>Render Tree + viewport size</td><td>Exact geometry (x, y, width, height) for every node</td></tr>
+        <tr><td>5. Paint</td><td>Render Tree + geometry</td><td>Filled-in pixels, organized into paint records/layers</td></tr>
+        <tr><td>6. Composite</td><td>Painted layers</td><td>The final, assembled image the user actually sees</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Step 1: DOM
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Step 1 — DOM Construction</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#6ab0ff">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#6ab0ff,#4d84cc)">1</div>
+        Converting raw HTML bytes into a tree of objects
+      </div>
+      <div class="step-card-sub">Bytes → Characters → Tokens → Nodes → DOM Tree</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The DOM construction sub-steps, in order:</span></span>
+  <span class="line"><span class="cm">// 1. Bytes: raw data received over the network</span></span>
+  <span class="line"><span class="cm">// 2. Characters: bytes converted to characters, per the document's encoding (e.g. UTF-8)</span></span>
+  <span class="line"><span class="cm">// 3. Tokens: the HTML tokenizer recognizes tags, attributes, and text as distinct tokens</span></span>
+  <span class="line"><span class="cm">//    e.g. StartTag: "div", Attribute: "class=container", EndTag: "div"</span></span>
+  <span class="line"><span class="cm">// 4. Nodes: tokens are converted into actual DOM node OBJECTS</span></span>
+  <span class="line"><span class="cm">// 5. DOM: nodes are linked together into a TREE based on nesting in the markup</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Example input HTML:</span></span>
+  <span class="line">&lt;<span class="ct">html</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">body</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">p</span>&gt;Hello &lt;<span class="ct">span</span>&gt;world&lt;/<span class="ct">span</span>&gt;&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line">  &lt;/<span class="ct">body</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">html</span>&gt;</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Resulting DOM tree</div>
+      <svg class="diagram-svg" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+        <rect x="150" y="10" width="80" height="30" rx="5" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="190" y="30" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">html</text>
+        <path d="M190 40 L190 60" stroke="#555a6e" stroke-width="1"/>
+        <rect x="150" y="60" width="80" height="30" rx="5" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="190" y="80" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">body</text>
+        <path d="M190 90 L190 110" stroke="#555a6e" stroke-width="1"/>
+        <rect x="150" y="110" width="80" height="30" rx="5" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="190" y="130" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">p</text>
+        <path d="M190 140 L100 155" stroke="#555a6e" stroke-width="1"/>
+        <path d="M190 140 L280 155" stroke="#555a6e" stroke-width="1"/>
+        <text x="80" y="158" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">"Hello "</text>
+        <text x="250" y="158" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">span → "world"</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>DOM construction is INCREMENTAL — the browser doesn't wait for the whole HTML document to build the whole tree.</strong> It processes bytes as they stream in, and the tree grows progressively. This is precisely why a parser-blocking synchronous <ic>&lt;script&gt;</ic> tag has such a big effect — it PAUSES this streaming, incremental process at exactly the point it's encountered.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Step 2: CSSOM
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Step 2 — CSSOM Construction</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#bd93f9">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#bd93f9,#7c4fd1)">2</div>
+        Converting raw CSS bytes into a tree of computed style rules
+      </div>
+      <div class="step-card-sub">Same byte→character→token→node process as DOM, but for CSS — plus cascade/specificity resolution</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Example input CSS:</span></span>
+  <span class="line">body { font-size: <span class="cn">16</span>px; }</span>
+  <span class="line">p { color: <span class="cs">blue</span>; }</span>
+  <span class="line">span { font-weight: <span class="cs">bold</span>; }</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// The CSSOM is also a TREE — child rules inherit/build on parent rules,</span></span>
+  <span class="line"><span class="cm">// following the CASCADE (specificity + source order + inheritance)</span></span>
+  <span class="line"><span class="cm">// A "span" inside a "p" inherits p's color UNLESS it has its own explicit rule</span></span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Resulting CSSOM tree — note child rules can inherit from parent rules</div>
+      <svg class="diagram-svg" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg">
+        <rect x="150" y="10" width="100" height="30" rx="5" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="200" y="30" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">body {16px}</text>
+        <path d="M200 40 L200 60" stroke="#555a6e" stroke-width="1"/>
+        <rect x="150" y="60" width="100" height="30" rx="5" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="200" y="80" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">p {color: blue}</text>
+        <path d="M200 90 L200 110" stroke="#555a6e" stroke-width="1"/>
+        <rect x="150" y="110" width="100" height="30" rx="5" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="200" y="130" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="8.5">span {bold, blue*}</text>
+        <text x="200" y="152" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="9">*inherited from &lt;p&gt;, not explicitly set on span</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>CSSOM construction is render-blocking — the browser must have the COMPLETE CSSOM before proceeding to the Render Tree step.</strong> Unlike DOM construction, this can't be done incrementally in the same way, since a rule appearing LATER in a stylesheet can override one appearing earlier, so nothing can be considered "final" until the whole stylesheet is processed.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Step 3: Render Tree
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Step 3 — Render Tree Construction</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#ff6b6b">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#ff6b6b,#cc4545)">3</div>
+        Walking the DOM and attaching matching CSSOM styles to each visible node
+      </div>
+      <div class="step-card-sub">For each DOM node: is it visible? If so, attach its computed style, and add it to the Render Tree</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// For EVERY DOM node, the browser asks:</span></span>
+  <span class="line"><span class="cm">// 1. Is this node visible? (display:none → EXCLUDED entirely, no render tree node at all)</span></span>
+  <span class="line"><span class="cm">// 2. What are its computed styles? (look up matching CSSOM rules, resolve the cascade)</span></span>
+  <span class="line"><span class="cm">// 3. Attach a Render Tree node combining: the DOM node + its resolved computed style</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Note: &lt;head&gt;, &lt;script&gt;, &lt;meta&gt; and similar non-visual elements are also</span></span>
+  <span class="line"><span class="cm">// excluded from the Render Tree — they exist in the DOM but have nothing to render</span></span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The Render Tree is NOT simply "DOM plus CSSOM stacked together" — it's a NEW tree, built by walking the DOM once and, for each visible node, looking up and attaching its final resolved style from the CSSOM. Invisible nodes (display:none, &lt;head&gt; contents) are dropped from this new tree entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Step 4: Layout
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Step 4 — Layout (Reflow)</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#ffb86c">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#ffb86c,#cc8a3d)">4</div>
+        Computing the EXACT box — position and size — of every Render Tree node
+      </div>
+      <div class="step-card-sub">Starts from the ROOT (the viewport) and walks down, computing each node's geometry in turn</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Layout starts from the viewport's dimensions and works down the tree</span></span>
+  <span class="line"><span class="cm">// Every node's SIZE and POSITION depends on:</span></span>
+  <span class="line"><span class="cm">//  - its own CSS box-model properties (width, height, padding, margin, border)</span></span>
+  <span class="line"><span class="cm">//  - its PARENT's available space</span></span>
+  <span class="line"><span class="cm">//  - its SIBLINGS (in flow layouts like block/inline/flex/grid)</span></span>
+  <span class="line"><span class="cm">//  - the viewport size (for percentage/vw/vh units)</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// This is WHY layout can CASCADE — resizing one element can ripple outward</span></span>
+  <span class="line"><span class="cm">// to affect its parent, its siblings, and anything positioned relative to it</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The first Layout for a page is called "Layout" — any SUBSEQUENT recalculation (triggered by a later DOM/style/size change) is often called "Reflow."</strong> Both refer to the SAME underlying computation; the distinction is purely about WHEN it happens (initial vs. later).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Step 5: Paint
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Step 5 — Paint</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#ff79c6">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#ff79c6,#cc4d9e)">5</div>
+        Filling in the actual visual appearance — for every node, in the correct order
+      </div>
+      <div class="step-card-sub">Text, colors, borders, shadows, images — converted into actual "paint records" (drawing instructions)</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Paint happens in a specific, deliberate ORDER to render overlapping elements</span></span>
+  <span class="line"><span class="cm">// correctly (this is a simplified version of the actual painting order rules):</span></span>
+  <span class="line"><span class="cm">// 1. Background color</span></span>
+  <span class="line"><span class="cm">// 2. Background image</span></span>
+  <span class="line"><span class="cm">// 3. Border</span></span>
+  <span class="line"><span class="cm">// 4. Children (in DOM order, respecting z-index/stacking contexts)</span></span>
+  <span class="line"><span class="cm">// 5. Outline</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// The browser may split painting across multiple LAYERS (e.g. for elements</span></span>
+  <span class="line"><span class="cm">// with certain CSS properties like "will-change", fixed position, or video),</span></span>
+  <span class="line"><span class="cm">// allowing later stages to update just ONE layer without repainting everything</span></span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Paint can be a SIGNIFICANT cost on complex pages — visual effects like shadows, gradients, and blurring are more expensive to paint than simple flat colors. This is why the "Paint" flame chart in DevTools' Performance panel is worth checking for pages with heavy visual styling.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Step 6: Composite
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Step 6 — Composite</h2>
+    </div>
+
+    <div class="step-card" style="border-top-color:#5cffb0">
+      <div class="step-card-title">
+        <div class="step-num-badge" style="background:linear-gradient(135deg,#5cffb0,#2db87a)">6</div>
+        Assembling all the separately-painted layers into the final image, on the GPU
+      </div>
+      <div class="step-card-sub">The cheapest, final stage — some properties (transform, opacity) can update here WITHOUT re-running Layout or Paint at all</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The GPU takes each painted layer (a bitmap) and combines them, applying</span></span>
+  <span class="line"><span class="cm">// any transforms/opacity/blending, into the final on-screen image</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// A CSS animation using ONLY transform/opacity can update purely at this</span></span>
+  <span class="line"><span class="cm">// stage — the GPU just repositions/fades an ALREADY-painted layer, with no</span></span>
+  <span class="line"><span class="cm">// need to recompute geometry (Layout) or redraw pixel content (Paint)</span></span>
+  <span class="line">element.style.transform = <span class="cs">"translateX(200px)"</span>; <span class="cm">// Composite-only update</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Change triggers...</th><th>DOM/CSSOM</th><th>Render Tree</th><th>Layout</th><th>Paint</th><th>Composite</th></tr></thead>
+      <tbody>
+        <tr><td>Adding a new element</td><td class="no">✓</td><td class="no">✓</td><td class="no">✓</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>Changing width/height</td><td class="yes">—</td><td class="yes">—</td><td class="no">✓</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>Changing background-color</td><td class="yes">—</td><td class="yes">—</td><td class="yes">—</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>Changing transform/opacity</td><td class="yes">—</td><td class="yes">—</td><td class="yes">—</td><td class="yes">—</td><td class="no">✓ ONLY</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Full Worked Example
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Full Worked Example — Tracing One Page Through All 6 Steps</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// The example document</span></span>
+  <span class="line">&lt;<span class="ct">html</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">head</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">style</span>&gt;</span>
+  <span class="line">    .card { <span class="cn">width</span>: <span class="cn">300</span>px; background: <span class="cs">lightgray</span>; }</span>
+  <span class="line">    .hidden { display: <span class="cs">none</span>; }</span>
+  <span class="line">    h1 { color: <span class="cs">navy</span>; }</span>
+  <span class="line">  &lt;/<span class="ct">style</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">head</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">body</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">div</span> <span class="ca">class</span>=<span class="cs">"card"</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">h1</span>&gt;Title&lt;/<span class="ct">h1</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">p</span> <span class="ca">class</span>=<span class="cs">"hidden"</span>&gt;Secret text&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line">  &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">body</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">html</span>&gt;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Step</th><th>What happens for THIS document, specifically</th></tr></thead>
+      <tbody>
+        <tr><td>1. DOM</td><td>A tree: html → head/body; body → div.card → h1 + p.hidden. Every element becomes a node, including the (invisible) &lt;head&gt; and its &lt;style&gt;.</td></tr>
+        <tr><td>2. CSSOM</td><td>Rules parsed: .card (width:300px, background:lightgray), .hidden (display:none), h1 (color:navy). No inheritance conflicts here.</td></tr>
+        <tr><td>3. Render Tree</td><td>Walks the DOM: html, body, div.card, h1 are all INCLUDED (visible, get their styles attached). &lt;head&gt; and its contents are excluded (non-visual). p.hidden is EXCLUDED too — display:none removes it entirely, not just visually.</td></tr>
+        <tr><td>4. Layout</td><td>div.card gets a box: width 300px (explicit), height determined by its content (h1's rendered height, since p is excluded and contributes NO space). h1 gets positioned inside, sized based on its text content and default block-level behavior.</td></tr>
+        <tr><td>5. Paint</td><td>div.card's lightgray background is painted first, then h1's "Title" text is painted in navy on top of it. p.hidden paints NOTHING — it was never in the Render Tree to begin with.</td></tr>
+        <tr><td>6. Composite</td><td>The single (in this simple case) painted layer is assembled and displayed — no transforms/special layers needed for this example, so composite is trivial here.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Interview tip:</strong> being able to trace a SPECIFIC, concrete example like this through all 6 steps — explicitly calling out that <ic>p.hidden</ic> disappears at the Render Tree step and never reaches Layout/Paint at all — demonstrates real understanding far better than reciting the 6 stage names alone.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — How JS Re-enters the Pipeline
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <h2>How JavaScript Re-enters the Pipeline After Initial Load</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>After the initial page load, JavaScript-driven DOM/style changes cause the pipeline to run again, but usually starting from a LATER step — not always all the way back from DOM construction.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Adding/removing a DOM node — restarts from DOM/Render Tree construction</span></span>
+  <span class="line">document.body.appendChild(newDiv);</span>
+  <span class="line"><span class="cm">// → DOM updated → Render Tree updated (new node added) → Layout → Paint → Composite</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Changing a style that affects geometry — restarts from Layout</span></span>
+  <span class="line">element.style.width = <span class="cs">"500px"</span>;</span>
+  <span class="line"><span class="cm">// → Layout (recompute geometry) → Paint → Composite</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Changing a purely visual style — restarts from Paint</span></span>
+  <span class="line">element.style.backgroundColor = <span class="cs">"red"</span>;</span>
+  <span class="line"><span class="cm">// → Paint (redraw pixels) → Composite</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Changing transform/opacity — restarts from Composite ONLY</span></span>
+  <span class="line">element.style.transform = <span class="cs">"scale(1.1)"</span>;</span>
+  <span class="line"><span class="cm">// → Composite (GPU repositions/blends the existing layer)</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>This is precisely why <ic>transform</ic>/<ic>opacity</ic> are recommended for animations — they're the ONLY properties that can update by re-entering the pipeline at the very LAST, cheapest stage, skipping Layout and Paint entirely.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 10 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>DOM construction is incremental/streamable; CSSOM construction effectively is NOT</strong> — this asymmetry is exactly why CSS is render-blocking while HTML parsing can proceed progressively; a later CSS rule can override an earlier one, so nothing is "final" until the whole stylesheet is processed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The Render Tree is a genuinely NEW, separate tree — not simply "the DOM with CSS attached in place."</strong> It specifically EXCLUDES non-visual nodes (display:none elements, &lt;head&gt; contents), which is a distinct, purpose-built structure for what actually needs to be rendered.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Layout" and "Reflow" refer to the SAME computation</strong> — Layout is the term for the FIRST time it happens; Reflow is often used for SUBSEQUENT recalculations, but they are mechanically identical.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every DOM/style change restarts the pipeline from the very beginning</strong> — the pipeline can re-enter at Layout, Paint, or Composite ONLY, depending on what specifically changed; understanding this is the single most practically useful takeaway of the whole topic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Layout can CASCADE beyond just the changed element</strong> — resizing one box can affect its parent's size (if the parent auto-sizes to content), its siblings' positions (in normal flow), and anything explicitly positioned relative to it, making Layout potentially much more expensive than a change to just ONE element might suggest.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Reading certain JS properties (offsetWidth, getBoundingClientRect, etc.) FORCES the browser to synchronously flush any pending Layout recalculation immediately</strong> — this is the root cause of "layout thrashing" when reads and writes are interleaved in a loop.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Painting isn't always a single, monolithic step across the whole page</strong> — the browser can split content into separate PAINT LAYERS (for elements with certain properties like `will-change`, fixed positioning, or video), letting it repaint just ONE layer instead of the entire page when only that layer's content changes.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Composite-only updates (transform/opacity) still require an INITIAL Paint to have already happened</strong> — the GPU is repositioning/blending an EXISTING painted layer, not creating pixel content from nothing; an element that has never been painted yet (e.g. still `display:none`) can't skip straight to a composite-only update.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The full 6-step pipeline (all the way from DOM/CSSOM) only runs completely for the INITIAL page load</strong> — subsequent updates are almost always partial re-entries at a later stage, which is why understanding WHICH stage a given change enters at is far more practically useful than just memorizing the 6 names in order.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Different browser engines (Blink/Chromium, Gecko/Firefox, WebKit/Safari) implement these concepts with some internal naming/architectural differences</strong> — the CONCEPTUAL model (DOM→CSSOM→Render Tree→Layout→Paint→Composite) is a reasonably universal way to explain rendering, but exact internal terminology can vary slightly between engines, which is fine to mention if asked about cross-browser specifics.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 11 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s11">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a foundational systems question — the strongest answers trace a CONCRETE example through the pipeline (like Section 8) rather than reciting the six stage names as an abstract list.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the six steps of the Critical Rendering Path, in order?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1. DOM</strong> — parse HTML bytes into a tree of DOM nodes representing structure/content. <strong>2. CSSOM</strong> — parse CSS bytes (from all sources) into a tree of computed style rules. <strong>3. Render Tree</strong> — walk the DOM, attach matching CSSOM styles to each VISIBLE node, building a new tree that excludes non-visual content. <strong>4. Layout</strong> (Reflow) — compute the exact size and position of every Render Tree node. <strong>5. Paint</strong> — fill in the actual pixels (colors, text, images, borders) for every node, in the correct visual order. <strong>6. Composite</strong> — the GPU assembles all painted layers into the final image displayed on screen.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is the Render Tree a separate step from just combining the DOM and CSSOM directly?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The DOM contains EVERY element in the document, including ones that will never actually be drawn on screen — `&lt;head&gt;`, `&lt;script&gt;`, `&lt;meta&gt;` tags, and any element styled with `display:none`. Building a genuinely separate Render Tree that walks the DOM and explicitly EXCLUDES these non-visual nodes (while attaching resolved styles to the ones that remain) means the LATER stages (Layout, Paint) only ever have to deal with content that actually needs to be rendered — they never waste computation considering elements that contribute nothing to the visual output. This separation keeps each subsequent stage focused purely on what's actually visible.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When does a JavaScript-driven change re-enter the pipeline at Layout, versus Paint, versus Composite only?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          It re-enters at <strong>Layout</strong> when the change affects an element's GEOMETRY — its size or position (width, height, top, left, margin, font-size, and similar properties) — since these require recomputing where things go before anything can be redrawn. It re-enters at <strong>Paint</strong> (skipping Layout) when the change is purely VISUAL and doesn't affect geometry — background-color, color, box-shadow, visibility. It re-enters at <strong>Composite ONLY</strong> (skipping both Layout and Paint) for `transform` and `opacity` changes specifically, since the GPU can reposition or blend an already-painted layer without recomputing geometry or redrawing pixel content at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you trace a specific code change — like adding a new list item to a visible &lt;ul&gt; via JavaScript — through the pipeline?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> `document.querySelector("ul").appendChild(newLi)` modifies the DOM tree directly — a new DOM node is added as a child of the `&lt;ul&gt;` node.<br>
+          <strong>2.</strong> The CSSOM doesn't need to be rebuilt (no CSS rules changed) — the browser reuses the EXISTING CSSOM and simply looks up which rules apply to this new `&lt;li&gt;` node.<br>
+          <strong>3.</strong> The Render Tree is updated — a new Render Tree node is created for the new `&lt;li&gt;` (assuming it's visible), with its resolved styles attached.<br>
+          <strong>4.</strong> Layout runs — the new `&lt;li&gt;`'s size/position is computed, and since it's a NEW item in a list, this likely also affects the `&lt;ul&gt;`'s own height (if it auto-sizes to content) and potentially pushes subsequent siblings/content below it.<br>
+          <strong>5.</strong> Paint runs — the new `&lt;li&gt;`'s content (text, any styling) is drawn.<br>
+          <strong>6.</strong> Composite runs — the updated layer(s) are assembled into the final displayed frame.<br>
+          This change re-enters the pipeline starting from the RENDER TREE step (since it's a genuine DOM structure change), not from DOM/CSSOM parsing (nothing needed re-parsing) and not skipping ahead to Layout-only either (since a new element, not just a style change on an existing one, was introduced).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between the terms "Layout" and "Reflow"?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          They refer to the exact SAME underlying computation — determining the size and position of every element in the Render Tree. "Layout" is typically used to refer to this computation happening for the FIRST time, during the initial page render. "Reflow" is commonly used to refer to this SAME computation happening AGAIN, LATER, triggered by a subsequent DOM or style change after the initial render. There's no mechanical difference between them — it's purely a naming convention based on WHEN in the page's lifecycle the computation occurs.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does the Render Tree step specifically need to happen AFTER both the DOM and CSSOM are fully built, rather than being computed incrementally alongside them?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Building the Render Tree requires knowing, for EVERY DOM node, its FINAL resolved style — which depends on the complete CSSOM (since CSS rules can come from multiple sources and later rules can override earlier ones via the cascade). If the Render Tree were built incrementally alongside CSSOM construction, a node's style could be determined INCORRECTLY based on an incomplete CSSOM, and would then need to be recomputed once more CSS rules arrive — potentially multiple times per node. Waiting until the CSSOM is fully resolved before building the Render Tree ensures each node's style is computed CORRECTLY exactly once, avoiding wasted, potentially-incorrect intermediate work.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would a seemingly small style change (like updating one element's font-size) end up being surprisingly expensive?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When that element is deeply nested within a LARGE subtree, or has many siblings whose layout depends on it — changing `font-size` alters the element's rendered text dimensions, which can change ITS size, which can then change its PARENT's size (if the parent auto-sizes to content), which can shift the position of SIBLING elements in normal document flow, and so on, cascading outward. In the worst case (e.g. changing a deeply-shared/foundational element like a global header's font-size), this single change can force the browser to recompute layout for a very large portion of the entire page, not just the one element that was directly modified — this cascading potential is exactly why Layout/Reflow is considered one of the more expensive stages to trigger carelessly or frequently.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain, step by step, why changing an element's opacity is cheaper than changing its width, even though both are just "one CSS property change"?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Changing width:</strong> the browser must re-enter the pipeline at LAYOUT — recomputing this element's geometry, which may cascade to affect its parent's size and sibling positions — THEN re-enter PAINT to redraw the now-differently-sized element's pixels (and potentially other affected elements) — THEN re-enter COMPOSITE to assemble the final frame. Three sequential, potentially expensive stages.<br><br>
+          <strong>Changing opacity:</strong> opacity doesn't affect the element's geometry at all (its size/position in the layout remain unchanged) — so LAYOUT is skipped entirely. It also doesn't require redrawing the element's actual pixel CONTENT — the shape, colors, and text are exactly the same, just displayed with different transparency — so PAINT is skipped too. The browser re-enters the pipeline directly at COMPOSITE, where the GPU simply blends the ALREADY-painted layer at the new opacity level. This is why the SAME "one property change" framing hides a fundamentally different amount of underlying work — the specific property determines how far back into the pipeline the browser needs to re-enter.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Critical Rendering Path · DOM · CSSOM · Render Tree · Layout · Paint · Composite
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

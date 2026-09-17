@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Core Web Vitals: LCP, INP &amp; CLS — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #ff6b6b;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #ff6b6b 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Metric header cards ── */
+  .metric-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.3rem; margin-bottom: 1.25rem; border-top: 3px solid transparent;
+  }
+  .metric-name { font-family: var(--font-head); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .metric-full { font-size: 12.5px; color: var(--text3); margin-bottom: 10px; }
+  .metric-def { font-size: 13.5px; color: var(--text2); line-height: 1.7; }
+
+  /* ── Threshold bar ── */
+  .threshold-bar { display: flex; height: 32px; border-radius: 8px; overflow: hidden; margin: 12px 0; font-family: var(--font-mono); font-size: 10.5px; }
+  .threshold-good { background: rgba(92,255,176,0.2); color: #9affd4; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--bg); }
+  .threshold-mid { background: rgba(255,184,108,0.2); color: #ffd49a; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--bg); }
+  .threshold-poor { background: rgba(255,107,107,0.2); color: #ffaaaa; display: flex; align-items: center; justify-content: center; }
+
+  /* ── Fix cards ── */
+  .fix-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .fix-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.9rem 1.05rem; border-left: 3px solid var(--teal);
+  }
+  .fix-num { font-family: var(--font-mono); font-size: 10px; color: var(--teal); font-weight: 600; margin-bottom: 4px; }
+  .fix-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .fix-desc { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 8px; }
+  .fix-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Core Web Vitals</div>
+    <h1>LCP, INP &amp; CLS</h1>
+    <p>What Degrades Each Metric, and 3 Concrete Fixes Each — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Are Core Web Vitals?</a>
+    <a class="topic-pill" href="#s2">2. LCP</a>
+    <a class="topic-pill" href="#s3">3. INP</a>
+    <a class="topic-pill" href="#s4">4. CLS</a>
+    <a class="topic-pill" href="#s5">5. Lab vs Field Data</a>
+    <a class="topic-pill" href="#s6">6. Comparison</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Metric</th><th>Measures</th><th>"Good" threshold</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>LCP</td><td>Loading — how fast the main content renders</td><td>≤ 2.5 seconds</td></tr>
+      <tr><td>INP</td><td>Interactivity — how fast the page responds to user input</td><td>≤ 200 milliseconds</td></tr>
+      <tr><td>CLS</td><td>Visual stability — how much content unexpectedly shifts around</td><td>≤ 0.1 (a unitless score)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Are Core Web Vitals
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Are Core Web Vitals?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Core Web Vitals</strong> are a specific set of metrics Google defined to measure real-world USER EXPERIENCE quality — chosen because they capture three distinct, important dimensions of a page's feel: how fast it LOADS, how RESPONSIVE it is to interaction, and how VISUALLY STABLE it is. They directly factor into Google Search ranking.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Three metrics, three different user experience dimensions</div>
+      <svg class="diagram-svg" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="200" height="80" rx="10" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="120" y="58" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">LCP</text>
+        <text x="120" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">"Is it loading</text>
+        <text x="120" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">fast enough?"</text>
+
+        <rect x="250" y="30" width="200" height="80" rx="10" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="58" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">INP</text>
+        <text x="350" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">"Does it respond</text>
+        <text x="350" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">when I interact?"</text>
+
+        <rect x="480" y="30" width="200" height="80" rx="10" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="580" y="58" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700">CLS</text>
+        <text x="580" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">"Does it JUMP</text>
+        <text x="580" y="92" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9">around unexpectedly?"</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>INP replaced FID (First Input Delay) as the official interactivity metric in March 2024.</strong> FID only measured the delay before the FIRST interaction started processing; INP measures responsiveness across the ENTIRE page lifecycle and the full duration of processing, giving a more complete picture. If asked about FID, be ready to explain this transition.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — LCP
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>LCP — Largest Contentful Paint</h2>
+    </div>
+
+    <div class="metric-card" style="border-top-color:#5cffb0">
+      <div class="metric-name" style="color:#5cffb0">LCP</div>
+      <div class="metric-full">Largest Contentful Paint</div>
+      <div class="metric-def">The time from navigation start until the LARGEST visible content element (usually a hero image, a large block of text, or a background image) has fully rendered on screen. It's a proxy for "when does the page feel like it has actually loaded, from the user's perspective?"</div>
+      <div class="threshold-bar">
+        <div class="threshold-good" style="flex:2.5">Good: ≤ 2.5s</div>
+        <div class="threshold-mid" style="flex:1.5">Needs Improvement: 2.5–4s</div>
+        <div class="threshold-poor" style="flex:2">Poor: &gt; 4s</div>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Common causes of a bad LCP:</strong> slow server response times, render-blocking CSS/JS delaying paint, the LCP element itself being a large, unoptimized image, or the LCP element being discovered LATE (e.g. loaded via JS after initial render, instead of directly in the HTML).</span>
+    </div>
+
+    <div class="fix-grid">
+      <div class="fix-card">
+        <div class="fix-num">Fix 1</div>
+        <div class="fix-title">Optimize/preload the LCP image</div>
+        <div class="fix-desc">Compress it (modern format like AVIF/WebP), size it appropriately, and explicitly preload it so the browser discovers it as early as possible.</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">link</span> <span class="ca">rel</span>=<span class="cs">"preload"</span></span>
+  <span class="line">      <span class="ca">href</span>=<span class="cs">"hero.avif"</span></span>
+  <span class="line">      <span class="ca">as</span>=<span class="cs">"image"</span></span>
+  <span class="line">      <span class="ca">fetchpriority</span>=<span class="cs">"high"</span> /&gt;</span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 2</div>
+        <div class="fix-title">Improve server response time (TTFB)</div>
+        <div class="fix-desc">Use a CDN, enable server-side caching, optimize slow database queries, or upgrade hosting — LCP can't start its clock any earlier than the server actually responds.</div>
+        <div class="code-block">
+  <span class="line"><span class="cm">// e.g. add caching headers, use</span></span>
+  <span class="line"><span class="cm">// edge/CDN rendering, reduce</span></span>
+  <span class="line"><span class="cm">// server-side processing time</span></span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 3</div>
+        <div class="fix-title">Eliminate render-blocking resources</div>
+        <div class="fix-desc">Inline critical CSS, defer non-critical CSS/JS, so the browser can paint the LCP element without waiting on unrelated resources.</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">style</span>&gt;/* critical CSS inline */&lt;/<span class="ct">style</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">script</span> <span class="ca">defer</span> <span class="ca">src</span>=<span class="cs">"app.js"</span>&gt;&lt;/<span class="ct">script</span>&gt;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — INP
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>INP — Interaction to Next Paint</h2>
+    </div>
+
+    <div class="metric-card" style="border-top-color:#6ab0ff">
+      <div class="metric-name" style="color:#6ab0ff">INP</div>
+      <div class="metric-full">Interaction to Next Paint</div>
+      <div class="metric-def">Measures the latency of EVERY user interaction (click, tap, key press) throughout the page's lifetime, from the input to when the browser can actually paint the next visual update in response — reporting a representative (typically near-worst-case) value. It's a proxy for "does this page feel responsive when I actually use it?"</div>
+      <div class="threshold-bar">
+        <div class="threshold-good" style="flex:2">Good: ≤ 200ms</div>
+        <div class="threshold-mid" style="flex:3">Needs Improvement: 200–500ms</div>
+        <div class="threshold-poor" style="flex:2">Poor: &gt; 500ms</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The three phases INP measures for a single interaction</div>
+      <svg class="diagram-svg" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="40" width="180" height="45" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="62" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">Input delay</text>
+        <text x="110" y="76" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">main thread busy?</text>
+
+        <rect x="220" y="40" width="180" height="45" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="310" y="62" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9.5">Processing time</text>
+        <text x="310" y="76" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">event handler runs</text>
+
+        <rect x="420" y="40" width="180" height="45" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="510" y="62" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9.5">Presentation delay</text>
+        <text x="510" y="76" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">next paint happens</text>
+
+        <text x="310" y="120" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">INP = the sum of all three — any of the three phases can be the bottleneck</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Common causes of bad INP:</strong> long-running JavaScript blocking the main thread (so input can't even be PROCESSED promptly), heavy/expensive event handlers doing too much synchronous work, and large DOM updates/re-renders triggered by the interaction that take a long time to paint.</span>
+    </div>
+
+    <div class="fix-grid">
+      <div class="fix-card">
+        <div class="fix-num">Fix 1</div>
+        <div class="fix-title">Break up long JavaScript tasks</div>
+        <div class="fix-desc">Split large synchronous work into smaller chunks, yielding control back to the main thread between them, so the browser can process pending input promptly.</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">async function</span> <span class="cf">processLargeList</span>(items) {</span>
+  <span class="line">  <span class="ck">for</span> (<span class="ck">const</span> item <span class="ck">of</span> items) {</span>
+  <span class="line">    <span class="cf">processItem</span>(item);</span>
+  <span class="line">    <span class="ck">await</span> <span class="ck">new</span> Promise(r =&gt; setTimeout(r));</span>
+  <span class="line">  } <span class="cm">// yields between iterations</span></span>
+  <span class="line">}</span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 2</div>
+        <div class="fix-title">Debounce/defer expensive handler work</div>
+        <div class="fix-desc">Use React's `startTransition` (or plain debouncing) to mark expensive, non-urgent work as lower priority, keeping the interaction itself feeling instant.</div>
+        <div class="code-block">
+  <span class="line">startTransition(() =&gt; {</span>
+  <span class="line">  setResults(<span class="cf">expensiveFilter</span>(data));</span>
+  <span class="line">}); <span class="cm">// input stays responsive</span></span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 3</div>
+        <div class="fix-title">Move heavy computation off the main thread</div>
+        <div class="fix-desc">Use a Web Worker for CPU-intensive work (parsing, sorting huge datasets, image processing) so it doesn't block the main thread from handling user input at all.</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">const</span> worker = <span class="ck">new</span> Worker(<span class="cs">"heavy-task.js"</span>);</span>
+  <span class="line">worker.postMessage(data);</span>
+  <span class="line">worker.onmessage = (e) =&gt; setResult(e.data);</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — CLS
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>CLS — Cumulative Layout Shift</h2>
+    </div>
+
+    <div class="metric-card" style="border-top-color:#bd93f9">
+      <div class="metric-name" style="color:#bd93f9">CLS</div>
+      <div class="metric-full">Cumulative Layout Shift</div>
+      <div class="metric-def">A unitless score measuring how much VISIBLE content unexpectedly shifts position during the page's lifetime — calculated from how much of the viewport moved, multiplied by how FAR it moved. Unlike LCP/INP, this is a SCORE, not a time measurement.</div>
+      <div class="threshold-bar">
+        <div class="threshold-good" style="flex:1">Good: ≤ 0.1</div>
+        <div class="threshold-mid" style="flex:1.5">Needs Improvement: 0.1–0.25</div>
+        <div class="threshold-poor" style="flex:1.5">Poor: &gt; 0.25</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The classic CLS bug — content shifting as an ad/image loads in</div>
+      <svg class="diagram-svg" viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">Before image loads</text>
+        <rect x="60" y="35" width="230" height="20" rx="3" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="175" y="49" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8">Article heading</text>
+        <rect x="60" y="60" width="230" height="16" rx="3" fill="var(--bg2)" stroke="#555a6e" stroke-width="1"/>
+        <text x="175" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">Paragraph text...</text>
+        <text x="175" y="100" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">👆 user about to tap "Read more"</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">Image POPS IN — no space was reserved</text>
+        <rect x="410" y="35" width="230" height="20" rx="3" fill="var(--bg2)" stroke="#6ab0ff" stroke-width="1"/>
+        <text x="525" y="49" text-anchor="middle" fill="#a8d4ff" font-family="JetBrains Mono, monospace" font-size="8">Article heading</text>
+        <rect x="410" y="60" width="230" height="45" rx="3" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="525" y="86" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">🖼️ image suddenly here</text>
+        <path d="M525 108 L525 130" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowRedCLS)"/>
+        <text x="525" y="148" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">Everything below JUMPS down — misclick!</text>
+
+        <defs>
+          <marker id="arrowRedCLS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Common causes of bad CLS:</strong> images/videos/iframes/ads without reserved dimensions, web fonts causing a visible reflow when they swap in (FOIT/FOUT), and content dynamically injected ABOVE existing content (like a banner or cookie notice) without reserving space beforehand.</span>
+    </div>
+
+    <div class="fix-grid">
+      <div class="fix-card">
+        <div class="fix-num">Fix 1</div>
+        <div class="fix-title">Always set width/height (or aspect-ratio)</div>
+        <div class="fix-desc">Explicit dimensions let the browser reserve the correct space BEFORE the image/video/iframe loads, so nothing has to move once it arrives.</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">img</span> <span class="ca">src</span>=<span class="cs">"photo.jpg"</span></span>
+  <span class="line">     <span class="ca">width</span>=<span class="cs">"800"</span> <span class="ca">height</span>=<span class="cs">"600"</span></span>
+  <span class="line">     <span class="ca">alt</span>=<span class="cs">"..."</span> /&gt;</span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 2</div>
+        <div class="fix-title">Reserve space for dynamic/injected content</div>
+        <div class="fix-desc">For ads, banners, or embeds that load asynchronously, reserve a fixed-size container via CSS (min-height) ahead of time, rather than letting content push everything down once it loads.</div>
+        <div class="code-block">
+  <span class="line">.ad-slot {</span>
+  <span class="line">  min-height: <span class="cn">250</span>px; <span class="cm">/* reserved */</span></span>
+  <span class="line">}</span>
+        </div>
+      </div>
+
+      <div class="fix-card">
+        <div class="fix-num">Fix 3</div>
+        <div class="fix-title">Control web font loading behavior</div>
+        <div class="fix-desc">Use `font-display: optional` or preload critical fonts to minimize the visible reflow when a custom font swaps in and changes text metrics/wrapping.</div>
+        <div class="code-block">
+  <span class="line">@font-face {</span>
+  <span class="line">  font-family: <span class="cs">"Custom"</span>;</span>
+  <span class="line">  font-display: swap; <span class="cm">/* or optional */</span></span>
+  <span class="line">}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Lab vs Field Data
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Lab Data vs Field Data</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Lab Data</th><th>Field Data (Real User Monitoring)</th></tr></thead>
+      <tbody>
+        <tr><td>Where it comes from</td><td>A simulated test run (Lighthouse, WebPageTest, DevTools)</td><td>Actual real users' browsers, via the Chrome User Experience Report (CrUX) or your own RUM setup</td></tr>
+        <tr><td>Consistency</td><td>Reproducible, controlled conditions</td><td>Highly variable — real devices, real network conditions</td></tr>
+        <tr><td>Includes INP?</td><td class="no">Limited — INP needs REAL interactions, hard to simulate meaningfully</td><td class="yes">✓ Yes — the authoritative source for INP</td></tr>
+        <tr><td>Used for Google Search ranking</td><td class="no">✗ No</td><td class="yes">✓ Yes — field data (CrUX) is what actually affects ranking</td></tr>
+        <tr><td>Best used for</td><td>Debugging, catching regressions before deploy, CI checks</td><td>Understanding REAL-world user experience, and what actually impacts SEO</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>A great Lighthouse (lab) score doesn't guarantee good real-world Core Web Vitals</strong> — lab tests run under fixed, often favorable conditions, while real users have vastly different devices, network speeds, and browser extensions/conditions. Field data from actual users is what Google Search actually uses for ranking purposes.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Comparison
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Side-by-Side Comparison</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>LCP</th><th>INP</th><th>CLS</th></tr></thead>
+      <tbody>
+        <tr><td>Dimension measured</td><td>Loading speed</td><td>Responsiveness</td><td>Visual stability</td></tr>
+        <tr><td>Unit</td><td>Time (seconds)</td><td>Time (milliseconds)</td><td>Unitless score</td></tr>
+        <tr><td>When it's measured</td><td>Once — during initial page load</td><td>Continuously — across the whole page lifetime</td><td>Continuously — across the whole page lifetime</td></tr>
+        <tr><td>"Good" threshold</td><td>≤ 2.5s</td><td>≤ 200ms</td><td>≤ 0.1</td></tr>
+        <tr><td>Primary culprit category</td><td>Slow server/render-blocking resources/unoptimized images</td><td>Long JS tasks blocking the main thread</td><td>Missing reserved space for dynamic content</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>FID (First Input Delay) was RETIRED as a Core Web Vital in March 2024, replaced by INP</strong> — an outdated answer citing FID as the current interactivity metric is a signal of stale knowledge; be ready to mention this transition if it comes up.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CLS only counts UNEXPECTED shifts — shifts caused directly by user interaction (like clicking a button to expand an accordion) are explicitly EXCLUDED</strong> from the score, since those are expected, intentional layout changes.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>LCP is measured ONCE per page load — it doesn't accumulate or repeat</strong> like CLS/INP do across the page's lifetime; it's specifically about the INITIAL loading experience.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The LCP "element" can change during loading as larger content appears</strong> — the browser continuously tracks the largest element seen SO FAR and reports the final one once it stabilizes (typically once user input occurs, or the page finishes loading).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Lazy-loading the LCP image (a mistake covered in the images topic) directly hurts LCP</strong> — this is a concrete, cross-cutting example of how different performance topics interact; always exempt the LCP candidate from lazy loading.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A single-page app's client-side route changes are NOT automatically tracked as new LCP events</strong> by default — LCP is fundamentally tied to the initial navigation; measuring "soft navigation" performance in SPAs requires additional tooling/instrumentation beyond the standard Core Web Vitals APIs.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>INP reports a representative interaction, not necessarily the average</strong> — it's designed to reflect something close to a high-percentile (worst-typical) interaction on the page, so a few very slow outlier interactions can meaningfully affect the score even if MOST interactions feel fine.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Web Workers can't directly manipulate the DOM</strong> — offloading heavy computation to a worker (an INP fix) requires structuring the code so the worker does the CPU-heavy part and posts a message back with the result, which the main thread then uses to update the DOM.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>font-display:swap can itself CAUSE a layout shift</strong> (the classic "flash of unstyled text" swapping to the custom font, which may have different metrics/character widths) — it trades a blank-text flash for a metrics-shift flash; `font-display:optional` avoids the shift but may not show the custom font at all on a slow connection, a real trade-off worth mentioning.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>These three metrics can trade off against each other if optimized carelessly</strong> — e.g. aggressively inlining ALL CSS to help LCP could bloat the HTML document and slow down JS parsing/execution, indirectly hurting INP; a holistic view considering all three together (not optimizing one in isolation) is the correct approach.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Core Web Vitals questions test both conceptual understanding AND practical fix knowledge — a strong answer names the metric, explains what it measures and why it matters, and can immediately suggest concrete, actionable fixes.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does each of LCP, INP, and CLS actually measure?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>LCP</strong> (Largest Contentful Paint) measures LOADING speed — specifically, how long until the largest visible content element has rendered, as a proxy for "does the page feel loaded?" <strong>INP</strong> (Interaction to Next Paint) measures RESPONSIVENESS — the latency between a user's interaction and the browser's next visual update in response, sampled across every interaction on the page. <strong>CLS</strong> (Cumulative Layout Shift) measures VISUAL STABILITY — a unitless score quantifying how much visible content unexpectedly shifts position during the page's lifetime.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why did Google replace FID with INP as the official interactivity metric?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          FID only measured the delay before the browser could even START processing the FIRST user interaction on a page — it said nothing about how long the interaction took to actually FINISH processing, nor anything about interactions AFTER the first one. This meant a page could have a great FID score while still feeling sluggish for every subsequent click/tap, or having a slow-but-not-technically-delayed first interaction. INP addresses both gaps: it measures the FULL latency (input delay + processing time + presentation delay) of interactions across the ENTIRE page lifetime, giving a much more complete and representative picture of how responsive a page actually feels to use, not just how it behaves on the very first click.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would a layout shift NOT count toward a page's CLS score?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the shift happens within 500ms of a genuine USER INTERACTION (a click, tap, or key press) — these are considered "expected" shifts, since the user directly caused them (e.g. clicking a button that expands an accordion, or a "load more" button that adds content below). CLS is specifically designed to penalize UNEXPECTED, jarring shifts the user didn't cause or anticipate — like an ad loading in and pushing content down while the user is reading, or about to click something else entirely.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you diagnose which specific element is causing a poor LCP score on a real page?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Open Chrome DevTools' Performance panel (or Lighthouse) and record a page load — the LCP marker is shown directly on the timeline, along with which specific DOM element was identified as the largest contentful element.<br>
+          <strong>2.</strong> Check the BREAKDOWN of what's delaying that element — DevTools/Lighthouse typically report sub-phases: time to first byte (TTFB), resource load delay, resource load time, and element render delay — pinpointing whether the bottleneck is server response time, a slow-loading resource (like an unoptimized image), or render-blocking CSS/JS holding up the paint.<br>
+          <strong>3.</strong> Cross-reference with FIELD data (via PageSpeed Insights, using real CrUX data) to confirm the lab-identified issue matches what real users are actually experiencing, since lab and field results can sometimes differ.<br>
+          <strong>4.</strong> Apply the fix matching the identified bottleneck — preloading/optimizing the image, improving server response time, or removing render-blocking resources — and re-measure to confirm improvement.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the three phases that make up an INP measurement for a single interaction?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1. Input delay</strong> — the time between the user's physical action (click/tap/keypress) and the browser actually being able to start processing it, often delayed if the main thread is busy with other work. <strong>2. Processing time</strong> — how long the actual event handler(s) triggered by the interaction take to run. <strong>3. Presentation delay</strong> — the time from when processing finishes until the browser can actually paint the resulting visual update to the screen. INP sums all three phases; a slow INP score can stem from a bottleneck in ANY of them, which is why diagnosing INP requires identifying WHICH phase is actually the problem, not just that "the interaction feels slow."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't lab tools like Lighthouse give a fully reliable INP score, unlike LCP or CLS?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          INP is fundamentally about measuring the latency of REAL user interactions — clicks, taps, key presses — happening at unpredictable moments throughout a real user's session. A lab test is an AUTOMATED, scripted page load with no actual human interacting with the page in a realistic way, so there's no natural interaction data to measure INP from in the same way LCP (a loading metric, measurable from an automated page load alone) or CLS (measurable by observing layout changes during an automated load) can be. Lab tools can simulate SOME interactions to approximate INP-like behavior, but the authoritative, meaningful INP score genuinely requires real user interaction data collected from the field (via Real User Monitoring or the CrUX report).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would offloading work to a Web Worker be the right INP fix, versus simply breaking a task into smaller chunks on the main thread?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use a Web Worker when the work is GENUINELY CPU-intensive and doesn't need frequent, tight back-and-forth with the DOM — e.g. parsing a large dataset, complex calculations, image/data processing — since moving it entirely off the main thread means it NEVER competes with input handling at all, regardless of how long it takes. Simply breaking a task into smaller chunks (yielding between them) is more appropriate when the work DOES need to interact with the DOM frequently (which Workers can't do directly), or when the total work is more moderate and the goal is just to interleave it with input handling rather than eliminate main-thread involvement entirely. Web Workers offer a stronger guarantee (zero main-thread contention) but add complexity (message-passing, no direct DOM access); chunking is simpler but still consumes main-thread time, just in smaller, less blocking increments.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a page where a cookie-consent banner injected at the top of the page (after initial load) is causing a poor CLS score?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Before — banner inserted with no reserved space, pushes ALL content down</span></span>
+  <span class="line"><span class="cm">// when it appears (often after an async check for consent status)</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ After — reserve the space UPFRONT with CSS, even before the banner's</span></span>
+  <span class="line"><span class="cm">// final content/visibility is determined</span></span>
+  <span class="line">.cookie-banner-container {</span>
+  <span class="line">  min-height: <span class="cn">80</span>px; <span class="cm">/* matches the banner's expected height */</span></span>
+  <span class="line">}</span>
+          </div>
+          Reserving the space with a fixed-height (or min-height) CONTAINER in the initial HTML/CSS — present in the layout from the very first render, regardless of whether the banner's content has loaded/decided to show yet — means there's no empty-to-filled transition that pushes other content around. An alternative approach is positioning the banner as a fixed/sticky overlay (e.g. `position: fixed` at the bottom of the viewport) that doesn't participate in the normal document flow at all, so it can never push other content around no matter when it appears.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Core Web Vitals · LCP · INP · CLS
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
