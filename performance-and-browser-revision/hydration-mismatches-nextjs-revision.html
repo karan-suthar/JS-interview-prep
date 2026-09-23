@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydration &amp; Hydration Mismatches — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff79c6;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,121,198,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,121,198,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,121,198,0.1); color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff79c6 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,121,198,0.1); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4d9e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Cause cards ── */
+  .cause-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .cause-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.9rem 1.05rem; border-left: 3px solid var(--red);
+  }
+  .cause-num { font-family: var(--font-mono); font-size: 10px; color: var(--red); font-weight: 600; margin-bottom: 4px; }
+  .cause-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .cause-desc { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 8px; }
+  .cause-card .code-block { font-size: 11.5px; margin-bottom: 0; padding: 0.7rem 0.85rem; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Step cards for debugging process ── */
+  .step-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .step-num-title { font-family: var(--font-head); font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .step-badge {
+    font-family: var(--font-mono); font-size: 10px; color: var(--accent);
+    background: rgba(255,121,198,0.1); border: 1px solid rgba(255,121,198,0.25);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .step-card .code-block { margin: 8px 0 0; }
+  .step-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,121,198,0.12); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Hydration</div>
+    <h1>Hydration &amp; Hydration Mismatches</h1>
+    <p>What Causes Mismatches in Next.js, and How to Debug Them — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What Hydration Is</a>
+    <a class="topic-pill" href="#s2">2. The Hydration Process</a>
+    <a class="topic-pill" href="#s3">3. What Causes Mismatches</a>
+    <a class="topic-pill" href="#s4">4. How to Debug Them</a>
+    <a class="topic-pill" href="#s5">5. Fix Patterns</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What Hydration Is
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Hydration Actually Is</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Hydration</strong> is the process of the browser taking ALREADY-RENDERED, server-generated HTML (from SSR/SSG/ISR) and "attaching" React's event handlers, state, and interactivity to that existing markup — WITHOUT re-creating the DOM from scratch. React walks the existing HTML and the component tree TOGETHER, expecting them to match.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Hydration vs a full client-side render — different starting points, same end result</div>
+      <svg class="diagram-svg" viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#6ab0ff" font-family="Inter, sans-serif" font-size="11" font-weight="600">Normal client render (CSR)</text>
+        <rect x="30" y="35" width="120" height="35" rx="6" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="90" y="57" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8.5">empty DOM</text>
+        <path d="M150 52 L190 52" stroke="#6ab0ff" stroke-width="1.5" marker-end="url(#arrowBlueH)"/>
+        <rect x="190" y="35" width="140" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="260" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="8.5">React CREATES all DOM</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ff79c6" font-family="Inter, sans-serif" font-size="11" font-weight="600">Hydration</text>
+        <rect x="390" y="35" width="120" height="35" rx="6" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="450" y="57" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="8.5">HTML already there</text>
+        <path d="M510 52 L550 52" stroke="#ff79c6" stroke-width="1.5" marker-end="url(#arrowPinkH)"/>
+        <rect x="550" y="35" width="140" height="35" rx="6" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="620" y="57" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="8.5">React REUSES + attaches</text>
+
+        <text x="350" y="110" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">React WALKS the existing HTML during hydration, comparing it against what it would have</text>
+        <text x="350" y="125" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">rendered itself — if they DON'T match, that's a hydration mismatch</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>A "hydration mismatch" happens when the HTML the SERVER sent doesn't match what React would produce if it rendered the SAME component tree on the CLIENT.</strong> React expects these to be IDENTICAL — any divergence is a mismatch, which React must then reconcile (often by discarding and re-rendering, at a real performance and correctness cost).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Hydration Process
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The Hydration Process, Step by Step</h2>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 1</span>Server renders HTML</div>
+      <div class="step-desc">The server runs the React component tree, produces complete HTML, and sends it to the browser — the user sees content immediately, before any JS has run.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 2</span>Browser displays the static HTML</div>
+      <div class="step-desc">The page is VISIBLE, but not yet interactive — clicking a button does nothing yet, since no JavaScript event handlers are attached.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 3</span>JS bundle downloads and runs</div>
+      <div class="step-desc">React's client-side code loads and begins the hydration process, starting from the root of the app.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 4</span>React walks the tree, comparing</div>
+      <div class="step-desc">For each component, React compares what the EXISTING DOM node looks like against what it would have rendered itself — if they match, React REUSES the existing DOM node and attaches event listeners/state to it.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 5</span>App becomes interactive</div>
+      <div class="step-desc">Once hydration completes, event handlers are live, state is initialized, and the app behaves like a normal client-side React app from this point forward.</div>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>If, at Step 4, React finds a MISMATCH between the existing HTML and what it would have rendered, it logs a hydration warning/error and typically falls back to discarding the mismatched DOM and re-rendering that portion client-side</strong> — losing some of hydration's performance benefit for the affected subtree, and potentially causing a visible flash/flicker as content changes.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — What Causes Mismatches
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>What Causes Hydration Mismatches</h2>
+    </div>
+
+    <div class="cause-grid">
+      <div class="cause-card">
+        <div class="cause-num">Cause 1</div>
+        <div class="cause-title">Using browser-only APIs during render</div>
+        <div class="cause-desc">`window`, `document`, `localStorage`, or `navigator` don't exist on the server — using them directly during rendering (not inside `useEffect`) produces different output server vs client.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// ✗ Mismatch — window doesn't</span></span>
+<span class="line"><span class="cm">// exist server-side</span></span>
+<span class="line">&lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;</span>
+        </div>
+      </div>
+
+      <div class="cause-card">
+        <div class="cause-num">Cause 2</div>
+        <div class="cause-title">Date/time or random values rendered directly</div>
+        <div class="cause-desc">`Date.now()`, `Math.random()`, or `new Date().toLocaleString()` produce a DIFFERENT value on the server (at build/request time) than on the client (a moment later).</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// ✗ Mismatch — timestamps differ</span></span>
+<span class="line">&lt;<span class="ct">span</span>&gt;{Date.now()}&lt;/<span class="ct">span</span>&gt;</span>
+        </div>
+      </div>
+
+      <div class="cause-card">
+        <div class="cause-num">Cause 3</div>
+        <div class="cause-title">Invalid HTML nesting</div>
+        <div class="cause-desc">The browser SILENTLY auto-corrects invalid HTML nesting (e.g. a `&lt;div&gt;` inside a `&lt;p&gt;`) while parsing — resulting in a DOM tree structure React didn't expect, since React's virtual representation still thinks it's what was written.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// ✗ Browser silently restructures this</span></span>
+<span class="line">&lt;<span class="ct">p</span>&gt;&lt;<span class="ct">div</span>&gt;Invalid nesting&lt;/<span class="ct">div</span>&gt;&lt;/<span class="ct">p</span>&gt;</span>
+        </div>
+      </div>
+
+      <div class="cause-card">
+        <div class="cause-num">Cause 4</div>
+        <div class="cause-title">Conditionally rendering based on typeof window</div>
+        <div class="cause-desc">A common but flawed "fix" attempt — checking `typeof window !== "undefined"` during RENDER still produces different output server vs client, since the condition itself evaluates differently in each environment.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// ✗ Still mismatches — condition itself</span></span>
+<span class="line"><span class="cm">// differs between server and client</span></span>
+<span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
+<span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
+        </div>
+      </div>
+
+      <div class="cause-card">
+        <div class="cause-num">Cause 5</div>
+        <div class="cause-title">Browser extensions modifying the DOM</div>
+        <div class="cause-desc">Some browser extensions (password managers, ad blockers, translation tools) inject attributes or elements into the page BEFORE React hydrates — React sees DOM content it never rendered itself.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// Not your app's code at all — an</span></span>
+<span class="line"><span class="cm">// extension injected e.g. a</span></span>
+<span class="line"><span class="cm">// data-* attribute or wrapper div</span></span>
+        </div>
+      </div>
+
+      <div class="cause-card">
+        <div class="cause-num">Cause 6</div>
+        <div class="cause-title">Locale/timezone-dependent formatting</div>
+        <div class="cause-desc">Server and client can have DIFFERENT locale/timezone settings — `toLocaleDateString()` or similar formatting functions can produce different STRING output for the exact same underlying date value.</div>
+        <div class="code-block">
+<span class="line"><span class="cm">// ✗ Server (UTC) vs client's local</span></span>
+<span class="line"><span class="cm">// timezone can format differently</span></span>
+<span class="line">{date.toLocaleDateString()}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — How to Debug Them
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>How to Debug a Hydration Mismatch</h2>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 1</span>Read the actual error message carefully</div>
+      <div class="step-desc">React's hydration error messages (especially in React 18+/Next.js) often show a DIFF between server and client HTML directly in the console — this is the single most useful starting clue, often pointing almost exactly at the offending element.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 2</span>Disable browser extensions / test in Incognito</div>
+      <div class="step-desc">Rule out Cause 5 (extension DOM injection) first, since it's easy to mistake for an application bug — test in a clean Incognito window with extensions disabled.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 3</span>Search the component for browser-only APIs, Date/random, or locale formatting</div>
+      <div class="step-desc">Grep the suspect component (and its children) for `window`, `document`, `Date.now()`, `Math.random()`, `toLocaleString`, or similar — these are the most common root causes by far.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 4</span>Check for invalid HTML nesting</div>
+      <div class="step-desc">Validate the rendered markup for structurally invalid nesting (block elements inside `&lt;p&gt;`, `&lt;div&gt;` inside `&lt;table&gt;` without proper wrapper elements, `&lt;a&gt;` inside `&lt;a&gt;`) — the browser's silent auto-correction of these is a very common, easy-to-miss cause.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num-title"><span class="step-badge">Step 5</span>View source vs. inspect element to compare</div>
+      <div class="step-desc">"View Page Source" shows the ORIGINAL server-rendered HTML; "Inspect Element" shows the CURRENT (possibly already-corrected-by-browser, or already-hydrated) DOM — comparing these two directly can reveal exactly where they diverge.</div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The fastest debugging shortcut:</strong> React 18's hydration error messages in development mode typically print BOTH the server-rendered HTML and what the client attempted to render, with the differing part highlighted — read this diff FIRST before doing any manual investigation.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Fix Patterns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Fix Patterns for Each Cause</h2>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Browser API used during render</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Move to useEffect, default for SSR</div>
+        <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
+<span class="line">  <span class="ck">const</span> [width, setWidth] = useState(<span class="ck">null</span>);</span>
+<span class="line">  useEffect(() =&gt; {</span>
+<span class="line">    setWidth(window.innerWidth); <span class="cm">// client-only</span></span>
+<span class="line">  }, []);</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{width ?? <span class="cs">"—"</span>}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ typeof window check during render</div>
+        <div class="code-block">
+<span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
+<span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Use a "mounted" state flag instead</div>
+        <div class="code-block">
+<span class="line"><span class="ck">const</span> [mounted, setMounted] = useState(<span class="ck">false</span>);</span>
+<span class="line">useEffect(() =&gt; setMounted(<span class="ck">true</span>), []);</span>
+<span class="line"><span class="ck">if</span> (!mounted) <span class="ck">return</span> <span class="ck">null</span>; <span class="cm">// same on BOTH</span></span>
+<span class="line"><span class="ck">return</span> &lt;<span class="ct">ClientWidget</span> /&gt;;</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ A timestamp that legitimately differs</div>
+        <div class="code-block">
+<span class="line">&lt;<span class="ct">span</span>&gt;{<span class="ck">new</span> Date().toLocaleTimeString()}&lt;/<span class="ct">span</span>&gt;</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Explicitly suppress for KNOWN, expected diffs</div>
+        <div class="code-block">
+<span class="line">&lt;<span class="ct">span</span> suppressHydrationWarning&gt;</span>
+<span class="line">  {<span class="ck">new</span> Date().toLocaleTimeString()}</span>
+<span class="line">&lt;/<span class="ct">span</span>&gt;</span>
+<span class="line"><span class="cm">// Use SPARINGLY — only when the mismatch</span></span>
+<span class="line"><span class="cm">// is genuinely expected/harmless (like a clock)</span></span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Cause</th><th>Fix approach</th></tr></thead>
+      <tbody>
+        <tr><td>Browser-only APIs during render</td><td>Move the API call into `useEffect`, render a safe default/placeholder for the initial (server-matching) render</td></tr>
+        <tr><td>Date/random values</td><td>Either generate the value SERVER-SIDE and pass it as a prop (so both sides use the SAME value), or accept the mismatch explicitly via `suppressHydrationWarning`</td></tr>
+        <tr><td>Invalid HTML nesting</td><td>Fix the actual markup structure to be valid HTML — this isn't just a hydration issue, it's simply incorrect HTML</td></tr>
+        <tr><td>typeof window checks during render</td><td>Use a "mounted" state flag set inside `useEffect`, ensuring BOTH server and initial client render agree (both render the "not mounted" state first)</td></tr>
+        <tr><td>Browser extension interference</td><td>Not fixable in your own code — document as a known false-positive; some extensions specifically avoid this by using MutationObserver timing tricks, but it's fundamentally outside your control</td></tr>
+        <tr><td>Locale/timezone formatting</td><td>Compute and pass the formatted string from the server (ensuring consistent formatting), or defer locale-specific formatting to `useEffect`/client-only rendering</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>`suppressHydrationWarning` only suppresses the WARNING for that specific element's direct text content — it does NOT fix an underlying structural problem, and doesn't apply recursively to children.</strong> It should be reserved for genuinely EXPECTED, harmless mismatches (like a live clock), never used as a blanket fix for an actual bug.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A "typeof window !== 'undefined'" check during RENDER is a classic anti-pattern that ironically CAUSES the exact mismatch it's often (incorrectly) used to try to prevent</strong> — the check itself evaluates differently server vs client, guaranteeing a mismatch rather than avoiding one.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Invalid HTML nesting mismatches can be subtle and easy to miss</strong> — e.g. placing a `&lt;div&gt;` inside a `&lt;p&gt;`, or nesting interactive elements like `&lt;button&gt;` inside `&lt;a&gt;`, gets SILENTLY restructured by the browser's HTML parser, with no obvious visual symptom until React's hydration check catches the resulting structural mismatch.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Browser extension-caused mismatches are a genuine, common false positive</strong> that can waste significant debugging time if not recognized quickly — always rule this out early by testing in Incognito/a clean profile before assuming it's an application bug.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A hydration mismatch doesn't necessarily CRASH the app</strong> — React often recovers by discarding the mismatched subtree and re-rendering it client-side, meaning the app may still "work" while silently paying a performance cost and potentially showing a brief visual flicker; this makes mismatches easy to overlook if you're not watching the console.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>React 18 changed how hydration errors are reported, generally with more helpful diffs</strong> than older React versions — if referencing specific error message formats/behavior, be aware this has evolved across React versions, and it's fine to describe the GENERAL debugging approach rather than memorizing an exact message format.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Rendering a value that depends on `Math.random()` or a UUID generated fresh on each render is a very common REAL bug</strong> (not just a theoretical example) — e.g. generating a "key" or an id value inline during render, rather than once and passed down, is a frequent source of this exact issue in real codebases.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Passing a Date object as a prop from server to client doesn't guarantee consistent FORMATTING</strong> — the underlying timestamp might be identical, but if formatting (like `toLocaleDateString()`) happens SEPARATELY on each side, differing locale/timezone environment settings can still produce different final strings.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Third-party scripts/libraries that manipulate the DOM directly (bypassing React) before hydration completes are another real, if less common, mismatch source</strong> — similar in nature to the browser extension issue, but caused by your OWN dependencies rather than something outside your control.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Hydration mismatches are NOT unique to Next.js</strong> — this is a general React SSR concept that applies to any framework/setup doing server rendering with React (Remix, Gatsby with SSR features, custom SSR setups); Next.js is simply the most common context this comes up in interviews because of its popularity.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4d9e);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Hydration mismatches are a very common REAL bug in production Next.js apps — interviewers value candidates who can both explain the underlying mechanism AND walk through a practical debugging process, not just recite the definition.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What exactly is a hydration mismatch?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A hydration mismatch occurs when the HTML the SERVER generated and sent to the browser doesn't match what React would produce if it rendered the SAME component tree on the CLIENT, during the hydration process. React expects these two renders to be IDENTICAL, since hydration's whole point is to REUSE the existing server-rendered DOM rather than recreate it — when React detects a difference while walking the tree during hydration, it logs a warning/error and typically discards the mismatched portion, re-rendering it client-side instead, which costs some performance and can cause a visible flicker.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does using window.innerWidth directly during a component's render cause a hydration mismatch?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The `window` object doesn't exist in the SERVER'S execution environment at all (there's no browser window on the server) — so `window.innerWidth` during a SERVER render would throw an error, or if somehow guarded, would need to resolve to SOME different value entirely (since there's no real viewport on the server). When the SAME component then renders on the CLIENT, `window.innerWidth` resolves to the actual browser's real viewport width — a value the server had no way of knowing or matching in advance. This guarantees the server-rendered HTML and the client's expected render diverge specifically because of the ENVIRONMENT difference (no window server-side vs. a real window client-side), which is exactly the category of issue hydration mismatch detection is designed to catch.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it actually appropriate to use suppressHydrationWarning, rather than treating a mismatch as a bug to fix?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the mismatch is GENUINELY expected and harmless, and there's no way to make server and client output truly identical — the classic legitimate example is displaying a live, current timestamp (like "Last updated 3 seconds ago" or a running clock), where the server's render time and the client's render time WILL always differ by at least a few milliseconds/seconds, and this difference is not a bug but an inherent, acceptable property of showing "the current time." In this narrow case, `suppressHydrationWarning` tells React "I know this specific element's content will differ, and that's fine" rather than papering over an actual, fixable application bug. It should never be reached for as a first response to an unexplained mismatch — only after confirming the mismatch is truly expected and unavoidable.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you debug a hydration mismatch error you've never seen before in a Next.js app?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Read the console error message CAREFULLY first — React (especially 18+) often prints a direct diff between the server-rendered and client-rendered HTML, which frequently points almost exactly at the problematic element or attribute.<br>
+          <strong>2.</strong> Rule out browser extensions by reproducing in an Incognito window with extensions disabled — this is a common false positive that's easy to mistake for an app bug.<br>
+          <strong>3.</strong> Search the implicated component (from the error's stack trace/diff) for browser-only APIs (`window`, `document`, `localStorage`), non-deterministic values (`Date.now()`, `Math.random()`), or locale-dependent formatting — these cover the vast majority of real-world causes.<br>
+          <strong>4.</strong> Check the component's markup for structurally invalid HTML nesting that the browser might be silently correcting.<br>
+          <strong>5.</strong> Once the specific cause is identified, apply the matching fix pattern — moving browser-API usage into `useEffect` with a safe default for the initial render, passing a server-computed value as a prop instead of recomputing differently on each side, or fixing genuinely invalid markup.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's wrong with using a "typeof window !== 'undefined'" check directly inside a component's render logic to avoid a hydration mismatch?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          This pattern is often reached for AS a fix, but it's actually a common cause of the very problem it's trying to solve. The check `typeof window !== "undefined"` itself evaluates to `false` on the SERVER (no window object exists) and `true` on the CLIENT (window exists) — meaning the CONDITION branches differently between the two environments, which means the component renders DIFFERENT output (e.g. `null` vs. an actual widget) on each side. This is EXACTLY a hydration mismatch by definition — server and client produced different HTML for the same component. The correct fix uses a "mounted" state flag set via `useEffect` (which only runs client-side, AFTER the initial hydration-matching render), ensuring BOTH the server render and the client's FIRST render agree (both show the "not yet mounted" state), with the different content only appearing on a SUBSEQUENT client-only re-render, after hydration has already successfully completed.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can invalid HTML nesting cause a hydration mismatch, even if the developer never intentionally wrote different content for server vs client?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The HTML specification defines certain nesting rules that browsers enforce automatically during PARSING — for example, block-level elements like `&lt;div&gt;` are not valid children of `&lt;p&gt;` elements. When the browser parses server-sent HTML containing this kind of invalid nesting, it SILENTLY auto-corrects the structure to make it valid (e.g. by closing the `&lt;p&gt;` tag early), producing an ACTUAL DOM tree that differs from what the raw HTML text literally specified. React, meanwhile, has its own internal representation based on what it INTENDED to render (the invalid nesting, as written in the component code) — when hydration compares React's expectation against the browser's ALREADY-CORRECTED actual DOM structure, they don't match, even though the developer never wrote intentionally different server/client logic. The root cause here is fundamentally an HTML VALIDITY bug, which then surfaces specifically as a hydration mismatch.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would a hydration mismatch silently degrade performance without necessarily breaking functionality?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When React detects the mismatch, discards the affected subtree, and successfully re-renders it entirely client-side — the app may end up displaying CORRECTLY (from the user's perspective, especially if the difference is subtle), but this recovery path is strictly more expensive than a normal, successful hydration would have been: instead of REUSING existing DOM nodes (hydration's core performance benefit), React has to throw them away and create brand new ones, essentially paying the cost of both the wasted server-rendering work AND a full client-side re-render for that portion of the page. This can happen repeatedly, on every page load, without ever crashing or visibly malfunctioning — making it the kind of issue that's easy to miss unless you're actively watching the browser console for hydration warnings during development and testing.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a component that needs to display a value from localStorage (e.g. a saved user preference) without causing a hydration mismatch?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">ThemeDisplay</span>() {</span>
+<span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"light"</span>); <span class="cm">// SAME default, both sides</span></span>
+<span class="line"></span>
+<span class="line">  useEffect(() =&gt; {</span>
+<span class="line">    <span class="cm">// localStorage only accessed client-side, AFTER initial hydration-matching render</span></span>
+<span class="line">    <span class="ck">const</span> saved = localStorage.getItem(<span class="cs">"theme"</span>);</span>
+<span class="line">    <span class="ck">if</span> (saved) setTheme(saved);</span>
+<span class="line">  }, []);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;Current theme: {theme}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+          </div>
+          The component initializes state with a FIXED default value (e.g. `"light"`) that's IDENTICAL on both server and client's first render — `localStorage` (a browser-only API) is only ever accessed inside `useEffect`, which runs strictly AFTER the initial render has already successfully hydrated and matched. Once `useEffect` runs client-side and reads the actual saved preference, updating state triggers a NORMAL client-side re-render (not a hydration comparison) — meaning the user briefly sees the DEFAULT value, then it updates to their actual saved preference a moment later, which is an acceptable, common trade-off for avoiding a hydration mismatch on genuinely client-only data.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Hydration · Hydration Mismatches · Next.js · React SSR
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

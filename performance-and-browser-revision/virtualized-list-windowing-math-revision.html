@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtualized Lists &amp; Windowing Math — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Formula cards ── */
+  .formula-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .formula-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .formula-expr {
+    font-family: var(--font-mono); font-size: 13px; color: var(--accent);
+    background: rgba(92,255,176,0.08); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; display: inline-block;
+  }
+  .formula-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Virtualization</div>
+    <h1>Virtualized Lists &amp; Windowing Math</h1>
+    <p>Implementing a Virtualized List From Scratch — Offset, Item Height, Visible Range — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Problem</a>
+    <a class="topic-pill" href="#s2">2. The Core Concept</a>
+    <a class="topic-pill" href="#s3">3. The Math</a>
+    <a class="topic-pill" href="#s4">4. Fixed-Height Implementation</a>
+    <a class="topic-pill" href="#s5">5. Overscan</a>
+    <a class="topic-pill" href="#s6">6. Variable-Height Lists</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Problem
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Problem Virtualization Solves</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Rendering a list of 10,000 items the NORMAL way means creating 10,000 real DOM nodes — even though a typical screen can only physically DISPLAY maybe 10-20 of them at once. This wastes memory, slows down initial render, and makes scrolling janky (the browser has to manage a huge DOM tree for content the user isn't even looking at).</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Without virtualization</th><th>With virtualization</th></tr></thead>
+      <tbody>
+        <tr><td>10,000 real DOM nodes created upfront</td><td>Only ~15-30 DOM nodes exist at any moment (just what's visible + a small buffer)</td></tr>
+        <tr><td>Slow initial render, high memory usage</td><td>Fast initial render, constant (not linear) memory usage regardless of list size</td></tr>
+        <tr><td>Scroll performance degrades as list grows</td><td>Scroll performance stays constant, independent of total item count</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>"Virtualization" and "windowing" are used essentially interchangeably</strong> — both describe the same technique of rendering only a small "window" of visible items, mapped onto their correct scroll positions, while the rest of the list's items are never actually created as DOM nodes.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The Core Concept
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>The Core Concept — Windowing</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The full list vs. the small "window" of items actually rendered</div>
+      <svg class="diagram-svg" viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+        <text x="120" y="20" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">Full logical list (10,000 items)</text>
+        <rect x="40" y="30" width="160" height="200" rx="6" fill="var(--bg3)" stroke="#555a6e" stroke-width="1"/>
+        <text x="120" y="55" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">item 0</text>
+        <text x="120" y="75" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">item 1</text>
+        <text x="120" y="95" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">...</text>
+        <rect x="45" y="105" width="150" height="60" rx="4" fill="rgba(92,255,176,0.12)" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="120" y="122" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8" font-weight="600">item 340 ●</text>
+        <text x="120" y="138" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8" font-weight="600">item 341 ●</text>
+        <text x="120" y="154" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8" font-weight="600">item 342 ●</text>
+        <text x="120" y="185" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">...</text>
+        <text x="120" y="210" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">item 9999</text>
+
+        <path d="M200 135 L280 135" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenV)"/>
+        <text x="240" y="125" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">only these</text>
+        <text x="240" y="150" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">become real DOM</text>
+
+        <text x="480" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">Visible viewport (rendered DOM)</text>
+        <rect x="400" y="40" width="160" height="120" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="2"/>
+        <rect x="410" y="50" width="140" height="30" rx="4" fill="var(--bg2)" stroke="#5cffb0" stroke-width="1"/>
+        <text x="480" y="69" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">item 340</text>
+        <rect x="410" y="85" width="140" height="30" rx="4" fill="var(--bg2)" stroke="#5cffb0" stroke-width="1"/>
+        <text x="480" y="104" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">item 341</text>
+        <rect x="410" y="120" width="140" height="30" rx="4" fill="var(--bg2)" stroke="#5cffb0" stroke-width="1"/>
+        <text x="480" y="139" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">item 342</text>
+
+        <text x="350" y="230" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">As the user scrolls, the WINDOW shifts, swapping out items — but the total DOM node count stays constant</text>
+
+        <defs>
+          <marker id="arrowGreenV" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The trick that makes this work:</strong> a container div is given a fixed height equal to the TOTAL height of ALL items (even the ones not rendered), so the scrollbar behaves correctly — then only the visible items are POSITIONED absolutely at their correct offset within that container, creating the illusion of a normal, fully-rendered list.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — The Math
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>The Math — Offset, Item Height, Visible Range</h2>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-name">1. Total scrollable height</div>
+      <div class="formula-expr">totalHeight = itemCount × itemHeight</div>
+      <div class="formula-desc">The height the CONTAINER needs to be, so the browser's native scrollbar behaves as if ALL items were really there — this is what makes scrolling feel completely normal despite most items not actually existing in the DOM.</div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-name">2. First visible index (the "start" of the window)</div>
+      <div class="formula-expr">startIndex = Math.floor(scrollTop / itemHeight)</div>
+      <div class="formula-desc">Given how far the user has scrolled (`scrollTop`, in pixels) and each item's fixed height, dividing tells you EXACTLY which item index is at the top of the visible viewport. `Math.floor` rounds DOWN, since a partially-scrolled-past item should still count as the first visible one.</div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-name">3. Number of visible items</div>
+      <div class="formula-expr">visibleCount = Math.ceil(containerHeight / itemHeight)</div>
+      <div class="formula-desc">Given the viewport's height and each item's height, this tells you how many items are needed to fill that space. `Math.ceil` rounds UP, since even a PARTIALLY visible item at the bottom edge still needs to be rendered.</div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-name">4. End index (the "end" of the window)</div>
+      <div class="formula-expr">endIndex = Math.min(itemCount - 1, startIndex + visibleCount)</div>
+      <div class="formula-desc">The last item index to render — capped with `Math.min` against the actual list length, so you never try to render an index that doesn't exist near the end of the list.</div>
+    </div>
+
+    <div class="formula-card">
+      <div class="formula-name">5. Offset for positioning a specific rendered item</div>
+      <div class="formula-expr">itemTopOffset = index × itemHeight</div>
+      <div class="formula-desc">Where to actually POSITION each rendered item (via `transform: translateY()` or `top`) within the container — so item 340, say, appears exactly where it "would have" been if all 340 items before it were really rendered.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Worked numeric example</div>
+      <svg class="diagram-svg" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10">Given: itemHeight = 50px, containerHeight = 400px, scrollTop = 1230px</text>
+
+        <text x="20" y="55" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10.5">startIndex = Math.floor(1230 / 50) = Math.floor(24.6) = 24</text>
+        <text x="20" y="80" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5">visibleCount = Math.ceil(400 / 50) = 8</text>
+        <text x="20" y="105" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10.5">endIndex = Math.min(itemCount - 1, 24 + 8) = 32</text>
+        <text x="20" y="130" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10.5">→ Render items 24 through 32 (9 items), item 24 positioned at top: 24 × 50 = 1200px</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Fixed-Height Implementation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Fixed-Height Implementation, From Scratch</h2>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">VirtualList</span>({ items, itemHeight, containerHeight }) {</span>
+<span class="line">  <span class="ck">const</span> [scrollTop, setScrollTop] = useState(<span class="cn">0</span>);</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// ── The core math, straight from Section 3 ──</span></span>
+<span class="line">  <span class="ck">const</span> totalHeight = items.length * itemHeight;</span>
+<span class="line">  <span class="ck">const</span> startIndex = Math.floor(scrollTop / itemHeight);</span>
+<span class="line">  <span class="ck">const</span> visibleCount = Math.ceil(containerHeight / itemHeight);</span>
+<span class="line">  <span class="ck">const</span> endIndex = Math.min(items.length - <span class="cn">1</span>, startIndex + visibleCount);</span>
+<span class="line"></span>
+<span class="line">  <span class="cm">// ── Slice out ONLY the items that need to actually render ──</span></span>
+<span class="line">  <span class="ck">const</span> visibleItems = items.slice(startIndex, endIndex + <span class="cn">1</span>);</span>
+<span class="line"></span>
+<span class="line">  <span class="ck">return</span> (</span>
+<span class="line">    &lt;<span class="ct">div</span></span>
+<span class="line">      <span class="ca">style</span>={{ height: containerHeight, overflowY: <span class="cs">"auto"</span>, position: <span class="cs">"relative"</span> }}</span>
+<span class="line">      <span class="ca">onScroll</span>={(e) =&gt; setScrollTop(e.currentTarget.scrollTop)}</span>
+<span class="line">    &gt;</span>
+<span class="line">      {<span class="cm">/* The SPACER — gives the container its FULL scrollable height,</span></span>
+<span class="line"><span class="cm">         even though most of that space has no real content in it */</span>}</span>
+<span class="line">      &lt;<span class="ct">div</span> <span class="ca">style</span>={{ height: totalHeight, position: <span class="cs">"relative"</span> }}&gt;</span>
+<span class="line">        {visibleItems.map((item, i) =&gt; {</span>
+<span class="line">          <span class="ck">const</span> actualIndex = startIndex + i;</span>
+<span class="line">          <span class="ck">return</span> (</span>
+<span class="line">            &lt;<span class="ct">div</span></span>
+<span class="line">              <span class="ca">key</span>={item.id}</span>
+<span class="line">              <span class="ca">style</span>={{</span>
+<span class="line">                position: <span class="cs">"absolute"</span>,</span>
+<span class="line">                top: actualIndex * itemHeight, <span class="cm">// ← the offset formula</span></span>
+<span class="line">                height: itemHeight,</span>
+<span class="line">                width: <span class="cs">"100%"</span>,</span>
+<span class="line">              }}</span>
+<span class="line">            &gt;</span>
+<span class="line">              {item.content}</span>
+<span class="line">            &lt;/<span class="ct">div</span>&gt;</span>
+<span class="line">          );</span>
+<span class="line">        })}</span>
+<span class="line">      &lt;/<span class="ct">div</span>&gt;</span>
+<span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+<span class="line">  );</span>
+<span class="line">}</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Two nested divs are doing distinct jobs here:</strong> the OUTER div is the scrollable viewport (fixed height, `overflow-y: auto`) — it's what the user actually scrolls. The INNER div is the "spacer" — its height equals the FULL logical list height, which is what makes the scrollbar's size/behavior correct, even though its actual rendered children only occupy a small slice of that space.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Overscan
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Overscan — Rendering a Small Buffer</h2>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Rendering EXACTLY the visible items (and nothing more) causes a visible "popping in" effect during fast scrolling</strong> — new items appear right at the viewport edge with no time to paint before becoming visible. <strong>Overscan</strong> fixes this by rendering a few EXTRA items just outside the visible area, in both directions.</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Adding overscan to the earlier math — just pad the start/end indices</span></span>
+<span class="line"><span class="ck">const</span> overscan = <span class="cn">3</span>; <span class="cm">// render 3 extra items above AND below the visible range</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> startIndex = Math.max(<span class="cn">0</span>, Math.floor(scrollTop / itemHeight) - overscan);</span>
+<span class="line"><span class="ck">const</span> endIndex = Math.min(</span>
+<span class="line">  items.length - <span class="cn">1</span>,</span>
+<span class="line">  Math.floor(scrollTop / itemHeight) + Math.ceil(containerHeight / itemHeight) + overscan</span>
+<span class="line">);</span>
+<span class="line"><span class="cm">// Math.max(0, ...) prevents a negative startIndex near the TOP of the list</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Overscan value</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>0 (none)</td><td>Fewest DOM nodes, but visible "popping in" during fast scrolls</td></tr>
+        <tr><td>Small (2-5)</td><td>Good balance — smooths out most scroll-jank without meaningfully increasing DOM node count</td></tr>
+        <tr><td>Large (20+)</td><td>Smoother still, but starts eroding the whole POINT of virtualization if it approaches the total visible+buffer being a large fraction of typical list sizes</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Variable-Height Lists
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Variable-Height Lists — Why It's Harder</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The fixed-height math (Section 3) completely breaks down when items have DIFFERENT heights</strong> — you can no longer compute `index × itemHeight` directly, since you'd need to know the SUM of every preceding item's individual height, which may not be knowable in advance (e.g. if height depends on dynamic text content).</span>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// The core technique for variable heights: maintain a running array of</span></span>
+<span class="line"><span class="cm">// MEASURED offsets, built up as items are actually rendered and measured</span></span>
+<span class="line"></span>
+<span class="line"><span class="ck">const</span> itemOffsets = useRef([<span class="cn">0</span>]); <span class="cm">// itemOffsets[i] = cumulative height BEFORE item i</span></span>
+<span class="line"><span class="ck">const</span> measuredHeights = useRef(<span class="ck">new</span> Map()); <span class="cm">// index → actual measured height</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// After an item renders, measure its REAL height (e.g. via a ref + getBoundingClientRect)</span></span>
+<span class="line"><span class="cm">// and update the offset array for everything AFTER it, since a wrong initial</span></span>
+<span class="line"><span class="cm">// height estimate needs correcting once the real size is known</span></span>
+<span class="line"></span>
+<span class="line"><span class="cm">// Finding startIndex now requires a BINARY SEARCH over itemOffsets</span></span>
+<span class="line"><span class="cm">// (since it's no longer a simple division) to find which item's offset</span></span>
+<span class="line"><span class="cm">// range contains the current scrollTop value — O(log n) instead of O(1)</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Fixed height</th><th>Variable height</th></tr></thead>
+      <tbody>
+        <tr><td>Finding startIndex</td><td>O(1) — simple division</td><td>O(log n) — binary search over measured offsets</td></tr>
+        <tr><td>Total height calculation</td><td>Exact — itemCount × itemHeight</td><td>Estimated (using an average/guess) until items are actually measured, then corrected</td></tr>
+        <tr><td>Scrollbar stability</td><td>Perfectly stable</td><td>Can visibly "jump" slightly as estimates are corrected with real measurements</td></tr>
+        <tr><td>Implementation complexity</td><td>Low — straightforward arithmetic</td><td>Significantly higher — requires measurement, caching, and re-estimation logic</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>In practice, most production apps use a battle-tested library</strong> (react-window, react-virtual/TanStack Virtual, react-virtualized) for variable-height virtualization rather than hand-rolling this — but understanding the underlying approach (measure-and-cache + binary search) is exactly what demonstrates real understanding in an interview.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Forgetting the "spacer" div (with the FULL total height) is the most common implementation mistake</strong> — without it, the scrollable container's native scrollbar would only be as tall as the currently-rendered items, making the scrollbar behave completely incorrectly (way too small/short) relative to the full logical list.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Using `key={index}` instead of a stable item ID causes React reconciliation bugs</strong> as the window shifts — since the SAME array index now refers to a DIFFERENT logical item as you scroll, React can incorrectly reuse component state/DOM between unrelated items; always key by a STABLE, unique item identifier, not its position in the currently-rendered slice.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not clamping startIndex/endIndex to valid bounds causes errors or blank space near the start/end of the list</strong> — always `Math.max(0, ...)` the start and `Math.min(itemCount - 1, ...)` the end, especially once overscan is added, which can otherwise push these values out of range.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Attaching the scroll listener to the WRONG element is a subtle bug</strong> — the listener needs to be on the actual SCROLLING container (the one with `overflow-y: auto` and a fixed height), not the inner spacer div or some ancestor that isn't the actual scroll context.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Handling window RESIZE (changing containerHeight) is often overlooked</strong> — if the visible area's size can change (e.g. a resizable panel, or the browser window itself resizing), `visibleCount` needs to be recalculated dynamically, not computed once and cached forever.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A naive scroll handler firing on EVERY scroll event without debouncing/throttling can itself become a performance bottleneck</strong> — especially since a state update on every pixel of scroll triggers a re-render; using `requestAnimationFrame` to batch scroll-triggered state updates is a common real-world optimization.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Virtualizing a list that also needs "scroll to a specific item" functionality (e.g. jump to item #4500) requires the SAME offset math in reverse</strong> — computing `index × itemHeight` and setting `scrollTop` to that value programmatically; this is a common practical follow-up an interviewer might ask about.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Variable-height virtualization's initial height ESTIMATE for not-yet-measured items introduces visible scrollbar "jumpiness"</strong> as the user scrolls past never-before-seen items and their heights get corrected from an estimate to a real measurement — this is an inherent trade-off of the technique, not usually eliminable entirely, only minimized with a good initial estimate.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Virtualized lists can break browser-native "Find on page" (Ctrl+F) search and accessibility features that expect all content to be in the DOM</strong> — since most items genuinely don't exist in the DOM at any given moment, a real trade-off to be aware of and mention if relevant.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Horizontal virtualization (for wide grids/carousels) uses the EXACT same mathematical approach, just swapping height for width and scrollTop for scrollLeft</strong> — worth mentioning if asked to generalize beyond a simple vertical list, since it demonstrates the underlying concept is really about ONE scrollable AXIS, not specifically "lists."</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a classic "implement from scratch" systems question — interviewers are checking whether you understand the underlying MATH deeply enough to derive it, not whether you've memorized a specific library's API.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is the core idea behind list virtualization/windowing?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Instead of rendering every single item in a large list as a real DOM node, virtualization renders ONLY the small subset of items currently visible in the viewport (plus a small buffer), while giving the scrollable container a spacer element sized to the FULL logical list's total height. This makes the scrollbar behave exactly as if the entire list were rendered, while the actual DOM node count stays roughly constant — proportional to the VIEWPORT size, not the total list length — regardless of whether the list has 100 items or 100,000.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is Math.floor used for calculating startIndex, but Math.ceil used for calculating visibleCount?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `Math.floor` for `startIndex` ensures that if the user has scrolled PARTWAY through an item (not a clean multiple of `itemHeight`), that PARTIALLY-scrolled-past item still counts as the first visible one and gets rendered — rounding UP here would incorrectly skip an item that's still partially in view. `Math.ceil` for `visibleCount` ensures that if the viewport height doesn't divide evenly by `itemHeight` (leaving a partial item visible at the BOTTOM edge of the viewport), that partial item is still counted and rendered — rounding DOWN here would leave a visible gap at the bottom of the viewport where an item should be, but isn't rendered. Both roundings serve the same underlying goal: never leave a genuinely visible portion of the viewport without its corresponding item rendered.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose to implement overscan, and how would you decide on its value?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Overscan is worth adding whenever users are likely to scroll QUICKLY through the list (which is most real-world usage) — without it, fast scrolling causes a visible "popping in" effect as newly-needed items appear right at the viewport's edge with zero time to have already been painted. The right VALUE is a trade-off: too small (0-1) doesn't meaningfully smooth out fast scrolling; too large erodes virtualization's core benefit by rendering a large fraction of the list anyway. A small, fixed value (commonly 2-5 items) is typically sufficient for smoothing typical scroll speeds without materially increasing the DOM node count — the exact right number can also be tuned empirically based on how fast users actually tend to scroll through the specific list in question.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement "scroll to item #N" functionality on top of a virtualized list?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+<span class="line"><span class="ck">function</span> <span class="cf">scrollToItem</span>(index, itemHeight, scrollContainerRef) {</span>
+<span class="line">  <span class="ck">const</span> targetOffset = index * itemHeight; <span class="cm">// same offset formula from Section 3</span></span>
+<span class="line">  scrollContainerRef.current.scrollTop = targetOffset;</span>
+<span class="line">  <span class="cm">// Setting scrollTop programmatically triggers the SAME onScroll handler</span></span>
+<span class="line">  <span class="cm">// the list already uses for normal user scrolling — the startIndex/endIndex</span></span>
+<span class="line">  <span class="cm">// math recalculates automatically, and the target item renders as part of</span></span>
+<span class="line">  <span class="cm">// the newly-visible window, with no special-case logic needed</span></span>
+<span class="line">}</span>
+          </div>
+          This reuses the EXACT same offset formula (`index × itemHeight`) used for positioning rendered items, just applied in the opposite direction — instead of "given a scroll position, find which item is visible," it's "given a target item, find the scroll position that makes it visible." Because the existing scroll handler already recalculates the visible window from `scrollTop` on every scroll event, programmatically setting `scrollTop` this way naturally triggers the SAME recalculation, requiring no additional special-case rendering logic.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What fundamentally changes about the implementation when list items have variable, unknown-in-advance heights?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The core `index × itemHeight` formula stops working entirely, since there's no single fixed `itemHeight` to multiply by — computing any item's offset requires knowing the SUM of every preceding item's actual (possibly still-unknown) height. The typical solution maintains a running array of MEASURED cumulative offsets, built up progressively as items actually render and get measured (e.g. via a ref and `getBoundingClientRect`), often starting from an ESTIMATED average height for not-yet-seen items and correcting it once the real measurement is available. Finding `startIndex` from a given `scrollTop` also changes from an O(1) division to an O(log n) binary search over this offset array, since the offsets are no longer evenly spaced. This added complexity is exactly why most real-world implementations use a well-tested library for the variable-height case rather than hand-rolling it.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is the "spacer" div (the one with the full total height) necessary — couldn't you just render the visible items directly inside the scrollable container?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The browser's native scrollbar size and behavior are determined by the CONTENT height of the scrollable container relative to its own fixed viewport height — if only the currently-visible ~10 items were rendered directly (with no spacer), the container's content height would only ever be `10 × itemHeight`, making the scrollbar tiny and allowing scrolling only through that small range, completely failing to represent the FULL 10,000-item list. The spacer div, sized to `itemCount × itemHeight`, gives the container the CORRECT full content height for scrollbar purposes, while the actual rendered items are positioned ABSOLUTELY within that spacer at their correct offsets — decoupling "how tall the scrollable area appears to be" from "how many real DOM nodes exist," which is the entire mechanism that makes virtualization work with the browser's native scrolling behavior.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would virtualizing a list NOT be worth the added implementation complexity?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the list is SMALL enough that rendering every item directly doesn't cause a noticeable performance problem in the first place — there's no universal "magic number," but lists in the tens (rather than hundreds or thousands) of items are often perfectly fine rendered normally, and virtualization would add real implementation complexity (positioning math, scroll handling, key management, accessibility trade-offs) for negligible actual benefit. It's also often not worth it for lists that NEED every item genuinely present in the DOM for a specific reason — e.g. relying heavily on browser-native "Find on page" search across the full list content, or certain accessibility patterns that assume full DOM presence — where virtualization's core trade-off (most items don't exist in the DOM) directly conflicts with a hard requirement.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you verify your virtualized list implementation is actually correct — what would you test?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Scroll to the very TOP and verify `startIndex` is exactly `0` and the first item renders correctly (checking the `Math.max(0, ...)` clamping doesn't misbehave).<br>
+          <strong>2.</strong> Scroll to the very BOTTOM and verify `endIndex` correctly caps at `itemCount - 1` without attempting to render a nonexistent item past the end of the array.<br>
+          <strong>3.</strong> Check that the TOTAL scrollable height (the spacer div) matches `itemCount × itemHeight` exactly, and that the scrollbar's proportions/behavior look correct relative to a REAL (non-virtualized) list of the same size for comparison.<br>
+          <strong>4.</strong> Verify each rendered item's actual on-screen POSITION matches its expected offset (`index × itemHeight`) — e.g. by checking that item 500 visually appears exactly where item 500 "should" be if you scrolled the full list to that point.<br>
+          <strong>5.</strong> Test RESIZING the container and confirm `visibleCount` recalculates correctly, rendering more/fewer items as appropriate.<br>
+          <strong>6.</strong> Test fast scrolling (dragging the scrollbar thumb rapidly) to confirm overscan is sufficient to avoid visible gaps/pop-in, and that no errors occur from indices briefly going temporarily out of expected bounds during rapid updates.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Virtualized Lists · Windowing · Offset Math · React Implementation
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

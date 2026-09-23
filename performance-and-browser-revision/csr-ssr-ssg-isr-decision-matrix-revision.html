@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSR vs SSR vs SSG vs ISR — Interview Decision Matrix Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+  .summary-table td:last-child { font-size: 11.5px; color: var(--text3); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    white-space: pre; tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Strategy cards ── */
+  .strategy-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.3rem; margin-bottom: 1rem; border-left: 3px solid transparent;
+  }
+  .strategy-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .strategy-full { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+  .strategy-desc { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .mid { color: var(--amber); font-weight: 500; }
+
+  /* ── Scenario/verdict cards ── */
+  .scenario-card {
+    background: linear-gradient(135deg, rgba(106,176,255,0.08), rgba(255,184,108,0.05));
+    border: 1px solid rgba(106,176,255,0.25); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.4rem; margin-bottom: 1.25rem;
+  }
+  .scenario-label { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 8px; }
+  .scenario-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+
+  .verdict-card {
+    background: rgba(92,255,176,0.06); border: 1px solid rgba(92,255,176,0.25); border-radius: var(--radius-lg);
+    padding: 1.1rem 1.3rem; margin-bottom: 1rem;
+  }
+  .verdict-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--teal); margin-bottom: 8px; }
+  .verdict-text { font-size: 13px; color: var(--text2); line-height: 1.7; }
+  .verdict-text strong { color: var(--text); }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1000px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Rendering Strategies</div>
+    <h1>CSR vs SSR vs SSG vs ISR</h1>
+    <p>A Decision Matrix for Choosing a Rendering Strategy — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Four Strategies</a>
+    <a class="topic-pill" href="#s2">2. CSR</a>
+    <a class="topic-pill" href="#s3">3. SSR</a>
+    <a class="topic-pill" href="#s4">4. SSG</a>
+    <a class="topic-pill" href="#s5">5. ISR</a>
+    <a class="topic-pill" href="#s6">6. The Decision Matrix</a>
+    <a class="topic-pill" href="#s7">7. Scenario Walkthrough</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Strategy</th><th>HTML generated...</th><th>Best for</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CSR</td><td>In the BROWSER, after JS downloads and runs</td><td>Highly interactive apps behind a login (dashboards, admin panels)</td></tr>
+      <tr><td>SSR</td><td>On the SERVER, for EVERY request, fresh</td><td>Dynamic, personalized, or frequently-changing content needing SEO/fast first paint</td></tr>
+      <tr><td>SSG</td><td>At BUILD TIME, once, ahead of any request</td><td>Content that's the same for everyone and rarely changes (marketing pages, docs, blogs)</td></tr>
+      <tr><td>ISR</td><td>At build time, then REGENERATED periodically/on-demand</td><td>Mostly-static content that needs occasional updates without a full rebuild</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Four Strategies Overview
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Four Strategies — Core Question</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Every rendering strategy answers the SAME two questions differently: <strong>WHERE does HTML get generated</strong> (browser vs server vs build pipeline), and <strong>WHEN does it get generated</strong> (on every request, once at build time, or periodically). All four trade-offs — freshness, speed, server load, and infrastructure complexity — flow directly from these two answers.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Where and when each strategy generates HTML</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="20" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">Build time</text>
+        <text x="20" y="105" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">Request time</text>
+        <text x="20" y="190" fill="#8b90a0" font-family="Inter, sans-serif" font-size="10">Browser time</text>
+
+        <rect x="120" y="10" width="130" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="185" y="32" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">SSG</text>
+
+        <rect x="270" y="10" width="130" height="35" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="335" y="32" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">ISR (initial build)</text>
+
+        <rect x="270" y="95" width="130" height="35" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="335" y="117" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9.5">ISR (regenerate)</text>
+
+        <rect x="420" y="95" width="130" height="35" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="485" y="117" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">SSR (every request)</text>
+
+        <rect x="270" y="175" width="130" height="20" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="335" y="189" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">CSR (in browser)</text>
+
+        <text x="350" y="145" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="9.5">ISR spans build time AND request time — that's its defining trait</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — CSR
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>CSR — Client-Side Rendering</h2>
+    </div>
+
+    <div class="strategy-card" style="border-left-color:#5cffb0">
+      <div class="strategy-title" style="color:#5cffb0">CSR</div>
+      <div class="strategy-full">Client-Side Rendering</div>
+      <div class="strategy-desc">The server sends a nearly-empty HTML shell plus a JavaScript bundle. The BROWSER downloads, parses, and executes that JS, which then fetches data and renders the actual content — entirely client-side, after the fact. Classic single-page-app (SPA) architecture.</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// What the server actually sends for a CSR app</span></span>
+<span class="line">&lt;<span class="ct">html</span>&gt;</span>
+<span class="line">  &lt;<span class="ct">body</span>&gt;</span>
+<span class="line">    &lt;<span class="ct">div</span> <span class="ca">id</span>=<span class="cs">"root"</span>&gt;&lt;/<span class="ct">div</span>&gt; <span class="cm">{/* EMPTY — nothing to see yet */}</span></span>
+<span class="line">    &lt;<span class="ct">script</span> <span class="ca">src</span>=<span class="cs">"bundle.js"</span>&gt;&lt;/<span class="ct">script</span>&gt; <span class="cm">{/* this does ALL the work */}</span></span>
+<span class="line">  &lt;/<span class="ct">body</span>&gt;</span>
+<span class="line">&lt;/<span class="ct">html</span>&gt;</span>
+<span class="line"><span class="cm">// A user (or a search engine crawler without JS execution) sees NOTHING</span></span>
+<span class="line"><span class="cm">// meaningful until bundle.js downloads, parses, executes, and fetches data</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Initial load speed</td><td class="no">✗ Slowest — blank page until JS downloads/executes/fetches</td></tr>
+        <tr><td>SEO</td><td class="no">✗ Weak by default (improving, but crawlers may not execute JS reliably)</td></tr>
+        <tr><td>Server load</td><td class="yes">✓ Lowest — server just serves static files, no per-request rendering work</td></tr>
+        <tr><td>Interactivity after load</td><td class="yes">✓ Excellent — full client-side app, no further server round-trips for navigation</td></tr>
+        <tr><td>Best for</td><td>Apps behind a login where SEO doesn't matter (dashboards, internal tools, admin panels)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — SSR
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>SSR — Server-Side Rendering</h2>
+    </div>
+
+    <div class="strategy-card" style="border-left-color:#ff6b6b">
+      <div class="strategy-title" style="color:#ff6b6b">SSR</div>
+      <div class="strategy-full">Server-Side Rendering</div>
+      <div class="strategy-desc">For EVERY incoming request, the server runs the app's rendering logic FRESH, fetches whatever data is needed, and sends back complete, ready-to-display HTML. The browser then "hydrates" this HTML to make it interactive.</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Simplified SSR flow (e.g. Next.js App Router, a Server Component)</span></span>
+<span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
+<span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> db.products.findById(params.id); <span class="cm">// fresh, on EVERY request</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// If the price changes in the database, the VERY NEXT request sees the new price —</span></span>
+<span class="line"><span class="cm">// no rebuild, no redeploy, no caching delay</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Freshness</td><td class="yes">✓ Always up to date — regenerated on every single request</td></tr>
+        <tr><td>SEO</td><td class="yes">✓ Excellent — crawlers receive complete, ready-made HTML</td></tr>
+        <tr><td>Server load</td><td class="no">✗ Highest — every request re-runs full rendering logic and data fetching</td></tr>
+        <tr><td>Time to First Byte</td><td class="mid">Moderate — depends on how fast the server-side data fetch/render actually is</td></tr>
+        <tr><td>Best for</td><td>Personalized, frequently-changing, or per-user content needing SEO — e-commerce product pages, news, social feeds</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — SSG
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>SSG — Static Site Generation</h2>
+    </div>
+
+    <div class="strategy-card" style="border-left-color:#6ab0ff">
+      <div class="strategy-title" style="color:#6ab0ff">SSG</div>
+      <div class="strategy-full">Static Site Generation</div>
+      <div class="strategy-desc">EVERY page's HTML is generated ONCE, at BUILD TIME — before any user ever requests it. The resulting static HTML files are then served directly (often from a CDN), identically, to every visitor.</div>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Simplified SSG flow (e.g. Next.js generateStaticParams, or Astro/Gatsby/Hugo)</span></span>
+<span class="line"><span class="ck">export async function</span> <span class="cf">generateStaticParams</span>() {</span>
+<span class="line">  <span class="ck">const</span> posts = <span class="ck">await</span> cms.getAllPosts();</span>
+<span class="line">  <span class="ck">return</span> posts.map((post) =&gt; ({ slug: post.slug })); <span class="cm">// pre-builds EVERY blog post page</span></span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="ck">async function</span> <span class="cf">BlogPost</span>({ params }) {</span>
+<span class="line">  <span class="ck">const</span> post = <span class="ck">await</span> cms.getPost(params.slug); <span class="cm">// runs ONCE, at BUILD time only</span></span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">article</span>&gt;{post.title}&lt;/<span class="ct">article</span>&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// If the CMS content changes, this page STAYS THE SAME until the NEXT build/deploy</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Speed / TTFB</td><td class="yes">✓ Fastest possible — pre-built static files, often served straight from a CDN</td></tr>
+        <tr><td>SEO</td><td class="yes">✓ Excellent — complete HTML, no server compute needed per request</td></tr>
+        <tr><td>Server load</td><td class="yes">✓ Minimal — essentially just serving static files</td></tr>
+        <tr><td>Freshness</td><td class="no">✗ Stale until the NEXT build/deploy — a real limitation for frequently-changing content</td></tr>
+        <tr><td>Best for</td><td>Content that's the same for everyone and changes infrequently — marketing pages, documentation, blogs</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — ISR
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>ISR — Incremental Static Regeneration</h2>
+    </div>
+
+    <div class="strategy-card" style="border-left-color:#bd93f9">
+      <div class="strategy-title" style="color:#bd93f9">ISR</div>
+      <div class="strategy-full">Incremental Static Regeneration</div>
+      <div class="strategy-desc">A hybrid: pages are generated statically (like SSG), but the server can REGENERATE individual pages in the background, either after a set time interval or on-demand — WITHOUT requiring a full site rebuild/redeploy.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The "stale-while-revalidate" flow ISR uses</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="180" height="50" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="110" y="52" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Request comes in</text>
+        <text x="110" y="68" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">cached page is STALE</text>
+
+        <path d="M200 55 L250 55" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowGreenISR)"/>
+
+        <rect x="250" y="30" width="200" height="50" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="350" y="52" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Serve STALE cached copy</text>
+        <text x="350" y="68" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">instantly — user doesn't wait!</text>
+
+        <path d="M350 80 L350 110" stroke="#ffb86c" stroke-width="1.5" marker-end="url(#arrowAmberISR)"/>
+
+        <rect x="250" y="110" width="200" height="50" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="132" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">Regenerate in the BACKGROUND</text>
+        <text x="350" y="148" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">next visitor gets the FRESH version</text>
+
+        <text x="350" y="182" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">No visitor ever waits on a slow rebuild — staleness self-heals automatically over time</text>
+
+        <defs>
+          <marker id="arrowGreenISR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowAmberISR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb86c"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+<span class="line"><span class="cm">// Simplified ISR flow (e.g. Next.js revalidate option)</span></span>
+<span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
+<span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/products/${params.id}`, {</span>
+<span class="line">    next: { revalidate: <span class="cn">60</span> } <span class="cm">// regenerate this page at MOST once every 60 seconds</span></span>
+<span class="line">  });</span>
+<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
+<span class="line">}</span>
+<span class="line"><span class="cm">// Fast like SSG (serves cached HTML instantly), but self-updates periodically</span></span>
+<span class="line"><span class="cm">// like SSR, WITHOUT needing a full site rebuild for every content change</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Speed / TTFB</td><td class="yes">✓ Fast — serves cached static HTML, just like SSG</td></tr>
+        <tr><td>Freshness</td><td class="mid">Eventually consistent — updates periodically or on-demand, without a full rebuild</td></tr>
+        <tr><td>Server load</td><td class="yes">✓ Low — regeneration only happens occasionally, not per-request</td></tr>
+        <tr><td>Complexity</td><td class="no">Higher — requires a framework/infra that supports this hybrid model well</td></tr>
+        <tr><td>Best for</td><td>Content that's mostly static but updates periodically at scale — e-commerce catalogs, news archives with thousands of pages</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — The Decision Matrix
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>The Full Decision Matrix</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Criterion</th><th>CSR</th><th>SSR</th><th>SSG</th><th>ISR</th></tr></thead>
+      <tbody>
+        <tr><td>SEO-friendly</td><td class="no">✗ Weak</td><td class="yes">✓ Excellent</td><td class="yes">✓ Excellent</td><td class="yes">✓ Excellent</td></tr>
+        <tr><td>Time to First Byte</td><td class="yes">Fast (empty shell)</td><td class="mid">Moderate</td><td class="yes">✓ Fastest</td><td class="yes">✓ Fast</td></tr>
+        <tr><td>Content freshness</td><td class="yes">✓ Always fresh (client fetches live)</td><td class="yes">✓ Always fresh</td><td class="no">✗ Stale until rebuild</td><td class="mid">Eventually fresh</td></tr>
+        <tr><td>Server compute cost</td><td class="yes">✓ Lowest</td><td class="no">✗ Highest (every request)</td><td class="yes">✓ Lowest</td><td class="yes">✓ Low</td></tr>
+        <tr><td>Good for personalized content</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes</td><td class="no">✗ No — same for everyone</td><td class="no">Limited — same for everyone between regenerations</td></tr>
+        <tr><td>Scales to huge numbers of pages</td><td class="yes">✓ Yes (no per-page build cost)</td><td class="yes">✓ Yes</td><td class="no">✗ Build time grows with page count</td><td class="yes">✓ Yes — avoids SSG's full-rebuild-time problem</td></tr>
+        <tr><td>Implementation complexity</td><td class="yes">Lower</td><td class="mid">Moderate</td><td class="yes">Lower</td><td class="no">Higher</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Scenario Walkthrough
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Scenario Walkthrough — Picking for a Real App</h2>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-label">The Scenario</div>
+      <div class="scenario-text">You're building a mid-sized e-commerce site: (1) a marketing homepage and "About" page, (2) thousands of product pages where price/stock can change several times a day, (3) a personalized "My Account" dashboard behind login, and (4) a search results page with live filtering.</div>
+    </div>
+
+    <div class="verdict-card">
+      <div class="verdict-title">✓ Different strategies for different parts of the SAME app</div>
+      <div class="verdict-text">
+        <strong>Marketing homepage / About page → SSG.</strong> This content is identical for every visitor and changes rarely (maybe with a deploy) — maximum speed and minimum server cost, with zero freshness concerns.<br><br>
+        <strong>Product pages → ISR.</strong> Thousands of pages rule out plain SSR (unnecessary server cost re-rendering the SAME product for every single visitor) and rule out plain SSG (a full rebuild every time ANY price changes, across possibly thousands of pages, would be painfully slow and disruptive). ISR gives fast, cached responses that self-update periodically (e.g. revalidate every 60 seconds) or on-demand when a price actually changes, without needing a full site rebuild.<br><br>
+        <strong>My Account dashboard → CSR.</strong> This is behind a login (SEO is irrelevant here), highly personalized and interactive, and doesn't need to be indexed by search engines at all — the classic profile for CSR, avoiding unnecessary server rendering cost for content only the logged-in user will ever see.<br><br>
+        <strong>Search results with live filtering → CSR (or SSR for the FIRST load, then CSR for subsequent filtering).</strong> The initial search page benefits from SSR/SSG for SEO (so search engines can index popular search terms), but once the user starts interactively filtering results, those subsequent updates happen CLIENT-SIDE for instant responsiveness, without a full page reload/server round-trip per filter change.
+      </div>
+    </div>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>The key insight this scenario demonstrates:</strong> real applications RARELY use just ONE rendering strategy for the entire app — modern frameworks (Next.js, Nuxt, SvelteKit) explicitly support mixing strategies PER ROUTE/PAGE, and a strong answer recognizes that the "right" choice is a PER-PAGE decision, not a single global architectural commitment.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>"SEO requires SSR" is an oversimplification</strong> — SSG and ISR are EQUALLY good (often better) for SEO, since they also deliver complete, ready-made HTML; SSR isn't uniquely required for SEO, just one of several ways to avoid CSR's SEO weaknesses.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Modern search engine crawlers CAN execute JavaScript to some degree</strong> — Google's crawler, for instance, does render JS-heavy pages, somewhat softening CSR's historical SEO disadvantage; however, this rendering is not guaranteed to be as fast/thorough/reliable as receiving pre-rendered HTML directly, so CSR remains the WEAKEST default option for SEO-sensitive content, not a hopeless one.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Choosing a rendering strategy is a PER-ROUTE decision in modern frameworks, not a single app-wide choice</strong> — presenting these four options as mutually exclusive, app-wide architectural commitments is a common but overly rigid framing.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>SSG's biggest practical limitation is BUILD TIME at scale</strong> — a site with tens of thousands of pages can face genuinely long build times if every single page must be regenerated on every deploy, which is precisely the problem ISR was invented to solve.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>ISR's "staleness window" is a real, sometimes overlooked trade-off</strong> — between the moment underlying data changes and the next regeneration, SOME users will see outdated content; this needs to be an ACCEPTABLE trade-off for the specific content (fine for a blog's view count, potentially not fine for real-time stock availability without on-demand revalidation).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>SSR doesn't automatically mean "fast"</strong> — if the server-side data fetching/rendering logic itself is slow (a slow database query, an unoptimized render), SSR's Time To First Byte can be WORSE than a well-optimized SSG/ISR page, despite SSR sounding like the more "dynamic, modern" choice.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Hydration (the process of making server-rendered HTML interactive on the client) applies to BOTH SSR and SSG/ISR</strong> — it's not an SSR-exclusive concept; any strategy that sends pre-rendered HTML needs a hydration step before client-side interactivity (event handlers, state) becomes active.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSR isn't "obsolete" or universally worse</strong> — for genuinely interactive, behind-login applications where SEO is irrelevant, CSR remains a perfectly reasonable, often SIMPLER choice; the narrative that "SSR/SSG is always better" ignores CSR's real, legitimate use cases.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>On-demand ISR revalidation (triggering a specific page's regeneration immediately, e.g. via a webhook when content is updated in a CMS) is different from TIME-based revalidation</strong> — conflating these two ISR modes is a common imprecision; time-based accepts periodic staleness, on-demand allows near-immediate freshness for specific, known content changes.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not every framework supports all four strategies equally well</strong> — the specific tooling/framework choice (Next.js, Nuxt, SvelteKit, Astro, Remix, plain React+Vite) significantly affects which strategies are easy vs. difficult to implement; a real-world answer should acknowledge that framework capabilities are part of the practical decision, not purely abstract trade-offs.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a classic architecture/system-design-style question — the strongest answers reason from CONCRETE content characteristics (freshness needs, personalization, scale, SEO importance) to a strategy, rather than reciting definitions.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is the fundamental difference between these four rendering strategies?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          They differ in WHERE and WHEN HTML is generated. CSR generates HTML in the BROWSER, after JavaScript downloads and runs. SSR generates HTML on the SERVER, freshly, for EVERY single request. SSG generates HTML ONCE, at BUILD TIME, before any request ever arrives, and serves the same static files to everyone. ISR is a hybrid: HTML is generated at build time like SSG, but the server can REGENERATE individual pages later — periodically or on-demand — without needing a full site rebuild.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why might a page with excellent SSR performance still be a worse choice than SSG for certain content?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          SSR re-runs the FULL rendering and data-fetching logic on the server for EVERY single request, even when the underlying content hasn't changed at all between requests — this is genuinely wasted server compute and cost for content that's IDENTICAL across visitors and rarely changes (like a marketing page or documentation). SSG does this expensive work exactly ONCE, at build time, and then serves the identical, pre-computed result to every subsequent visitor essentially for free (often straight from a CDN) — for content matching this profile, SSG achieves the SAME (or better) end-user speed with dramatically lower ongoing server cost, making SSR's per-request re-computation an unnecessary expense rather than a meaningful benefit.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would ISR specifically be a better choice than plain SSG, even for content that's mostly static?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the site has a LARGE number of pages (making a full rebuild for every content change slow/impractical) AND that content changes periodically, even if infrequently — e.g. thousands of e-commerce product pages where prices update daily, or a large content archive where individual articles occasionally get edited. Plain SSG would require rebuilding the ENTIRE site (or at least regenerating every affected page) on every single content change, which becomes increasingly slow and disruptive as the page count grows. ISR solves this by allowing INDIVIDUAL pages to regenerate independently, in the background, without touching the rest of the site — giving you SSG's speed and low server cost with a practical path to keeping large amounts of content reasonably fresh.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you decide which rendering strategy to use for a NEW page/route you're adding to an existing app?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Does this page need to be indexed by search engines? If NOT (e.g. behind a login), CSR becomes a strong, simple option.<br>
+          <strong>2.</strong> If SEO matters, is the content the SAME for every visitor, or personalized per-user? Personalized/per-user content generally needs SSR (or CSR with SSR for a shell).<br>
+          <strong>3.</strong> If the content is the SAME for everyone, how OFTEN does it change? Rarely (deploy-time-only changes) → SSG. Periodically, but not on every single request → ISR. Needs to be correct on literally every request (e.g. real-time stock levels critical to display accurately) → SSR.<br>
+          <strong>4.</strong> Consider SCALE — if choosing SSG/ISR, how many pages of this type exist, and does that make a full-rebuild-per-change approach (plain SSG) impractical, pushing toward ISR instead?<br>
+          This is a decision made PER ROUTE, informed by that specific route's actual freshness, personalization, and SEO requirements — not a single global choice for the whole application.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does "hydration" mean, and which of these strategies require it?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Hydration is the process of the browser taking SERVER-GENERATED (or pre-built) static HTML that's already visible on screen, and "attaching" the client-side JavaScript framework's event handlers, state, and interactivity to that existing markup — rather than re-rendering everything from scratch. SSR, SSG, and ISR all require hydration, since all three send pre-rendered HTML to the browser that then needs to become interactive. CSR does NOT need hydration in the same sense, since it never received pre-rendered HTML in the first place — it builds the entire DOM from scratch, client-side, from an empty starting shell.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is "CSR is bad for SEO" not an absolute, unconditional rule anymore?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Modern search engine crawlers, notably Google's, DO execute JavaScript to some extent as part of their indexing process, rendering the page somewhat similarly to a real browser before extracting its content — this is a meaningful improvement over the historical assumption that crawlers only ever see raw, unexecuted HTML. However, this JS-rendering step in the crawling process can be slower, more resource-intensive, and less immediately reliable than a crawler simply reading pre-rendered HTML directly (as SSR/SSG/ISR provide) — and not all crawlers (including some non-Google search engines, or social media link-preview bots) execute JS as thoroughly. So CSR's SEO situation has genuinely improved, but pre-rendered strategies remain the SAFER, more reliably indexable default for SEO-critical content.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose SSR over ISR for content that changes frequently, rather than just using a very short ISR revalidation window?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the content needs to be CORRECT on literally every single request, with zero tolerance for even brief staleness — e.g. displaying a live, exact stock count during a high-demand flash sale, or a real-time auction price, where showing even slightly outdated data could cause a genuinely bad outcome (overselling limited stock, a user bidding based on stale price info). ISR's revalidation window, no matter how short, always has SOME period where a stale cached version could be served to a user before the background regeneration completes — for content where this window's risk is unacceptable, SSR's guarantee of fresh data on EVERY request (at the cost of higher server load) is the more appropriate, safer choice.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain, using the e-commerce scenario from this guide, why using ONLY SSR for the entire site would be a mistake?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Using SSR for EVERYTHING means the marketing homepage — content that's IDENTICAL for every single visitor and barely ever changes — would be fully re-rendered on the server for every single request, burning server compute and adding latency for zero actual benefit, since the exact same HTML could instead be pre-built once (SSG) and served instantly from a CDN. Similarly, the logged-in "My Account" dashboard doesn't need SEO at all (it's behind a login, invisible to search engines regardless), so paying the server-rendering cost for it is unnecessary when CSR would serve the exact same user experience more cheaply. Using SSR universally treats every page as if it has the SAME freshness/personalization/SEO requirements, when in reality different pages within the SAME app have meaningfully different needs — which is exactly why mixing strategies per route, rather than picking one strategy globally, is the practically correct approach for a real, multi-page application.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · CSR vs SSR vs SSG vs ISR · Rendering Strategy Decision Matrix
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
