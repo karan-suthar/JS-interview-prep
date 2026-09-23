@@ -105,7 +105,7 @@
     background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
     line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
-    white-space: pre; tab-size: 2;
+    tab-size: 2;
   }
   .code-block .line { display: block; white-space: pre; }
   .cm  { color: #4a5068; font-style: italic; }
@@ -364,9 +364,9 @@
         <div class="cause-title">Using browser-only APIs during render</div>
         <div class="cause-desc">`window`, `document`, `localStorage`, or `navigator` don't exist on the server — using them directly during rendering (not inside `useEffect`) produces different output server vs client.</div>
         <div class="code-block">
-<span class="line"><span class="cm">// ✗ Mismatch — window doesn't</span></span>
-<span class="line"><span class="cm">// exist server-side</span></span>
-<span class="line">&lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line"><span class="cm">// ✗ Mismatch — window doesn't</span></span>
+  <span class="line"><span class="cm">// exist server-side</span></span>
+  <span class="line">&lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;</span>
         </div>
       </div>
 
@@ -375,8 +375,8 @@
         <div class="cause-title">Date/time or random values rendered directly</div>
         <div class="cause-desc">`Date.now()`, `Math.random()`, or `new Date().toLocaleString()` produce a DIFFERENT value on the server (at build/request time) than on the client (a moment later).</div>
         <div class="code-block">
-<span class="line"><span class="cm">// ✗ Mismatch — timestamps differ</span></span>
-<span class="line">&lt;<span class="ct">span</span>&gt;{Date.now()}&lt;/<span class="ct">span</span>&gt;</span>
+  <span class="line"><span class="cm">// ✗ Mismatch — timestamps differ</span></span>
+  <span class="line">&lt;<span class="ct">span</span>&gt;{Date.now()}&lt;/<span class="ct">span</span>&gt;</span>
         </div>
       </div>
 
@@ -385,8 +385,8 @@
         <div class="cause-title">Invalid HTML nesting</div>
         <div class="cause-desc">The browser SILENTLY auto-corrects invalid HTML nesting (e.g. a `&lt;div&gt;` inside a `&lt;p&gt;`) while parsing — resulting in a DOM tree structure React didn't expect, since React's virtual representation still thinks it's what was written.</div>
         <div class="code-block">
-<span class="line"><span class="cm">// ✗ Browser silently restructures this</span></span>
-<span class="line">&lt;<span class="ct">p</span>&gt;&lt;<span class="ct">div</span>&gt;Invalid nesting&lt;/<span class="ct">div</span>&gt;&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line"><span class="cm">// ✗ Browser silently restructures this</span></span>
+  <span class="line">&lt;<span class="ct">p</span>&gt;&lt;<span class="ct">div</span>&gt;Invalid nesting&lt;/<span class="ct">div</span>&gt;&lt;/<span class="ct">p</span>&gt;</span>
         </div>
       </div>
 
@@ -395,10 +395,10 @@
         <div class="cause-title">Conditionally rendering based on typeof window</div>
         <div class="cause-desc">A common but flawed "fix" attempt — checking `typeof window !== "undefined"` during RENDER still produces different output server vs client, since the condition itself evaluates differently in each environment.</div>
         <div class="code-block">
-<span class="line"><span class="cm">// ✗ Still mismatches — condition itself</span></span>
-<span class="line"><span class="cm">// differs between server and client</span></span>
-<span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
-<span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
+  <span class="line"><span class="cm">// ✗ Still mismatches — condition itself</span></span>
+  <span class="line"><span class="cm">// differs between server and client</span></span>
+  <span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
+  <span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
         </div>
       </div>
 
@@ -407,9 +407,9 @@
         <div class="cause-title">Browser extensions modifying the DOM</div>
         <div class="cause-desc">Some browser extensions (password managers, ad blockers, translation tools) inject attributes or elements into the page BEFORE React hydrates — React sees DOM content it never rendered itself.</div>
         <div class="code-block">
-<span class="line"><span class="cm">// Not your app's code at all — an</span></span>
-<span class="line"><span class="cm">// extension injected e.g. a</span></span>
-<span class="line"><span class="cm">// data-* attribute or wrapper div</span></span>
+  <span class="line"><span class="cm">// Not your app's code at all — an</span></span>
+  <span class="line"><span class="cm">// extension injected e.g. a</span></span>
+  <span class="line"><span class="cm">// data-* attribute or wrapper div</span></span>
         </div>
       </div>
 
@@ -418,9 +418,9 @@
         <div class="cause-title">Locale/timezone-dependent formatting</div>
         <div class="cause-desc">Server and client can have DIFFERENT locale/timezone settings — `toLocaleDateString()` or similar formatting functions can produce different STRING output for the exact same underlying date value.</div>
         <div class="code-block">
-<span class="line"><span class="cm">// ✗ Server (UTC) vs client's local</span></span>
-<span class="line"><span class="cm">// timezone can format differently</span></span>
-<span class="line">{date.toLocaleDateString()}</span>
+  <span class="line"><span class="cm">// ✗ Server (UTC) vs client's local</span></span>
+  <span class="line"><span class="cm">// timezone can format differently</span></span>
+  <span class="line">{date.toLocaleDateString()}</span>
         </div>
       </div>
     </div>
@@ -483,21 +483,21 @@
       <div class="ba-card">
         <div class="ba-label label-before">✗ Browser API used during render</div>
         <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;;</span>
-<span class="line">}</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{window.innerWidth}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
         </div>
       </div>
       <div class="ba-card">
         <div class="ba-label label-after">✓ Move to useEffect, default for SSR</div>
         <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
-<span class="line">  <span class="ck">const</span> [width, setWidth] = useState(<span class="ck">null</span>);</span>
-<span class="line">  useEffect(() =&gt; {</span>
-<span class="line">    setWidth(window.innerWidth); <span class="cm">// client-only</span></span>
-<span class="line">  }, []);</span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{width ?? <span class="cs">"—"</span>}&lt;/<span class="ct">div</span>&gt;;</span>
-<span class="line">}</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">WidthDisplay</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [width, setWidth] = useState(<span class="ck">null</span>);</span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    setWidth(window.innerWidth); <span class="cm">// client-only</span></span>
+  <span class="line">  }, []);</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{width ?? <span class="cs">"—"</span>}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
         </div>
       </div>
     </div>
@@ -506,17 +506,17 @@
       <div class="ba-card">
         <div class="ba-label label-before">✗ typeof window check during render</div>
         <div class="code-block">
-<span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
-<span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
+  <span class="line">{<span class="ck">typeof</span> window !== <span class="cs">"undefined"</span></span>
+  <span class="line">  ? &lt;<span class="ct">ClientWidget</span> /&gt; : <span class="ck">null</span>}</span>
         </div>
       </div>
       <div class="ba-card">
         <div class="ba-label label-after">✓ Use a "mounted" state flag instead</div>
         <div class="code-block">
-<span class="line"><span class="ck">const</span> [mounted, setMounted] = useState(<span class="ck">false</span>);</span>
-<span class="line">useEffect(() =&gt; setMounted(<span class="ck">true</span>), []);</span>
-<span class="line"><span class="ck">if</span> (!mounted) <span class="ck">return</span> <span class="ck">null</span>; <span class="cm">// same on BOTH</span></span>
-<span class="line"><span class="ck">return</span> &lt;<span class="ct">ClientWidget</span> /&gt;;</span>
+  <span class="line"><span class="ck">const</span> [mounted, setMounted] = useState(<span class="ck">false</span>);</span>
+  <span class="line">useEffect(() =&gt; setMounted(<span class="ck">true</span>), []);</span>
+  <span class="line"><span class="ck">if</span> (!mounted) <span class="ck">return</span> <span class="ck">null</span>; <span class="cm">// same on BOTH</span></span>
+  <span class="line"><span class="ck">return</span> &lt;<span class="ct">ClientWidget</span> /&gt;;</span>
         </div>
       </div>
     </div>
@@ -525,17 +525,17 @@
       <div class="ba-card">
         <div class="ba-label label-before">✗ A timestamp that legitimately differs</div>
         <div class="code-block">
-<span class="line">&lt;<span class="ct">span</span>&gt;{<span class="ck">new</span> Date().toLocaleTimeString()}&lt;/<span class="ct">span</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">span</span>&gt;{<span class="ck">new</span> Date().toLocaleTimeString()}&lt;/<span class="ct">span</span>&gt;</span>
         </div>
       </div>
       <div class="ba-card">
         <div class="ba-label label-after">✓ Explicitly suppress for KNOWN, expected diffs</div>
         <div class="code-block">
-<span class="line">&lt;<span class="ct">span</span> suppressHydrationWarning&gt;</span>
-<span class="line">  {<span class="ck">new</span> Date().toLocaleTimeString()}</span>
-<span class="line">&lt;/<span class="ct">span</span>&gt;</span>
-<span class="line"><span class="cm">// Use SPARINGLY — only when the mismatch</span></span>
-<span class="line"><span class="cm">// is genuinely expected/harmless (like a clock)</span></span>
+  <span class="line">&lt;<span class="ct">span</span> suppressHydrationWarning&gt;</span>
+  <span class="line">  {<span class="ck">new</span> Date().toLocaleTimeString()}</span>
+  <span class="line">&lt;/<span class="ct">span</span>&gt;</span>
+  <span class="line"><span class="cm">// Use SPARINGLY — only when the mismatch</span></span>
+  <span class="line"><span class="cm">// is genuinely expected/harmless (like a clock)</span></span>
         </div>
       </div>
     </div>
@@ -690,17 +690,17 @@
       <div class="qa-answer">
         <div class="qa-answer-inner">
           <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">ThemeDisplay</span>() {</span>
-<span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"light"</span>); <span class="cm">// SAME default, both sides</span></span>
-<span class="line"></span>
-<span class="line">  useEffect(() =&gt; {</span>
-<span class="line">    <span class="cm">// localStorage only accessed client-side, AFTER initial hydration-matching render</span></span>
-<span class="line">    <span class="ck">const</span> saved = localStorage.getItem(<span class="cs">"theme"</span>);</span>
-<span class="line">    <span class="ck">if</span> (saved) setTheme(saved);</span>
-<span class="line">  }, []);</span>
-<span class="line"></span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;Current theme: {theme}&lt;/<span class="ct">div</span>&gt;;</span>
-<span class="line">}</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">ThemeDisplay</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [theme, setTheme] = useState(<span class="cs">"light"</span>); <span class="cm">// SAME default, both sides</span></span>
+  <span class="line"></span>
+  <span class="line">  useEffect(() =&gt; {</span>
+  <span class="line">    <span class="cm">// localStorage only accessed client-side, AFTER initial hydration-matching render</span></span>
+  <span class="line">    <span class="ck">const</span> saved = localStorage.getItem(<span class="cs">"theme"</span>);</span>
+  <span class="line">    <span class="ck">if</span> (saved) setTheme(saved);</span>
+  <span class="line">  }, []);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;Current theme: {theme}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
           </div>
           The component initializes state with a FIXED default value (e.g. `"light"`) that's IDENTICAL on both server and client's first render — `localStorage` (a browser-only API) is only ever accessed inside `useEffect`, which runs strictly AFTER the initial render has already successfully hydrated and matched. Once `useEffect` runs client-side and reads the actual saved preference, updating state triggers a NORMAL client-side re-render (not a hydration comparison) — meaning the user briefly sees the DEFAULT value, then it updates to their actual saved preference a moment later, which is an acceptable, common trade-off for avoiding a hydration mismatch on genuinely client-only data.
         </div>
@@ -721,6 +721,16 @@
   function toggleQA(card) {
     card.classList.toggle('open');
   }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
 
   document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {

@@ -106,7 +106,7 @@
     background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
     line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
-    white-space: pre; tab-size: 2;
+    tab-size: 2;
   }
   .code-block .line { display: block; white-space: pre; }
   .cm  { color: #4a5068; font-style: italic; }
@@ -391,46 +391,46 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">VirtualList</span>({ items, itemHeight, containerHeight }) {</span>
-<span class="line">  <span class="ck">const</span> [scrollTop, setScrollTop] = useState(<span class="cn">0</span>);</span>
-<span class="line"></span>
-<span class="line">  <span class="cm">// ── The core math, straight from Section 3 ──</span></span>
-<span class="line">  <span class="ck">const</span> totalHeight = items.length * itemHeight;</span>
-<span class="line">  <span class="ck">const</span> startIndex = Math.floor(scrollTop / itemHeight);</span>
-<span class="line">  <span class="ck">const</span> visibleCount = Math.ceil(containerHeight / itemHeight);</span>
-<span class="line">  <span class="ck">const</span> endIndex = Math.min(items.length - <span class="cn">1</span>, startIndex + visibleCount);</span>
-<span class="line"></span>
-<span class="line">  <span class="cm">// ── Slice out ONLY the items that need to actually render ──</span></span>
-<span class="line">  <span class="ck">const</span> visibleItems = items.slice(startIndex, endIndex + <span class="cn">1</span>);</span>
-<span class="line"></span>
-<span class="line">  <span class="ck">return</span> (</span>
-<span class="line">    &lt;<span class="ct">div</span></span>
-<span class="line">      <span class="ca">style</span>={{ height: containerHeight, overflowY: <span class="cs">"auto"</span>, position: <span class="cs">"relative"</span> }}</span>
-<span class="line">      <span class="ca">onScroll</span>={(e) =&gt; setScrollTop(e.currentTarget.scrollTop)}</span>
-<span class="line">    &gt;</span>
-<span class="line">      {<span class="cm">/* The SPACER — gives the container its FULL scrollable height,</span></span>
-<span class="line"><span class="cm">         even though most of that space has no real content in it */</span>}</span>
-<span class="line">      &lt;<span class="ct">div</span> <span class="ca">style</span>={{ height: totalHeight, position: <span class="cs">"relative"</span> }}&gt;</span>
-<span class="line">        {visibleItems.map((item, i) =&gt; {</span>
-<span class="line">          <span class="ck">const</span> actualIndex = startIndex + i;</span>
-<span class="line">          <span class="ck">return</span> (</span>
-<span class="line">            &lt;<span class="ct">div</span></span>
-<span class="line">              <span class="ca">key</span>={item.id}</span>
-<span class="line">              <span class="ca">style</span>={{</span>
-<span class="line">                position: <span class="cs">"absolute"</span>,</span>
-<span class="line">                top: actualIndex * itemHeight, <span class="cm">// ← the offset formula</span></span>
-<span class="line">                height: itemHeight,</span>
-<span class="line">                width: <span class="cs">"100%"</span>,</span>
-<span class="line">              }}</span>
-<span class="line">            &gt;</span>
-<span class="line">              {item.content}</span>
-<span class="line">            &lt;/<span class="ct">div</span>&gt;</span>
-<span class="line">          );</span>
-<span class="line">        })}</span>
-<span class="line">      &lt;/<span class="ct">div</span>&gt;</span>
-<span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
-<span class="line">  );</span>
-<span class="line">}</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">VirtualList</span>({ items, itemHeight, containerHeight }) {</span>
+  <span class="line">  <span class="ck">const</span> [scrollTop, setScrollTop] = useState(<span class="cn">0</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// ── The core math, straight from Section 3 ──</span></span>
+  <span class="line">  <span class="ck">const</span> totalHeight = items.length * itemHeight;</span>
+  <span class="line">  <span class="ck">const</span> startIndex = Math.floor(scrollTop / itemHeight);</span>
+  <span class="line">  <span class="ck">const</span> visibleCount = Math.ceil(containerHeight / itemHeight);</span>
+  <span class="line">  <span class="ck">const</span> endIndex = Math.min(items.length - <span class="cn">1</span>, startIndex + visibleCount);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// ── Slice out ONLY the items that need to actually render ──</span></span>
+  <span class="line">  <span class="ck">const</span> visibleItems = items.slice(startIndex, endIndex + <span class="cn">1</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">div</span></span>
+  <span class="line">      <span class="ca">style</span>={{ height: containerHeight, overflowY: <span class="cs">"auto"</span>, position: <span class="cs">"relative"</span> }}</span>
+  <span class="line">      <span class="ca">onScroll</span>={(e) =&gt; setScrollTop(e.currentTarget.scrollTop)}</span>
+  <span class="line">    &gt;</span>
+  <span class="line">      {<span class="cm">/* The SPACER — gives the container its FULL scrollable height,</span></span>
+  <span class="line"><span class="cm">         even though most of that space has no real content in it */</span>}</span>
+  <span class="line">      &lt;<span class="ct">div</span> <span class="ca">style</span>={{ height: totalHeight, position: <span class="cs">"relative"</span> }}&gt;</span>
+  <span class="line">        {visibleItems.map((item, i) =&gt; {</span>
+  <span class="line">          <span class="ck">const</span> actualIndex = startIndex + i;</span>
+  <span class="line">          <span class="ck">return</span> (</span>
+  <span class="line">            &lt;<span class="ct">div</span></span>
+  <span class="line">              <span class="ca">key</span>={item.id}</span>
+  <span class="line">              <span class="ca">style</span>={{</span>
+  <span class="line">                position: <span class="cs">"absolute"</span>,</span>
+  <span class="line">                top: actualIndex * itemHeight, <span class="cm">// ← the offset formula</span></span>
+  <span class="line">                height: itemHeight,</span>
+  <span class="line">                width: <span class="cs">"100%"</span>,</span>
+  <span class="line">              }}</span>
+  <span class="line">            &gt;</span>
+  <span class="line">              {item.content}</span>
+  <span class="line">            &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">          );</span>
+  <span class="line">        })}</span>
+  <span class="line">      &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">    &lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">}</span>
     </div>
 
     <div class="callout callout-blue">
@@ -456,15 +456,15 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// Adding overscan to the earlier math — just pad the start/end indices</span></span>
-<span class="line"><span class="ck">const</span> overscan = <span class="cn">3</span>; <span class="cm">// render 3 extra items above AND below the visible range</span></span>
-<span class="line"></span>
-<span class="line"><span class="ck">const</span> startIndex = Math.max(<span class="cn">0</span>, Math.floor(scrollTop / itemHeight) - overscan);</span>
-<span class="line"><span class="ck">const</span> endIndex = Math.min(</span>
-<span class="line">  items.length - <span class="cn">1</span>,</span>
-<span class="line">  Math.floor(scrollTop / itemHeight) + Math.ceil(containerHeight / itemHeight) + overscan</span>
-<span class="line">);</span>
-<span class="line"><span class="cm">// Math.max(0, ...) prevents a negative startIndex near the TOP of the list</span></span>
+  <span class="line"><span class="cm">// Adding overscan to the earlier math — just pad the start/end indices</span></span>
+  <span class="line"><span class="ck">const</span> overscan = <span class="cn">3</span>; <span class="cm">// render 3 extra items above AND below the visible range</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> startIndex = Math.max(<span class="cn">0</span>, Math.floor(scrollTop / itemHeight) - overscan);</span>
+  <span class="line"><span class="ck">const</span> endIndex = Math.min(</span>
+  <span class="line">  items.length - <span class="cn">1</span>,</span>
+  <span class="line">  Math.floor(scrollTop / itemHeight) + Math.ceil(containerHeight / itemHeight) + overscan</span>
+  <span class="line">);</span>
+  <span class="line"><span class="cm">// Math.max(0, ...) prevents a negative startIndex near the TOP of the list</span></span>
     </div>
 
     <table class="feat-table">
@@ -494,19 +494,19 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// The core technique for variable heights: maintain a running array of</span></span>
-<span class="line"><span class="cm">// MEASURED offsets, built up as items are actually rendered and measured</span></span>
-<span class="line"></span>
-<span class="line"><span class="ck">const</span> itemOffsets = useRef([<span class="cn">0</span>]); <span class="cm">// itemOffsets[i] = cumulative height BEFORE item i</span></span>
-<span class="line"><span class="ck">const</span> measuredHeights = useRef(<span class="ck">new</span> Map()); <span class="cm">// index → actual measured height</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// After an item renders, measure its REAL height (e.g. via a ref + getBoundingClientRect)</span></span>
-<span class="line"><span class="cm">// and update the offset array for everything AFTER it, since a wrong initial</span></span>
-<span class="line"><span class="cm">// height estimate needs correcting once the real size is known</span></span>
-<span class="line"></span>
-<span class="line"><span class="cm">// Finding startIndex now requires a BINARY SEARCH over itemOffsets</span></span>
-<span class="line"><span class="cm">// (since it's no longer a simple division) to find which item's offset</span></span>
-<span class="line"><span class="cm">// range contains the current scrollTop value — O(log n) instead of O(1)</span></span>
+  <span class="line"><span class="cm">// The core technique for variable heights: maintain a running array of</span></span>
+  <span class="line"><span class="cm">// MEASURED offsets, built up as items are actually rendered and measured</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> itemOffsets = useRef([<span class="cn">0</span>]); <span class="cm">// itemOffsets[i] = cumulative height BEFORE item i</span></span>
+  <span class="line"><span class="ck">const</span> measuredHeights = useRef(<span class="ck">new</span> Map()); <span class="cm">// index → actual measured height</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// After an item renders, measure its REAL height (e.g. via a ref + getBoundingClientRect)</span></span>
+  <span class="line"><span class="cm">// and update the offset array for everything AFTER it, since a wrong initial</span></span>
+  <span class="line"><span class="cm">// height estimate needs correcting once the real size is known</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Finding startIndex now requires a BINARY SEARCH over itemOffsets</span></span>
+  <span class="line"><span class="cm">// (since it's no longer a simple division) to find which item's offset</span></span>
+  <span class="line"><span class="cm">// range contains the current scrollTop value — O(log n) instead of O(1)</span></span>
     </div>
 
     <table class="feat-table">
@@ -610,14 +610,14 @@
       <div class="qa-answer">
         <div class="qa-answer-inner">
           <div class="code-block">
-<span class="line"><span class="ck">function</span> <span class="cf">scrollToItem</span>(index, itemHeight, scrollContainerRef) {</span>
-<span class="line">  <span class="ck">const</span> targetOffset = index * itemHeight; <span class="cm">// same offset formula from Section 3</span></span>
-<span class="line">  scrollContainerRef.current.scrollTop = targetOffset;</span>
-<span class="line">  <span class="cm">// Setting scrollTop programmatically triggers the SAME onScroll handler</span></span>
-<span class="line">  <span class="cm">// the list already uses for normal user scrolling — the startIndex/endIndex</span></span>
-<span class="line">  <span class="cm">// math recalculates automatically, and the target item renders as part of</span></span>
-<span class="line">  <span class="cm">// the newly-visible window, with no special-case logic needed</span></span>
-<span class="line">}</span>
+  <span class="line"><span class="ck">function</span> <span class="cf">scrollToItem</span>(index, itemHeight, scrollContainerRef) {</span>
+  <span class="line">  <span class="ck">const</span> targetOffset = index * itemHeight; <span class="cm">// same offset formula from Section 3</span></span>
+  <span class="line">  scrollContainerRef.current.scrollTop = targetOffset;</span>
+  <span class="line">  <span class="cm">// Setting scrollTop programmatically triggers the SAME onScroll handler</span></span>
+  <span class="line">  <span class="cm">// the list already uses for normal user scrolling — the startIndex/endIndex</span></span>
+  <span class="line">  <span class="cm">// math recalculates automatically, and the target item renders as part of</span></span>
+  <span class="line">  <span class="cm">// the newly-visible window, with no special-case logic needed</span></span>
+  <span class="line">}</span>
           </div>
           This reuses the EXACT same offset formula (`index × itemHeight`) used for positioning rendered items, just applied in the opposite direction — instead of "given a scroll position, find which item is visible," it's "given a target item, find the scroll position that makes it visible." Because the existing scroll handler already recalculates the visible window from `scrollTop` on every scroll event, programmatically setting `scrollTop` this way naturally triggers the SAME recalculation, requiring no additional special-case rendering logic.
         </div>
@@ -691,6 +691,16 @@
   function toggleQA(card) {
     card.classList.toggle('open');
   }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
 
   document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {

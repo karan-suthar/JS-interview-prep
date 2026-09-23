@@ -121,7 +121,7 @@
     background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
     line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
-    white-space: pre; tab-size: 2;
+    tab-size: 2;
   }
   .code-block .line { display: block; white-space: pre; }
   .cm  { color: #4a5068; font-style: italic; }
@@ -346,15 +346,15 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// What the server actually sends for a CSR app</span></span>
-<span class="line">&lt;<span class="ct">html</span>&gt;</span>
-<span class="line">  &lt;<span class="ct">body</span>&gt;</span>
-<span class="line">    &lt;<span class="ct">div</span> <span class="ca">id</span>=<span class="cs">"root"</span>&gt;&lt;/<span class="ct">div</span>&gt; <span class="cm">{/* EMPTY — nothing to see yet */}</span></span>
-<span class="line">    &lt;<span class="ct">script</span> <span class="ca">src</span>=<span class="cs">"bundle.js"</span>&gt;&lt;/<span class="ct">script</span>&gt; <span class="cm">{/* this does ALL the work */}</span></span>
-<span class="line">  &lt;/<span class="ct">body</span>&gt;</span>
-<span class="line">&lt;/<span class="ct">html</span>&gt;</span>
-<span class="line"><span class="cm">// A user (or a search engine crawler without JS execution) sees NOTHING</span></span>
-<span class="line"><span class="cm">// meaningful until bundle.js downloads, parses, executes, and fetches data</span></span>
+  <span class="line"><span class="cm">// What the server actually sends for a CSR app</span></span>
+  <span class="line">&lt;<span class="ct">html</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">body</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">div</span> <span class="ca">id</span>=<span class="cs">"root"</span>&gt;&lt;/<span class="ct">div</span>&gt; <span class="cm">{/* EMPTY — nothing to see yet */}</span></span>
+  <span class="line">    &lt;<span class="ct">script</span> <span class="ca">src</span>=<span class="cs">"bundle.js"</span>&gt;&lt;/<span class="ct">script</span>&gt; <span class="cm">{/* this does ALL the work */}</span></span>
+  <span class="line">  &lt;/<span class="ct">body</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">html</span>&gt;</span>
+  <span class="line"><span class="cm">// A user (or a search engine crawler without JS execution) sees NOTHING</span></span>
+  <span class="line"><span class="cm">// meaningful until bundle.js downloads, parses, executes, and fetches data</span></span>
     </div>
 
     <table class="feat-table">
@@ -387,13 +387,13 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// Simplified SSR flow (e.g. Next.js App Router, a Server Component)</span></span>
-<span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
-<span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> db.products.findById(params.id); <span class="cm">// fresh, on EVERY request</span></span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
-<span class="line">}</span>
-<span class="line"><span class="cm">// If the price changes in the database, the VERY NEXT request sees the new price —</span></span>
-<span class="line"><span class="cm">// no rebuild, no redeploy, no caching delay</span></span>
+  <span class="line"><span class="cm">// Simplified SSR flow (e.g. Next.js App Router, a Server Component)</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
+  <span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> db.products.findById(params.id); <span class="cm">// fresh, on EVERY request</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// If the price changes in the database, the VERY NEXT request sees the new price —</span></span>
+  <span class="line"><span class="cm">// no rebuild, no redeploy, no caching delay</span></span>
     </div>
 
     <table class="feat-table">
@@ -426,17 +426,17 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// Simplified SSG flow (e.g. Next.js generateStaticParams, or Astro/Gatsby/Hugo)</span></span>
-<span class="line"><span class="ck">export async function</span> <span class="cf">generateStaticParams</span>() {</span>
-<span class="line">  <span class="ck">const</span> posts = <span class="ck">await</span> cms.getAllPosts();</span>
-<span class="line">  <span class="ck">return</span> posts.map((post) =&gt; ({ slug: post.slug })); <span class="cm">// pre-builds EVERY blog post page</span></span>
-<span class="line">}</span>
-<span class="line"></span>
-<span class="line"><span class="ck">async function</span> <span class="cf">BlogPost</span>({ params }) {</span>
-<span class="line">  <span class="ck">const</span> post = <span class="ck">await</span> cms.getPost(params.slug); <span class="cm">// runs ONCE, at BUILD time only</span></span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">article</span>&gt;{post.title}&lt;/<span class="ct">article</span>&gt;;</span>
-<span class="line">}</span>
-<span class="line"><span class="cm">// If the CMS content changes, this page STAYS THE SAME until the NEXT build/deploy</span></span>
+  <span class="line"><span class="cm">// Simplified SSG flow (e.g. Next.js generateStaticParams, or Astro/Gatsby/Hugo)</span></span>
+  <span class="line"><span class="ck">export async function</span> <span class="cf">generateStaticParams</span>() {</span>
+  <span class="line">  <span class="ck">const</span> posts = <span class="ck">await</span> cms.getAllPosts();</span>
+  <span class="line">  <span class="ck">return</span> posts.map((post) =&gt; ({ slug: post.slug })); <span class="cm">// pre-builds EVERY blog post page</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">BlogPost</span>({ params }) {</span>
+  <span class="line">  <span class="ck">const</span> post = <span class="ck">await</span> cms.getPost(params.slug); <span class="cm">// runs ONCE, at BUILD time only</span></span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">article</span>&gt;{post.title}&lt;/<span class="ct">article</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// If the CMS content changes, this page STAYS THE SAME until the NEXT build/deploy</span></span>
     </div>
 
     <table class="feat-table">
@@ -497,15 +497,15 @@
     </div>
 
     <div class="code-block">
-<span class="line"><span class="cm">// Simplified ISR flow (e.g. Next.js revalidate option)</span></span>
-<span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
-<span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/products/${params.id}`, {</span>
-<span class="line">    next: { revalidate: <span class="cn">60</span> } <span class="cm">// regenerate this page at MOST once every 60 seconds</span></span>
-<span class="line">  });</span>
-<span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
-<span class="line">}</span>
-<span class="line"><span class="cm">// Fast like SSG (serves cached HTML instantly), but self-updates periodically</span></span>
-<span class="line"><span class="cm">// like SSR, WITHOUT needing a full site rebuild for every content change</span></span>
+  <span class="line"><span class="cm">// Simplified ISR flow (e.g. Next.js revalidate option)</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">ProductPage</span>({ params }) {</span>
+  <span class="line">  <span class="ck">const</span> product = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/products/${params.id}`, {</span>
+  <span class="line">    next: { revalidate: <span class="cn">60</span> } <span class="cm">// regenerate this page at MOST once every 60 seconds</span></span>
+  <span class="line">  });</span>
+  <span class="line">  <span class="ck">return</span> &lt;<span class="ct">div</span>&gt;{product.name} — ${product.price}&lt;/<span class="ct">div</span>&gt;;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Fast like SSG (serves cached HTML instantly), but self-updates periodically</span></span>
+  <span class="line"><span class="cm">// like SSR, WITHOUT needing a full site rebuild for every content change</span></span>
     </div>
 
     <table class="feat-table">
@@ -732,6 +732,16 @@
   function toggleQA(card) {
     card.classList.toggle('open');
   }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
 
   document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
