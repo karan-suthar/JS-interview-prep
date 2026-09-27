@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflow vs Repaint &amp; Forced Synchronous Layout — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff6b6b;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,107,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,107,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,107,107,0.1); color: var(--accent);
+    border: 1px solid rgba(255,107,107,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff6b6b 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4545);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Property grid ── */
+  .prop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+  @media (max-width: 640px) { .prop-grid { grid-template-columns: 1fr; } }
+  .prop-column {
+    background: var(--bg2); border-radius: var(--radius-lg); padding: 1.1rem 1.2rem;
+    border-top: 3px solid transparent;
+  }
+  .prop-column-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .prop-item {
+    font-family: var(--font-mono); font-size: 12.5px; padding: 8px 10px; border-radius: 6px;
+    margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .prop-num { font-size: 10px; opacity: 0.6; font-weight: 600; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,107,107,0.12); border-color: rgba(255,107,107,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · CSS Performance</div>
+    <h1>Reflow vs Repaint &amp; Forced Synchronous Layout</h1>
+    <p>10 Properties That Trigger Each, and How to Avoid Layout Thrashing — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Reflow vs Repaint Recap</a>
+    <a class="topic-pill" href="#s2">2. The 10 Properties</a>
+    <a class="topic-pill" href="#s3">3. Extended Reference Table</a>
+    <a class="topic-pill" href="#s4">4. Forced Synchronous Layout</a>
+    <a class="topic-pill" href="#s5">5. How to Avoid It</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Reflow vs Repaint Recap
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Reflow vs Repaint — Quick Recap</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Reflow (Layout)</strong> recomputes the SIZE and POSITION of elements — expensive, and can CASCADE to affect other elements. <strong>Repaint (Paint)</strong> redraws pixel content WITHOUT recomputing geometry — cheaper, since it skips layout entirely. Some changes skip BOTH, going straight to Composite (the cheapest path of all).</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The cost hierarchy — reflow is always more expensive than repaint-only</div>
+      <svg class="diagram-svg" viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="30" width="200" height="60" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="120" y="55" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">REFLOW</text>
+        <text x="120" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">Layout→Paint→Composite</text>
+
+        <rect x="250" y="30" width="200" height="60" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="55" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">REPAINT ONLY</text>
+        <text x="350" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">Paint→Composite</text>
+
+        <rect x="480" y="30" width="200" height="60" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="580" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">COMPOSITE ONLY</text>
+        <text x="580" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8.5">GPU only</text>
+
+        <text x="350" y="115" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Most expensive ←──────────────────────────────────────────→ Cheapest</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — The 10 Properties
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>10 Properties — 5 Reflow, 5 Repaint-Only</h2>
+    </div>
+
+    <div class="prop-grid">
+      <div class="prop-column" style="border-top-color:#ff6b6b">
+        <div class="prop-column-title" style="color:#ff6b6b">🔴 Trigger Reflow (Layout)</div>
+        <div class="prop-item" style="background:rgba(255,107,107,0.08)"><span class="prop-num">1</span>width / height</div>
+        <div class="prop-item" style="background:rgba(255,107,107,0.08)"><span class="prop-num">2</span>top / left / right / bottom (when positioned)</div>
+        <div class="prop-item" style="background:rgba(255,107,107,0.08)"><span class="prop-num">3</span>margin / padding</div>
+        <div class="prop-item" style="background:rgba(255,107,107,0.08)"><span class="prop-num">4</span>font-size / font-family</div>
+        <div class="prop-item" style="background:rgba(255,107,107,0.08)"><span class="prop-num">5</span>display (block↔none, flex, etc.)</div>
+      </div>
+      <div class="prop-column" style="border-top-color:#ffb86c">
+        <div class="prop-column-title" style="color:#ffb86c">🟡 Trigger Repaint ONLY (no reflow)</div>
+        <div class="prop-item" style="background:rgba(255,184,108,0.08)"><span class="prop-num">6</span>color</div>
+        <div class="prop-item" style="background:rgba(255,184,108,0.08)"><span class="prop-num">7</span>background-color / background-image</div>
+        <div class="prop-item" style="background:rgba(255,184,108,0.08)"><span class="prop-num">8</span>border-color / border-style</div>
+        <div class="prop-item" style="background:rgba(255,184,108,0.08)"><span class="prop-num">9</span>box-shadow / outline</div>
+        <div class="prop-item" style="background:rgba(255,184,108,0.08)"><span class="prop-num">10</span>visibility (hidden↔visible)</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The underlying rule that explains ALL ten:</strong> if a property can change an element's SIZE or POSITION (or affect its SIBLINGS'/PARENT's size/position), it triggers reflow. If it only changes VISUAL appearance without touching geometry, it's repaint-only. <ic>transform</ic> and <ic>opacity</ic> go a step further, skipping repaint too — composite-only.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Property</th><th>Category</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>width / height</td><td class="no">Reflow</td><td>Directly changes the element's box size — must recompute geometry</td></tr>
+        <tr><td>top / left / right / bottom</td><td class="no">Reflow</td><td>Changes position (for positioned elements) — geometry recalculation needed</td></tr>
+        <tr><td>margin / padding</td><td class="no">Reflow</td><td>Affects the box model directly, and can shift SIBLING elements' positions</td></tr>
+        <tr><td>font-size / font-family</td><td class="no">Reflow</td><td>Changes text metrics (character width/height), which can reflow surrounding content</td></tr>
+        <tr><td>display</td><td class="no">Reflow</td><td>Can add/remove the element from the render tree/layout entirely, or change its layout mode</td></tr>
+        <tr><td>color</td><td class="yes">Repaint only</td><td>Pure visual change — text still occupies the exact same space</td></tr>
+        <tr><td>background-color / background-image</td><td class="yes">Repaint only</td><td>Visual fill only — doesn't affect the box's size or position</td></tr>
+        <tr><td>border-color / border-style</td><td class="yes">Repaint only</td><td>Visual only — NOTE: border-WIDTH is different, see gotchas</td></tr>
+        <tr><td>box-shadow / outline</td><td class="yes">Repaint only</td><td>Drawn OUTSIDE the box's layout bounds — doesn't affect surrounding layout</td></tr>
+        <tr><td>visibility</td><td class="yes">Repaint only</td><td>Hides/shows the element visually, but its layout space is STILL reserved either way</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Extended Reference Table
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Extended Reference — Composite-Only Properties Too</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Property</th><th>Reflow</th><th>Repaint</th><th>Composite</th></tr></thead>
+      <tbody>
+        <tr><td>transform</td><td class="yes">✗ Skipped</td><td class="yes">✗ Skipped</td><td class="no">✓ Only</td></tr>
+        <tr><td>opacity</td><td class="yes">✗ Skipped</td><td class="yes">✗ Skipped</td><td class="no">✓ Only</td></tr>
+        <tr><td>filter (e.g. blur)</td><td class="yes">✗ Skipped</td><td class="no">✓ Triggered*</td><td class="no">✓</td><td></td></tr>
+        <tr><td>position (static↔fixed/absolute)</td><td class="no">✓ Triggered</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>float / clear</td><td class="no">✓ Triggered</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>overflow (visible↔hidden/scroll)</td><td class="no">✓ Triggered</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>text-align / vertical-align</td><td class="no">✓ Triggered</td><td class="no">✓</td><td class="no">✓</td></tr>
+        <tr><td>border-width (vs. border-color)</td><td class="no">✓ Triggered</td><td class="no">✓</td><td class="no">✓</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>*<ic>filter</ic> is often GPU-accelerated in modern browsers (composited on its own layer), but this isn't guaranteed the same way `transform`/`opacity` are — treat it as "usually cheaper than a full reflow, but not as universally cheap as transform/opacity" rather than a guaranteed composite-only property.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Forced Synchronous Layout
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Forced Synchronous Layout ("Layout Thrashing")</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Normally, the browser BATCHES layout recalculations and defers them until right before the next paint, for efficiency.</strong> But certain JavaScript property READS force the browser to immediately, SYNCHRONOUSLY compute layout RIGHT NOW, flushing any pending changes early — this is called a "forced synchronous layout," and doing it repeatedly in a loop is "layout thrashing."</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Properties/methods that FORCE a synchronous layout flush when READ:</span></span>
+  <span class="line">element.offsetWidth / offsetHeight / offsetTop / offsetLeft</span>
+  <span class="line">element.clientWidth / clientHeight / clientTop / clientLeft</span>
+  <span class="line">element.scrollWidth / scrollHeight / scrollTop / scrollLeft</span>
+  <span class="line">element.getBoundingClientRect()</span>
+  <span class="line">getComputedStyle(element) <span class="cm">// for certain properties</span></span>
+  <span class="line">window.getSelection()</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Why interleaved reads and writes are so expensive</div>
+      <svg class="diagram-svg" viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">✗ Interleaved (thrashing)</text>
+        <rect x="30" y="35" width="90" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="75" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7.5">WRITE box1</text>
+        <rect x="130" y="35" width="90" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="175" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7.5">READ box1 ⚡FLUSH</text>
+        <rect x="230" y="35" width="90" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="275" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7.5">WRITE box2</text>
+        <rect x="330" y="35" width="90" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="375" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="7.5">READ box2 ⚡FLUSH</text>
+        <text x="230" y="80" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="9.5">EVERY read forces a fresh, synchronous layout flush — N items = N forced layouts</text>
+
+        <text x="525" y="105" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">✓ Batched (reads, then writes)</text>
+        <rect x="400" y="120" width="90" height="25" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="445" y="137" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7.5">READ ALL ⚡once</text>
+        <rect x="500" y="120" width="90" height="25" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="545" y="137" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7.5">WRITE ALL</text>
+        <rect x="600" y="120" width="80" height="25" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1"/>
+        <text x="640" y="137" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7.5">1 layout total</text>
+        <text x="540" y="165" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="9.5">Layout flushes ONCE, to satisfy the batched reads — dramatically fewer flushes</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — How to Avoid It
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>How to Avoid Forced Synchronous Layout</h2>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Interleaved reads/writes in a loop</div>
+        <div class="code-block">
+  <span class="line">boxes.forEach((box) =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> h = box.offsetHeight; <span class="cm">// READ</span></span>
+  <span class="line">  box.style.height = h * <span class="cn">2</span> + <span class="cs">"px"</span>; <span class="cm">// WRITE</span></span>
+  <span class="line">}); <span class="cm">// N forced layouts for N boxes</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Batch all reads, then all writes</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">const</span> heights = boxes.map((b) =&gt; b.offsetHeight);</span>
+  <span class="line">boxes.forEach((box, i) =&gt; {</span>
+  <span class="line">  box.style.height = heights[i] * <span class="cn">2</span> + <span class="cs">"px"</span>;</span>
+  <span class="line">}); <span class="cm">// 1 forced layout total</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Reading layout in a scroll/resize handler</div>
+        <div class="code-block">
+  <span class="line">window.addEventListener(<span class="cs">"scroll"</span>, () =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> rect = el.getBoundingClientRect();</span>
+  <span class="line">  updateSomething(rect.top); <span class="cm">// fires on EVERY scroll pixel</span></span>
+  <span class="line">});</span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Wrap in requestAnimationFrame</div>
+        <div class="code-block">
+  <span class="line"><span class="ck">let</span> ticking = <span class="ck">false</span>;</span>
+  <span class="line">window.addEventListener(<span class="cs">"scroll"</span>, () =&gt; {</span>
+  <span class="line">  <span class="ck">if</span> (!ticking) {</span>
+  <span class="line">    requestAnimationFrame(() =&gt; {</span>
+  <span class="line">      <span class="ck">const</span> rect = el.getBoundingClientRect();</span>
+  <span class="line">      updateSomething(rect.top);</span>
+  <span class="line">      ticking = <span class="ck">false</span>;</span>
+  <span class="line">    });</span>
+  <span class="line">    ticking = <span class="ck">true</span>;</span>
+  <span class="line">  }</span>
+  <span class="line">});</span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Technique</th><th>How it helps</th></tr></thead>
+      <tbody>
+        <tr><td>Batch reads, then batch writes ("FastDOM" pattern)</td><td>Ensures the browser only needs to compute layout ONCE, to satisfy all reads together, instead of once per interleaved read</td></tr>
+        <tr><td>Use requestAnimationFrame for layout-reading logic</td><td>Aligns DOM reads with the browser's natural render cycle, avoiding redundant mid-frame layout flushes from high-frequency events (scroll, resize)</td></tr>
+        <tr><td>Cache read values instead of re-reading repeatedly</td><td>If a value (like a container's width) won't change between uses, read it ONCE and reuse the cached value rather than re-querying it</td></tr>
+        <tr><td>Use CSS transform/opacity for animations</td><td>Avoids the reflow/repaint cost entirely for animated properties — composite-only, no synchronous layout risk</td></tr>
+        <tr><td>Use `will-change` sparingly for elements about to animate</td><td>Hints the browser to promote the element to its own compositor layer in advance, though overuse can waste memory</td></tr>
+        <tr><td>Debounce/throttle handlers that read layout</td><td>Reduces how OFTEN layout-reading code runs at all, on high-frequency events</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>border-color is repaint-only, but border-WIDTH triggers reflow</strong> — a classic, easy-to-miss distinction; changing the border's THICKNESS changes the element's effective box size, while changing its COLOR does not.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>visibility:hidden is repaint-only, but display:none triggers reflow</strong> — `visibility` keeps the element's layout space reserved (so no geometry recalculation needed elsewhere), while `display:none` removes it from the render tree entirely, which DOES require the surrounding layout to be recomputed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>filter isn't a clean composite-only property like transform/opacity</strong> — it's OFTEN GPU-accelerated in modern browsers, but this isn't a universal guarantee the way transform/opacity's behavior is; don't lump it in as equivalent.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Reflow doesn't just cost the ONE changed element — it can cascade to parents, siblings, and children</strong> — this is why reflow-triggering property changes are considered dramatically more expensive than repaint-only ones, beyond just "one more stage in the pipeline."</span></li>
+      <li><span class="gi">⚠️</span><span><strong>getComputedStyle() doesn't ALWAYS force a synchronous layout</strong> — it depends on WHICH specific property is being queried; querying a property affected by pending layout changes forces a flush, while others may not; it's safest to treat it as a potential trigger rather than assuming it's always safe or always forces a flush.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The "read/write batching" pattern needs to span the WHOLE operation, not just one loop</strong> — if code elsewhere (a different function, a different event handler) also interleaves reads/writes on the same frame, the batching benefit can be undermined; this is why dedicated libraries like FastDOM exist, to centralize and coordinate this batching across an entire application.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Chrome DevTools' Performance panel shows "Forced reflow" warnings directly</strong> — specifically flagging JavaScript calls that triggered a synchronous layout recalculation, making this a very practical, verifiable thing to check for and demonstrate awareness of.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>will-change should be removed/reset after the relevant animation completes</strong> — leaving it applied indefinitely on many elements can waste GPU memory by keeping unnecessary compositor layers alive longer than needed; it's a targeted, temporary hint, not a permanent "make this fast" switch.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not all reflow-triggering changes are equally expensive</strong> — a reflow on a deeply nested, complex subtree with many siblings/children is far more costly than a reflow on a simple, isolated element; "triggers reflow" is a binary category, but the ACTUAL cost varies enormously by context.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>React/Vue/other frameworks' virtual DOM diffing doesn't automatically prevent layout thrashing</strong> — if application code explicitly reads a layout property (like `ref.current.offsetHeight`) inside a render or effect that also writes styles, the SAME thrashing risk applies regardless of the framework; virtual DOM batches RE-RENDERS, not necessarily raw DOM read/write ordering at the browser level.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4545);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is concrete, actionable performance knowledge — interviewers value precise property-level examples over vague statements like "some things are more expensive than others."</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What determines whether a CSS property change triggers reflow versus just repaint?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The determining factor is whether the property can change an element's GEOMETRY — its size or position — either directly, or indirectly by affecting how much space it needs (like text metrics changing from a font-size update). If a property affects geometry, the browser must re-run LAYOUT to recompute affected elements' boxes before it can paint anything correctly — this is reflow. If a property only changes VISUAL appearance (color, shadows, background) without altering size or position at all, the browser can skip layout entirely and go straight to repainting the affected pixels — cheaper, since one whole stage of the pipeline is skipped.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does reading element.offsetHeight force a synchronous layout, when the browser would normally prefer to batch and defer layout calculations?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `offsetHeight` needs to return the element's CURRENT, ACCURATE rendered height — but if there are PENDING style changes the browser hasn't yet processed through layout (because it was deferring/batching them for efficiency, as it normally does), the browser has no way to know the correct up-to-date height WITHOUT actually running that pending layout computation right now. Returning a STALE or incorrect value would be a worse outcome than the performance cost of computing it immediately — so the browser is forced to synchronously "flush" any pending layout work at that exact moment, guaranteeing the returned value is accurate, at the cost of losing its normal batching/deferral optimization for that particular computation.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would animating with box-shadow or filter still be acceptable, despite not being purely composite-only like transform/opacity?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the animated element and the affected screen area are SMALL, and/or the animation is brief/infrequent rather than a continuous, large-scale effect — a repaint (or filter's GPU-accelerated-but-not-guaranteed-composite behavior) on a small, isolated element is far less noticeable than the same property change applied to a large, complex, frequently-updating element. It's also acceptable on lower-stakes interactions (a subtle hover effect on a button) where occasional minor jank wouldn't meaningfully harm the user experience, versus a continuous, large-scale, performance-critical animation (like a full-page transition) where sticking strictly to transform/opacity matters much more. As with most performance guidance, the right choice depends on MEASURING actual impact for the specific case, not blanket-avoiding every non-composite-only property universally.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you refactor a function that resizes 100 elements to match their tallest sibling, to avoid layout thrashing?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Before — interleaved: reads EACH height, then writes, over and over</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">equalizeHeights</span>(elements) {</span>
+  <span class="line">  <span class="ck">let</span> maxHeight = <span class="cn">0</span>;</span>
+  <span class="line">  elements.forEach((el) =&gt; {</span>
+  <span class="line">    maxHeight = Math.max(maxHeight, el.offsetHeight); <span class="cm">// READ, forces flush</span></span>
+  <span class="line">    el.style.height = <span class="cs">"auto"</span>; <span class="cm">// WRITE — invalidates layout for NEXT read</span></span>
+  <span class="line">  });</span>
+  <span class="line">  elements.forEach((el) =&gt; { el.style.height = maxHeight + <span class="cs">"px"</span>; });</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ After — all reads happen FIRST, in one pass, then all writes</span></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">equalizeHeights</span>(elements) {</span>
+  <span class="line">  <span class="cm">// READ phase — one pass, ONE layout flush total for all of them</span></span>
+  <span class="line">  <span class="ck">const</span> heights = elements.map((el) =&gt; el.offsetHeight);</span>
+  <span class="line">  <span class="ck">const</span> maxHeight = Math.max(...heights);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// WRITE phase — separate pass, no reads interleaved, no forced flushes</span></span>
+  <span class="line">  elements.forEach((el) =&gt; { el.style.height = maxHeight + <span class="cs">"px"</span>; });</span>
+  <span class="line">}</span>
+          </div>
+          The key change is separating the function into two distinct PHASES — first, read every element's `offsetHeight` in one uninterrupted pass (the browser only needs to compute layout ONCE to satisfy all these reads together, since nothing was WRITTEN in between them), and only THEN write the new height to every element in a second pass. This reduces the forced synchronous layout count from potentially ONE PER ELEMENT (100 forced layouts) down to effectively one, since no write happens between any of the reads.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference in cost between changing display:none and visibility:hidden, even though both "hide" an element?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `display:none` REMOVES the element from the render tree entirely — it occupies zero space, meaning surrounding elements need their layout RECOMPUTED to account for the now-missing space (a reflow, which can cascade to siblings/parents). `visibility:hidden` keeps the element's layout box FULLY INTACT and reserved — it simply isn't painted/visible — so no surrounding element's geometry is affected at all, meaning only a repaint (of that element becoming invisible) is needed, with no reflow required. For toggling visibility frequently (like a tooltip that shows/hides often), `visibility:hidden` (or `opacity`, for an even cheaper composite-only option, if reserving layout space is acceptable) is generally the more performant choice specifically because it avoids the reflow cost `display:none` incurs on every toggle.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is a reflow triggered by a change to a deeply nested element potentially MORE expensive than a reflow triggered by a change to a top-level, isolated element?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Layout computation can CASCADE outward from the changed element — if a deeply nested element's size change affects its PARENT's size (e.g. the parent auto-sizes to fit its content), that parent's size change can then affect ITS OWN parent, and so on up the tree, and can also shift the positions of SIBLING elements at each level along the way in normal document flow. An isolated, top-level element with no dependent parents/siblings relying on its size has a much more CONTAINED reflow — the recalculation doesn't need to propagate nearly as far through the tree. The WORST-case reflow scenario is a change deep in a complex, deeply-nested tree with many size-dependent ancestors and siblings, which can force the browser to recompute layout for a much LARGER portion of the page than the single element that was actually modified.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would using requestAnimationFrame NOT be sufficient to prevent layout thrashing on its own?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `requestAnimationFrame` helps by aligning WHEN your code runs with the browser's natural rendering cycle (avoiding redundant work firing many times per frame, like on every scroll pixel) — but it does NOT, by itself, guarantee your reads and writes stay properly SEPARATED/batched. If code INSIDE a single `requestAnimationFrame` callback still interleaves reads and writes (reading a layout property, then writing a style, then reading again, all within that one callback), the SAME forced-synchronous-layout thrashing can still occur within that single frame — `requestAnimationFrame` alone controls timing/frequency, not the read/write ORDERING discipline that the FastDOM-style batching pattern specifically addresses. Both techniques are complementary and often used together, not substitutes for one another.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you use Chrome DevTools to actually verify whether a specific piece of code is causing forced synchronous layouts in a real application?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Open the Performance panel and record while triggering the interaction/code path suspected of causing the issue (e.g. scrolling, or clicking a button that runs the suspect function).<br>
+          <strong>2.</strong> Look through the recorded timeline for "Layout" entries — Chrome specifically labels ones caused by a forced synchronous read with a warning icon and the text "Forced reflow" (or similar, sometimes phrased "Forced synchronous layout"), often directly linking to the exact line of JavaScript responsible.<br>
+          <strong>3.</strong> Check HOW MANY times this occurs during the recording — a single forced layout is often negligible, but seeing it fire dozens or hundreds of times (e.g. once per item in a loop) confirms genuine layout thrashing, not just an isolated, harmless instance.<br>
+          <strong>4.</strong> Click through to the flagged call stack to identify the EXACT property read (`offsetHeight`, `getBoundingClientRect()`, etc.) and the surrounding code, then apply the read/write batching refactor shown in Section 5.<br>
+          <strong>5.</strong> Re-record after the fix and confirm the forced-reflow warnings are gone (or significantly reduced), and that the total time spent in "Layout" for that interaction has measurably decreased.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Reflow vs Repaint · Forced Synchronous Layout · Layout Thrashing
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

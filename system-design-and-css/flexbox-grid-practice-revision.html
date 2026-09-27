@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flexbox &amp; Grid Practice — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #ff79c6;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Live demo boxes ── */
+  .live-demo {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    padding: 1rem; margin-bottom: 1rem;
+  }
+  .demo-label { font-size: 10.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+
+  /* Flexbox demo */
+  .flex-demo { display: flex; gap: 8px; }
+  .flex-box { background: rgba(92,255,176,0.15); border: 1px solid rgba(92,255,176,0.4); border-radius: 6px; padding: 12px; color: var(--teal); font-family: var(--font-mono); font-size: 11px; text-align: center; flex: 1; }
+
+  /* Grid demo */
+  .grid-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid-box { background: rgba(255,121,198,0.15); border: 1px solid rgba(255,121,198,0.4); border-radius: 6px; padding: 12px; color: var(--pink); font-family: var(--font-mono); font-size: 11px; text-align: center; }
+
+  /* Sidebar layout demo */
+  .sidebar-demo { display: grid; grid-template-columns: 200px 1fr; gap: 8px; min-height: 100px; }
+  .sidebar-demo .sb { background: rgba(106,176,255,0.15); border: 1px solid rgba(106,176,255,0.4); border-radius: 6px; padding: 10px; color: var(--blue); font-family: var(--font-mono); font-size: 10.5px; }
+  .sidebar-demo .main { background: rgba(255,184,108,0.15); border: 1px solid rgba(255,184,108,0.4); border-radius: 6px; padding: 10px; color: var(--amber); font-family: var(--font-mono); font-size: 10.5px; }
+
+  /* Card grid demo */
+  .card-demo { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .card-demo .cd { background: rgba(189,147,249,0.15); border: 1px solid rgba(189,147,249,0.4); border-radius: 6px; padding: 14px; color: var(--purple); font-family: var(--font-mono); font-size: 10.5px; text-align: center; }
+
+  /* Modal centering demo */
+  .modal-demo { display: flex; align-items: center; justify-content: center; min-height: 140px; background: rgba(0,0,0,0.3); border-radius: 8px; }
+  .modal-demo .md { background: rgba(92,255,176,0.15); border: 1px solid rgba(92,255,176,0.5); border-radius: 8px; padding: 20px 30px; color: var(--teal); font-family: var(--font-mono); font-size: 11px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Flexbox &amp; Grid</div>
+    <h1>Flexbox &amp; Grid Practice</h1>
+    <p>Building a Sidebar Layout, Card Grid, and Centered Modal — with Live Demos and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Flexbox vs Grid</a>
+    <a class="topic-pill" href="#s2">2. Flexbox Core Concepts</a>
+    <a class="topic-pill" href="#s3">3. Grid Core Concepts</a>
+    <a class="topic-pill" href="#s4">4. Build 1 — Sidebar Layout</a>
+    <a class="topic-pill" href="#s5">5. Build 2 — Card Grid</a>
+    <a class="topic-pill" href="#s6">6. Build 3 — Centered Modal</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Flexbox vs Grid
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Flexbox vs Grid — When to Reach for Each</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Flexbox is ONE-DIMENSIONAL</strong> — it lays items out along a SINGLE axis (row OR column) and excels at distributing/aligning items within that one line. <strong>Grid is TWO-DIMENSIONAL</strong> — it lays items out across ROWS and COLUMNS simultaneously, excelling at overall PAGE/component structure.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Use case</th><th>Better fit</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Navbar with logo + nav links + button</td><td>Flexbox</td><td>One row, distributing/aligning items along it</td></tr>
+        <tr><td>Overall page layout (header/sidebar/main/footer)</td><td>Grid</td><td>Needs to control both rows AND columns simultaneously</td></tr>
+        <tr><td>A row of buttons that should wrap</td><td>Flexbox</td><td>One-dimensional flow with wrapping</td></tr>
+        <tr><td>A photo gallery / card grid</td><td>Grid</td><td>Genuinely two-dimensional — rows AND columns of equal-ish items</td></tr>
+        <tr><td>Centering ONE item inside a container</td><td>Either works equally well</td><td>Both have simple, one-line centering solutions</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Flexbox Core Concepts
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Flexbox Core Concepts</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: display: flex; gap: 8px;</div>
+      <div class="flex-demo">
+        <div class="flex-box">flex: 1</div>
+        <div class="flex-box">flex: 1</div>
+        <div class="flex-box">flex: 1</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line">.container {</span>
+  <span class="line">  display: flex;</span>
+  <span class="line">  flex-direction: row;        <span class="cm">/* row (default) | column */</span></span>
+  <span class="line">  justify-content: space-between; <span class="cm">/* alignment along the MAIN axis */</span></span>
+  <span class="line">  align-items: center;        <span class="cm">/* alignment along the CROSS axis */</span></span>
+  <span class="line">  flex-wrap: wrap;            <span class="cm">/* allow items to wrap to a new line */</span></span>
+  <span class="line">  gap: <span class="cn">12</span>px;                  <span class="cm">/* spacing BETWEEN items, no manual margins needed */</span></span>
+  <span class="line">}</span>
+  <span class="line">.item { flex: <span class="cn">1</span>; } <span class="cm">/* shorthand for flex-grow:1, flex-shrink:1, flex-basis:0 — "share space equally" */</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Property (on container)</th><th>Controls</th></tr></thead>
+      <tbody>
+        <tr><td>flex-direction</td><td>Which axis is the "main" axis — row or column</td></tr>
+        <tr><td>justify-content</td><td>Alignment/distribution ALONG the main axis (flex-start, center, space-between, space-around)</td></tr>
+        <tr><td>align-items</td><td>Alignment along the CROSS axis (perpendicular to main)</td></tr>
+        <tr><td>flex-wrap</td><td>Whether items wrap onto multiple lines when they don't fit</td></tr>
+        <tr><td>gap</td><td>Spacing between items — modern, cleaner alternative to margin-based spacing</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Grid Core Concepts
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Grid Core Concepts</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: display: grid; grid-template-columns: repeat(3, 1fr);</div>
+      <div class="grid-demo">
+        <div class="grid-box">1</div>
+        <div class="grid-box">2</div>
+        <div class="grid-box">3</div>
+        <div class="grid-box">4</div>
+        <div class="grid-box">5</div>
+        <div class="grid-box">6</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line">.container {</span>
+  <span class="line">  display: grid;</span>
+  <span class="line">  grid-template-columns: <span class="cn">200</span>px <span class="cn">1</span>fr <span class="cn">1</span>fr; <span class="cm">/* 3 columns: fixed, then two flexible */</span></span>
+  <span class="line">  grid-template-rows: auto <span class="cn">1</span>fr auto;    <span class="cm">/* 3 rows: content-sized, flexible, content-sized */</span></span>
+  <span class="line">  gap: <span class="cn">16</span>px;</span>
+  <span class="line">}</span>
+  <span class="line">.item {</span>
+  <span class="line">  grid-column: <span class="cn">1</span> / <span class="cn">3</span>; <span class="cm">/* span from column line 1 to column line 3 (i.e. spans 2 columns) */</span></span>
+  <span class="line">  grid-row: <span class="cn">2</span>;      <span class="cm">/* place in row 2 */</span></span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Property/unit</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>fr unit</td><td>A FRACTION of the remaining available space — `1fr 2fr` splits space into thirds, giving the second column twice as much</td></tr>
+        <tr><td>grid-template-columns/rows</td><td>Defines the explicit column/row TRACK sizes for the grid</td></tr>
+        <tr><td>repeat(n, size)</td><td>Shorthand for repeating the same track size N times — `repeat(3, 1fr)` = `1fr 1fr 1fr`</td></tr>
+        <tr><td>auto-fit / auto-fill + minmax()</td><td>Lets the grid automatically compute how many columns fit, based on a MIN and MAX size per column — key for responsive grids without media queries</td></tr>
+        <tr><td>grid-column / grid-row</td><td>Places or SPANS a specific item across multiple grid lines/tracks</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Build 1: Sidebar Layout
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Build 1 — Two-Column Sidebar Layout</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live demo</div>
+      <div class="sidebar-demo">
+        <div class="sb">SIDEBAR<br>200px fixed</div>
+        <div class="main">MAIN CONTENT<br>fills remaining space (1fr)</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* ── Grid approach (recommended — it's a 2D structural layout) ── */</span></span>
+  <span class="line">.layout {</span>
+  <span class="line">  display: grid;</span>
+  <span class="line">  grid-template-columns: <span class="cn">240</span>px <span class="cn">1</span>fr; <span class="cm">/* sidebar: fixed 240px, main: fills the rest */</span></span>
+  <span class="line">  min-height: <span class="cn">100</span>vh;</span>
+  <span class="line">  gap: <span class="cn">16</span>px;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* ── Flexbox approach (also valid — a simpler, single-row case) ── */</span></span>
+  <span class="line">.layout {</span>
+  <span class="line">  display: flex;</span>
+  <span class="line">  min-height: <span class="cn">100</span>vh;</span>
+  <span class="line">  gap: <span class="cn">16</span>px;</span>
+  <span class="line">}</span>
+  <span class="line">.sidebar { flex: <span class="cn">0</span> <span class="cn">0</span> <span class="cn">240</span>px; } <span class="cm">/* don't grow, don't shrink, fixed 240px basis */</span></span>
+  <span class="line">.main { flex: <span class="cn">1</span>; }             <span class="cm">/* grow to fill all remaining space */</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Both approaches work for this simple case</strong> — Grid is generally preferred for whole-page structural layouts like this, since it's explicitly designed for exactly this "define the overall skeleton" use case, and scales more cleanly if you later add a header/footer row too.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Build 2: Card Grid
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Build 2 — Responsive Card Grid</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live demo — resize your browser to see columns adjust automatically</div>
+      <div class="card-demo">
+        <div class="cd">Card 1</div>
+        <div class="cd">Card 2</div>
+        <div class="cd">Card 3</div>
+        <div class="cd">Card 4</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* The auto-fit + minmax() pattern — responsive WITHOUT a single media query */</span></span>
+  <span class="line">.card-grid {</span>
+  <span class="line">  display: grid;</span>
+  <span class="line">  grid-template-columns: repeat(auto-fit, minmax(<span class="cn">220</span>px, <span class="cn">1</span>fr));</span>
+  <span class="line">  gap: <span class="cn">20</span>px;</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// How to read this: "fit as many columns as possible, each AT LEAST 220px wide,</span></span>
+  <span class="line">// and let them GROW to fill any leftover space equally (1fr)"</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Value</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>auto-fit</td><td>Collapses empty tracks — if there aren't enough items to fill a row, existing cards STRETCH to fill the space</td></tr>
+        <tr><td>auto-fill</td><td>Keeps empty tracks as empty, fixed-size gaps — existing cards stay their minmax() size instead of stretching further</td></tr>
+        <tr><td>minmax(220px, 1fr)</td><td>Each column is AT LEAST 220px, but grows to share any extra space equally with other columns</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>auto-fit vs auto-fill only differs visually when there are FEWER items than would fill a complete row</strong> — with many items filling multiple full rows, they behave identically; the difference only shows up in that specific "not quite enough items" edge case.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Build 3: Centered Modal
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Build 3 — Centered Modal</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live demo</div>
+      <div class="modal-demo">
+        <div class="md">Centered modal content</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* ── Flexbox approach — the classic, most common one-liner ── */</span></span>
+  <span class="line">.modal-overlay {</span>
+  <span class="line">  position: fixed;</span>
+  <span class="line">  inset: <span class="cn">0</span>; <span class="cm">/* shorthand for top/right/bottom/left: 0 */</span></span>
+  <span class="line">  background: rgba(<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0.5</span>);</span>
+  <span class="line">  display: flex;</span>
+  <span class="line">  align-items: center;    <span class="cm">/* vertical centering */</span></span>
+  <span class="line">  justify-content: center; <span class="cm">/* horizontal centering */</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* ── Grid approach — equally valid, arguably even more concise ── */</span></span>
+  <span class="line">.modal-overlay {</span>
+  <span class="line">  position: fixed;</span>
+  <span class="line">  inset: <span class="cn">0</span>;</span>
+  <span class="line">  background: rgba(<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0.5</span>);</span>
+  <span class="line">  display: grid;</span>
+  <span class="line">  place-items: center; <span class="cm">/* shorthand for BOTH align-items AND justify-items: center */</span></span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Approach</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Flexbox: align-items + justify-content: center</td><td>The traditional, most widely-recognized centering pattern — works great for a SINGLE centered child</td></tr>
+        <tr><td>Grid: place-items: center</td><td>A newer, more concise one-line shorthand achieving the identical result — increasingly the preferred modern approach for simple centering</td></tr>
+        <tr><td>Position + transform (older technique)</td><td>`position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);` — works but is more verbose and was the standard BEFORE flexbox/grid had wide support</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Don't forget the modal needs its OWN internal layout too</strong> — once centered, its internal content (header, body, footer buttons) often benefits from its own nested flex/grid layout, e.g. `display: flex; flex-direction: column;` for a header/body/footer stack inside the modal box itself.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>flex: 1 is a SHORTHAND for three properties</strong> (flex-grow: 1, flex-shrink: 1, flex-basis: 0%) — not just "grow to fill space"; understanding that `flex-basis: 0` means it IGNORES the item's natural content size as a starting point is important for predicting actual behavior with mixed-size items.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>justify-content and align-items SWAP meaning when flex-direction changes from row to column</strong> — `justify-content` always refers to the MAIN axis (horizontal for row, VERTICAL for column), a common source of confusion when refactoring a layout's direction.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Grid's implicit rows (rows the grid creates automatically for content beyond your explicit grid-template-rows) default to `auto` sizing</strong> — unless you explicitly set `grid-auto-rows`, which can catch people off guard when adding more items than originally planned for.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>gap works in BOTH flexbox and grid</strong> (not just grid, despite grid getting more attention for it) — a relatively recent but now well-supported addition to flexbox specifically, eliminating the need for margin-based spacing hacks in flex layouts too.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>auto-fit and auto-fill ONLY behave differently when there are fewer items than would fill a complete row</strong> — a common point of confusion is expecting a visible difference in every scenario, when it's specifically an edge case involving incomplete rows.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Grid items overlap by DEFAULT if you explicitly place them onto the same grid-column/grid-row</strong> — Grid doesn't automatically prevent overlapping placements the way normal document flow does; this is sometimes used deliberately (for layered/overlapping designs) but can also be an easy-to-miss bug.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>min-width: auto is the DEFAULT for flex items, and can prevent them from shrinking as expected</strong> — a flex item with long unbreakable content (like a long word or a wide image) may refuse to shrink below its content's natural size unless `min-width: 0` (or `overflow: hidden`) is explicitly set, a classic, non-obvious flexbox gotcha.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>place-items is a shorthand that sets BOTH align-items and justify-items</strong> — for individual, per-item overrides you'd use `align-self`/`justify-self` instead, and there's a separate `place-content` shorthand for `align-content`/`justify-content` (content vs items distinction still applies in Grid).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Nesting flexbox inside grid (or vice versa) is completely normal and often the RIGHT approach</strong> — e.g. Grid for the overall page skeleton, with Flexbox used WITHIN individual grid cells/components for their internal one-dimensional alignment needs; they're complementary tools, not mutually exclusive choices for an entire page.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Older centering techniques (position:absolute + transform) still appear in legacy codebases and are worth recognizing</strong> — even though flexbox/grid centering is now strongly preferred for new code, being able to read and explain the OLDER pattern is still a reasonable thing to be asked about.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Layout questions are often LIVE-CODING exercises — interviewers care as much about your reasoning process (why you reached for a specific property) as the final working result.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental difference between Flexbox and Grid?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Flexbox is a ONE-DIMENSIONAL layout model — it arranges items along a SINGLE axis (either a row or a column) and is designed to distribute space and align items along THAT one line, even when items wrap onto multiple lines. Grid is a TWO-DIMENSIONAL layout model — it arranges items across ROWS and COLUMNS simultaneously, letting you define an explicit grid structure and place items precisely within it, including having items SPAN multiple rows/columns. Flexbox excels at "arrange these items in a line, distribute space between them"; Grid excels at "define an overall structural skeleton with distinct rows and columns."
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is Grid generally preferred over Flexbox for a page-level sidebar layout, even though Flexbox can technically achieve the same visual result?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A sidebar layout is CONCEPTUALLY a two-dimensional structure — even if it currently has just one row (sidebar + main content), it's the kind of layout that commonly GROWS to include a header row and/or footer row later. Grid lets you define this entire structure — including rows AND columns — in one place, using `grid-template-columns`/`grid-template-rows`, making it straightforward to add a header/footer later by just adding a row definition. Flexbox CAN replicate the single-row case (using `flex-basis` for the sidebar width and `flex:1` for the main area), but if you later need to add a header spanning both the sidebar and main content, you'd need to either nest an additional flex container or restructure the HTML — Grid handles this kind of structural evolution more naturally since it was designed for genuinely two-dimensional layout from the start.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose auto-fill over auto-fit for a responsive card grid, or vice versa?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Choose <ic>auto-fit</ic> when you want existing cards to STRETCH and fill the full available width whenever there aren't enough items to complete a row — e.g. showing just 2 cards on a screen wide enough for 4, where you'd rather those 2 cards grow larger than leave visible empty space. Choose <ic>auto-fill</ic> when you want cards to maintain a CONSISTENT size regardless of how many items are present — e.g. a product grid where you specifically want every card to look uniformly sized whether there are 2 items or 20, even if that means visible empty space in an incomplete row, for a more predictable/uniform visual rhythm. The choice depends entirely on whether "stretch to fill" or "stay consistent size" is the more desirable visual behavior for that specific incomplete-row scenario.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you build a responsive card grid that shows a MINIMUM of 3 columns on desktop but wraps down to 1 column on mobile, without using media queries?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line">.card-grid {</span>
+  <span class="line">  display: grid;</span>
+  <span class="line">  grid-template-columns: repeat(auto-fit, minmax(<span class="cn">280</span>px, <span class="cn">1</span>fr));</span>
+  <span class="line">  gap: <span class="cn">20</span>px;</span>
+  <span class="line">}</span>
+          </div>
+          Set the `minmax()` minimum value (280px in this example) to whatever the SMALLEST comfortable card width is — the grid automatically computes how many 280px+ columns can fit in the current container width, WITHOUT any explicit breakpoints. On a wide desktop screen, this naturally computes to 3+ columns (since several 280px+ columns fit); on a narrow mobile screen, it naturally computes down to just 1 column (since only one 280px-wide column fits), all through the SAME single CSS rule adapting to the container's actual available width. The "minimum of 3 columns on desktop" requirement isn't a HARD constraint enforced by this pattern (it's driven by the min-width value relative to whatever the desktop viewport happens to be), but choosing an appropriate `minmax()` minimum value achieves that practical outcome for typical desktop widths without writing separate breakpoint-based rules.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What does flex: 1 actually mean, as a shorthand?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `flex: 1` is shorthand for THREE separate properties: `flex-grow: 1` (this item should grow to consume any available leftover space, sharing it proportionally with other flex-grow items), `flex-shrink: 1` (this item is allowed to shrink if there isn't enough space, again sharing the shrinkage proportionally), and `flex-basis: 0%` (the item's STARTING size before growing/shrinking is calculated is treated as zero, essentially ignoring its natural content size as a starting point and just letting flex-grow determine the final size from scratch). This specific combination is why `flex: 1` on multiple sibling items typically results in them all becoming EQUAL width, regardless of how much content each one contains — because the `flex-basis: 0` means their natural content size isn't factored into the initial space calculation at all.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why might a flex item with a very long, unbreakable string of text refuse to shrink below its content's width, even with flex-shrink set?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Flex items have an implicit DEFAULT `min-width: auto` (or `min-height: auto` for column direction) — this means, by default, a flex item won't shrink SMALLER than its own intrinsic content size, REGARDLESS of what `flex-shrink` value is set. For an item containing a long, unbreakable string (like a long URL or a word with no natural break points), this "intrinsic content size" can be quite large, effectively preventing the item from shrinking as much as you might expect, even with `flex-shrink: 1` explicitly set. The fix is to explicitly override this default with `min-width: 0` (or `overflow: hidden`, which also allows shrinking below content size by clipping/scrolling overflow) on the flex item, removing the implicit content-size floor and allowing it to genuinely shrink as far as `flex-shrink` and the available space dictate.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you nest Flexbox INSIDE a Grid layout (or vice versa), rather than using just one or the other for the whole component?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          This is actually the NORMAL, expected pattern for most real-world UIs, not an edge case — use Grid for the outer, structural, genuinely two-dimensional layout (like the overall page skeleton: header/sidebar/main/footer), and use Flexbox WITHIN individual grid cells or components for their internal one-dimensional alignment needs (like a card's internal header/body/footer stack, or a row of action buttons within that card). For example: a page uses Grid to lay out a sidebar and main content area; INSIDE the main content area, a card grid might itself use Grid again (for the 2D grid of cards); and INSIDE each individual card, Flexbox handles the simple one-dimensional stacking of the card's title, description, and button row. Neither tool is meant to handle an ENTIRE complex page single-handedly — they're complementary, and mixing them at different levels of nesting is standard, well-regarded practice.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you build a centered modal that also handles a case where the modal's content is taller than the viewport (needs to scroll)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line">.modal-overlay {</span>
+  <span class="line">  position: fixed;</span>
+  <span class="line">  inset: <span class="cn">0</span>;</span>
+  <span class="line">  background: rgba(<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0</span>,<span class="cn">0.5</span>);</span>
+  <span class="line">  display: flex;</span>
+  <span class="line">  align-items: center;</span>
+  <span class="line">  justify-content: center;</span>
+  <span class="line">  padding: <span class="cn">20</span>px; <span class="cm">/* prevents the modal from touching the viewport edges */</span></span>
+  <span class="line">  overflow-y: auto; <span class="cm">/* KEY — lets the OVERLAY itself scroll if content is too tall */</span></span>
+  <span class="line">}</span>
+  <span class="line">.modal-box {</span>
+  <span class="line">  max-height: <span class="cn">90</span>vh; <span class="cm">/* cap the modal's own height */</span></span>
+  <span class="line">  overflow-y: auto; <span class="cm">/* let the MODAL's own content scroll internally too */</span></span>
+  <span class="line">}</span>
+          </div>
+          The key additions beyond basic centering are: `overflow-y: auto` on the OVERLAY itself, so that if the modal is taller than the viewport, the whole overlay (and the centered modal within it) can scroll rather than the modal being cut off with no way to reach its bottom content; and `max-height` + `overflow-y: auto` on the MODAL BOX itself, so very long content scrolls WITHIN the modal's own bounds rather than making the modal grow arbitrarily tall. Together, these ensure the modal remains usable regardless of viewport size or content length, rather than the basic centering-only solution breaking down for tall content.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Flexbox &amp; Grid · Sidebar Layout · Card Grid · Centered Modal
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

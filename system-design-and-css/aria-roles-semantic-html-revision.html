@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA Roles &amp; Semantic HTML — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Accessibility</div>
+    <h1>ARIA Roles &amp; Semantic HTML</h1>
+    <p>button vs div · role="dialog" · aria-label · aria-live — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The First Rule of ARIA</a>
+    <a class="topic-pill" href="#s2">2. button vs div</a>
+    <a class="topic-pill" href="#s3">3. The Accessibility Tree</a>
+    <a class="topic-pill" href="#s4">4. role="dialog" Pattern</a>
+    <a class="topic-pill" href="#s5">5. aria-label vs labelledby vs describedby</a>
+    <a class="topic-pill" href="#s6">6. aria-live Regions</a>
+    <a class="topic-pill" href="#s7">7. Common Roles Reference</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The First Rule of ARIA
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The First Rule of ARIA</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>"The First Rule of ARIA Use" (from the official W3C spec): if a NATIVE HTML element or attribute already has the semantics/behavior you need, USE IT instead of re-purposing a generic element with ARIA.</strong> ARIA is meant to fill GAPS, not replace what HTML already does well — native elements come with built-in keyboard support, focus handling, and screen reader behavior for FREE.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Need</th><th>Use this native element FIRST</th><th>Not this</th></tr></thead>
+      <tbody>
+        <tr><td>A clickable action</td><td>&lt;button&gt;</td><td>&lt;div onclick&gt; + role="button"</td></tr>
+        <tr><td>A navigational link</td><td>&lt;a href&gt;</td><td>&lt;span onclick&gt; + role="link"</td></tr>
+        <tr><td>A checkbox</td><td>&lt;input type="checkbox"&gt;</td><td>&lt;div role="checkbox" aria-checked&gt;</td></tr>
+        <tr><td>A heading</td><td>&lt;h1&gt;–&lt;h6&gt;</td><td>&lt;div role="heading" aria-level&gt;</td></tr>
+        <tr><td>A list</td><td>&lt;ul&gt;/&lt;ol&gt; + &lt;li&gt;</td><td>&lt;div role="list"&gt; + &lt;div role="listitem"&gt;</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — button vs div
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>button vs div — What You Get for Free</h2>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ &lt;div&gt; pretending to be a button</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">onClick</span>={handleClick}&gt;</span>
+  <span class="line">  Submit</span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line"><span class="cm">// ✗ Not focusable via Tab</span></span>
+  <span class="line"><span class="cm">// ✗ Enter/Space don't activate it</span></span>
+  <span class="line"><span class="cm">// ✗ Not announced as a button by</span></span>
+  <span class="line"><span class="cm">//    screen readers at all</span></span>
+  <span class="line"><span class="cm">// ✗ No disabled state semantics</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ A real &lt;button&gt;</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">button</span> <span class="ca">onClick</span>={handleClick}&gt;</span>
+  <span class="line">  Submit</span>
+  <span class="line">&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line"><span class="cm">// ✓ Focusable via Tab automatically</span></span>
+  <span class="line"><span class="cm">// ✓ Enter AND Space both activate it</span></span>
+  <span class="line"><span class="cm">// ✓ Announced as "button" by</span></span>
+  <span class="line"><span class="cm">//    screen readers automatically</span></span>
+  <span class="line"><span class="cm">// ✓ disabled attribute works natively</span></span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Behavior</th><th>&lt;button&gt;</th><th>&lt;div&gt; + role="button"</th></tr></thead>
+      <tbody>
+        <tr><td>Keyboard focusable (Tab)</td><td class="yes">✓ Automatic</td><td class="no">✗ Needs tabindex="0" manually</td></tr>
+        <tr><td>Enter key activates</td><td class="yes">✓ Automatic</td><td class="no">✗ Needs a manual keydown handler</td></tr>
+        <tr><td>Space key activates</td><td class="yes">✓ Automatic</td><td class="no">✗ Needs a manual keydown handler</td></tr>
+        <tr><td>Announced correctly by screen readers</td><td class="yes">✓ Automatic</td><td class="no">Only if role="button" is added — and behavior still isn't automatic</td></tr>
+        <tr><td>disabled state</td><td class="yes">✓ Native attribute</td><td class="no">Needs aria-disabled AND manually preventing the click handler</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Adding role="button" to a &lt;div&gt; only fixes ONE part of the problem</strong> — it tells screen readers to ANNOUNCE it as a button, but does NOTHING for keyboard focusability or Enter/Space key activation. All THREE (role, tabindex, and keydown handling) must be added manually to fully replicate what a real &lt;button&gt; gives you automatically.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// If you REALLY can't use a real &lt;button&gt; (rare), full manual replication:</span></span>
+  <span class="line">&lt;<span class="ct">div</span></span>
+  <span class="line">  <span class="ca">role</span>=<span class="cs">"button"</span></span>
+  <span class="line">  <span class="ca">tabIndex</span>={<span class="cn">0</span>}</span>
+  <span class="line">  <span class="ca">onClick</span>={handleClick}</span>
+  <span class="line">  <span class="ca">onKeyDown</span>={(e) =&gt; {</span>
+  <span class="line">    <span class="ck">if</span> (e.key === <span class="cs">"Enter"</span> || e.key === <span class="cs">" "</span>) {</span>
+  <span class="line">      e.preventDefault(); <span class="cm">// prevent page scroll on Space</span></span>
+  <span class="line">      handleClick();</span>
+  <span class="line">    }</span>
+  <span class="line">  }}</span>
+  <span class="line">&gt;</span>
+  <span class="line">  Submit</span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — The Accessibility Tree
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>The Accessibility Tree — Where ARIA Actually Applies</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">DOM tree vs. Accessibility tree — a PARALLEL structure screen readers actually use</div>
+      <svg class="diagram-svg" viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#6ab0ff" font-family="Inter, sans-serif" font-size="11" font-weight="600">DOM Tree (visual/structural)</text>
+        <rect x="80" y="35" width="190" height="30" rx="5" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="175" y="55" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">&lt;div class="btn"&gt;</text>
+        <path d="M175 65 L175 85" stroke="#6ab0ff" stroke-width="1"/>
+        <rect x="80" y="85" width="190" height="30" rx="5" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="175" y="105" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">"Submit" (text node)</text>
+
+        <path d="M290 65 L410 65" stroke="#ffb86c" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowAria)"/>
+
+        <text x="525" y="20" text-anchor="middle" fill="#ffb86c" font-family="Inter, sans-serif" font-size="11" font-weight="600">Accessibility Tree (what AT hears)</text>
+        <rect x="410" y="35" width="230" height="45" rx="5" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="525" y="55" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">role: button (from ARIA)</text>
+        <text x="525" y="70" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">name: "Submit"</text>
+
+        <text x="350" y="130" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">ARIA attributes don't change what's VISUALLY on screen — they change what gets</text>
+        <text x="350" y="145" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">exposed in THIS separate tree, which is what screen readers/assistive tech actually consume</text>
+
+        <defs>
+          <marker id="arrowAria" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ffb86c"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>This is the single most important mental model for understanding ARIA:</strong> ARIA attributes NEVER change what's visually rendered, NEVER add keyboard behavior, and NEVER change functionality — they ONLY change what gets exposed in the accessibility tree (role, name, state, properties) that assistive technology reads from. This is exactly why role="button" alone doesn't add keyboard support — that's a DOM/JS behavior concern, entirely separate from the accessibility tree ARIA controls.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — role="dialog" Pattern
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>role="dialog" — The Full Modal Pattern</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line">&lt;<span class="ct">div</span></span>
+  <span class="line">  <span class="ca">role</span>=<span class="cs">"dialog"</span></span>
+  <span class="line">  <span class="ca">aria-modal</span>=<span class="cs">"true"</span></span>
+  <span class="line">  <span class="ca">aria-labelledby</span>=<span class="cs">"dialog-title"</span></span>
+  <span class="line">  <span class="ca">aria-describedby</span>=<span class="cs">"dialog-desc"</span></span>
+  <span class="line">&gt;</span>
+  <span class="line">  &lt;<span class="ct">h2</span> <span class="ca">id</span>=<span class="cs">"dialog-title"</span>&gt;Delete this item?&lt;/<span class="ct">h2</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">p</span> <span class="ca">id</span>=<span class="cs">"dialog-desc"</span>&gt;This action cannot be undone.&lt;/<span class="ct">p</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">button</span> <span class="ca">onClick</span>={confirm}&gt;Delete&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">button</span> <span class="ca">onClick</span>={cancel}&gt;Cancel&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Attribute/behavior</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>role="dialog"</td><td>Announces the element as a dialog to assistive technology</td></tr>
+        <tr><td>aria-modal="true"</td><td>Tells assistive technology that content OUTSIDE the dialog is currently inert/unreachable — reinforces the "everything else is blocked" behavior</td></tr>
+        <tr><td>aria-labelledby</td><td>Points to the element that serves as the dialog's ACCESSIBLE NAME (usually its heading)</td></tr>
+        <tr><td>aria-describedby</td><td>Points to additional descriptive text, announced AFTER the name, giving more context</td></tr>
+        <tr><td>Focus moved INTO the dialog on open</td><td>JS responsibility — focus must move to the dialog (or its first focusable element) when it opens, not handled by ARIA attributes alone</td></tr>
+        <tr><td>Focus trapped WITHIN the dialog</td><td>JS responsibility — Tab/Shift+Tab should cycle only among the dialog's own focusable elements while open</td></tr>
+        <tr><td>Focus RESTORED on close</td><td>JS responsibility — focus should return to whatever element opened the dialog once it closes</td></tr>
+        <tr><td>Escape key closes the dialog</td><td>JS responsibility — a standard, expected keyboard interaction for dialogs</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>role="dialog" and aria-modal alone do NOTHING for focus management — this is entirely your responsibility to implement in JavaScript.</strong> This is one of the most common accessibility bugs: a visually-correct modal with the right ARIA attributes, but focus never actually moves into it, gets trapped, or returns afterward — making it effectively unusable via keyboard/screen reader despite "having the right ARIA."</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The native &lt;dialog&gt; HTML element</strong> (with its `showModal()` method) now handles much of this — focus management, Escape-to-close, and the modal/inert background behavior — natively, in modern browsers, reducing how much of this needs to be hand-rolled with a plain `&lt;div role="dialog"&gt;`.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — aria-label vs labelledby vs describedby
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>aria-label vs aria-labelledby vs aria-describedby</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// aria-label — a direct, inline STRING used as the accessible name</span></span>
+  <span class="line">&lt;<span class="ct">button</span> <span class="ca">aria-label</span>=<span class="cs">"Close dialog"</span>&gt;✕&lt;/<span class="ct">button</span>&gt;</span>
+  <span class="line"><span class="cm">// Needed here because the visible content is just an "✕" symbol — meaningless</span></span>
+  <span class="line"><span class="cm">// to a screen reader without an explicit label describing its actual purpose</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// aria-labelledby — POINTS TO another element's text to use as the accessible name</span></span>
+  <span class="line">&lt;<span class="ct">h2</span> <span class="ca">id</span>=<span class="cs">"section-title"</span>&gt;Account Settings&lt;/<span class="ct">h2</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">section</span> <span class="ca">aria-labelledby</span>=<span class="cs">"section-title"</span>&gt;...&lt;/<span class="ct">section</span>&gt;</span>
+  <span class="line"><span class="cm">// Reuses EXISTING visible text as the label — avoids duplicating the same string</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// aria-describedby — POINTS TO additional DESCRIPTION text (announced AFTER the name)</span></span>
+  <span class="line">&lt;<span class="ct">input</span> <span class="ca">id</span>=<span class="cs">"password"</span> <span class="ca">aria-describedby</span>=<span class="cs">"pw-hint"</span> /&gt;</span>
+  <span class="line">&lt;<span class="ct">span</span> <span class="ca">id</span>=<span class="cs">"pw-hint"</span>&gt;Must be at least 8 characters&lt;/<span class="ct">span</span>&gt;</span>
+  <span class="line"><span class="cm">// Provides SUPPLEMENTARY info, not a replacement for the field's actual label</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Attribute</th><th>Provides</th><th>Use when</th></tr></thead>
+      <tbody>
+        <tr><td>aria-label</td><td>The accessible NAME, as a literal string</td><td>No visible text exists to serve as a label (icon-only buttons)</td></tr>
+        <tr><td>aria-labelledby</td><td>The accessible NAME, referencing another element's text</td><td>Visible text ALREADY exists elsewhere that should serve as the label — avoids duplicating it</td></tr>
+        <tr><td>aria-describedby</td><td>Supplementary DESCRIPTION, announced after the name</td><td>Extra context/hint text exists that shouldn't replace the primary label, just supplement it</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Priority order when multiple naming sources exist:</strong> aria-labelledby &gt; aria-label &gt; the element's own visible text content/native label. If aria-labelledby is present, it OVERRIDES aria-label entirely, which in turn overrides visible text — a common source of confusing bugs when multiple naming mechanisms are accidentally combined.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — aria-live Regions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>aria-live — Announcing Dynamic Content Changes</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>aria-live tells a screen reader "watch this region — when its content CHANGES, announce the new content automatically," without the user needing to navigate to it.</strong> This solves a real problem: dynamic content (a form validation error, a toast notification, a live search result count) that appears WITHOUT a page reload or focus change would otherwise go completely unnoticed by a screen reader user.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// polite — announces AFTER the screen reader finishes its current speech (most common)</span></span>
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">aria-live</span>=<span class="cs">"polite"</span>&gt;</span>
+  <span class="line">  {statusMessage} <span class="cm">// e.g. "3 results found"</span></span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// assertive — interrupts IMMEDIATELY, even mid-speech (use sparingly, for urgent info)</span></span>
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">aria-live</span>=<span class="cs">"assertive"</span>&gt;</span>
+  <span class="line">  {errorMessage} <span class="cm">// e.g. "Error: session expired"</span></span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// off (default) — no automatic announcement at all</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Value</th><th>Behavior</th><th>Use for</th></tr></thead>
+      <tbody>
+        <tr><td>polite</td><td>Waits for the screen reader to finish its current announcement first</td><td>Non-urgent updates: search result counts, "saved successfully" confirmations, chat messages</td></tr>
+        <tr><td>assertive</td><td>Interrupts whatever is currently being announced, immediately</td><td>Urgent, time-sensitive info: critical errors, session timeouts — used SPARINGLY since frequent interruptions are disorienting</td></tr>
+        <tr><td>off (default)</td><td>No automatic announcement</td><td>The default for all elements unless explicitly set otherwise</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The aria-live region must EXIST in the DOM BEFORE the content change happens</strong> — adding `aria-live="polite"` to a brand-new element AT THE SAME TIME as inserting its content often fails to announce anything, since the screen reader wasn't yet "watching" that region. The common fix is rendering an EMPTY live region upfront, then updating its content afterward.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Common Roles Reference
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Common ARIA Roles — Quick Reference</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Role</th><th>Used for</th><th>Prefer native equivalent when possible</th></tr></thead>
+      <tbody>
+        <tr><td>dialog / alertdialog</td><td>Modals — alertdialog specifically for ones requiring an urgent response</td><td>&lt;dialog&gt; element (modern browsers)</td></tr>
+        <tr><td>alert</td><td>Important, time-sensitive messages — implicitly aria-live="assertive"</td><td>No direct native equivalent</td></tr>
+        <tr><td>tablist / tab / tabpanel</td><td>Tabbed interfaces</td><td>No native HTML tab element exists — this is a case where ARIA genuinely fills a real gap</td></tr>
+        <tr><td>tooltip</td><td>Supplementary hover/focus-triggered info</td><td>No native equivalent — the `title` attribute is a weak, inconsistent substitute</td></tr>
+        <tr><td>navigation</td><td>A block of navigational links</td><td>&lt;nav&gt; element</td></tr>
+        <tr><td>banner</td><td>Site-wide header content</td><td>&lt;header&gt; element (at the top level)</td></tr>
+        <tr><td>contentinfo</td><td>Site-wide footer content</td><td>&lt;footer&gt; element (at the top level)</td></tr>
+        <tr><td>presentation / none</td><td>Explicitly REMOVES an element's semantics — e.g. a decorative &lt;ul&gt; being used purely for visual layout</td><td>N/A — this is itself the tool for suppressing unwanted semantics</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>"No ARIA is better than bad ARIA"</strong> — a widely-cited accessibility principle; INCORRECT or conflicting ARIA can make an element LESS accessible than having no ARIA at all, since it actively misleads assistive technology rather than just lacking extra information.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>ARIA attributes never add keyboard behavior or functionality on their own</strong> — `role="button"` alone does NOT make an element focusable or activatable via Enter/Space; that requires separately adding `tabindex` and JavaScript keydown handling, a very common incomplete-implementation bug.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>role="dialog" + aria-modal do nothing for actual FOCUS MANAGEMENT</strong> — moving focus in, trapping it, and restoring it on close are all JavaScript responsibilities; a shockingly common real-world bug is a "correctly" ARIA-labeled modal that's still unusable via keyboard because focus was never actually managed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>aria-hidden="true" hides an element from the accessibility tree, but does NOT hide it visually or prevent it from being focused</strong> — using it on a still-visible, still-focusable element creates a confusing state where sighted keyboard users can tab to something a screen reader user is told doesn't exist; always pair it with removing focusability if the element is meant to be fully hidden.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An aria-live region added to the DOM at the SAME TIME as its content often fails to announce</strong> — the region needs to already exist and be "observed" before the content change occurs; render it empty first, then update it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>aria-labelledby takes priority over aria-label, which takes priority over visible text content</strong> — accidentally including more than one of these naming mechanisms can produce a confusingly different accessible name than what's visually displayed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Using assertive aria-live regions too liberally is a real anti-pattern</strong> — frequent interruptions are disorienting for screen reader users; reserve `assertive` genuinely for urgent, time-sensitive information, defaulting to `polite` for most dynamic updates.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A div styled to LOOK like a heading (large, bold text) is NOT a heading to assistive technology unless it actually IS a semantic heading element or has role="heading" + aria-level</strong> — visual styling and semantic meaning are completely independent; screen reader users often navigate BY heading structure, so this gap can make a page significantly harder to navigate even though it "looks" properly structured.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The native &lt;dialog&gt; element's showModal() method handles a lot of what used to require extensive manual ARIA + JS work</strong> — including basic focus trapping and Escape-to-close — current browser support is strong, making it worth mentioning as the modern-first option, with hand-rolled `role="dialog"` reserved for cases needing behavior the native element doesn't fully cover.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Testing accessibility by SIGHT alone (does it "look" right) is insufficient</strong> — genuinely verifying ARIA/semantic correctness requires actually using a real screen reader (VoiceOver, NVDA, JAWS) or automated tools (axe DevTools, Lighthouse's accessibility audit) alongside actual keyboard-only navigation testing, not just visual inspection.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Accessibility questions increasingly appear in frontend interviews as a core competency, not a niche specialty — precise, mechanism-level answers (not just "always use semantic HTML") demonstrate genuine understanding.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between using a real &lt;button&gt; element and a &lt;div&gt; with role="button"?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A real `&lt;button&gt;` gets FOUR things automatically, built into the browser: keyboard focusability (it's in the natural Tab order), activation via BOTH Enter and Space keys, correct announcement as "button" by screen readers, and native `disabled` state handling. A `&lt;div role="button"&gt;` gets NONE of these automatically — `role="button"` alone only affects the ACCESSIBILITY TREE, telling screen readers to announce it as a button, but does nothing for keyboard focus or activation. To fully replicate a real button's behavior on a div, you'd need to manually add `tabindex="0"` (for focusability) AND a keydown handler checking for Enter/Space (for activation) — three separate pieces of manual work to match what `&lt;button&gt;` gives for free.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why doesn't adding role="dialog" and aria-modal="true" to a modal automatically make it keyboard-accessible?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          ARIA attributes ONLY affect the accessibility tree — the parallel structure screen readers and other assistive technology read from — they never change actual DOM behavior, focus management, or keyboard event handling. `role="dialog"` tells assistive technology "announce this as a dialog," and `aria-modal="true"` tells it "treat content outside this as currently inert" — but neither of these attributes actually MOVES keyboard focus into the dialog when it opens, TRAPS focus within it while it's open, or RESTORES focus to the triggering element when it closes. All of that is genuine JavaScript/DOM manipulation work that has to be implemented separately — ARIA describes what something IS and its current STATE to assistive technology, but implementing the actual interactive BEHAVIOR remains entirely the developer's responsibility.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you use aria-label instead of aria-labelledby for naming an element?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Use `aria-label` when there's NO existing visible text on the page that could serve as the element's name — the classic example is an icon-only button (like a "✕" close button, or a magnifying-glass search icon button) where the VISUAL content gives a sighted user enough context, but provides literally no meaningful text for a screen reader to announce. In this case, `aria-label="Close dialog"` directly supplies the missing accessible name as a string. Use `aria-labelledby` instead when relevant visible text ALREADY EXISTS elsewhere on the page (like a section's heading) that should serve as the name for a DIFFERENT element (like the section container itself) — referencing that existing text avoids awkwardly duplicating the same string in two places, and keeps the two in sync if the visible heading text is ever updated.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement an aria-live region for a search results count, and what mistake would you specifically avoid?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// ✓ The live region EXISTS from the start, initially empty or with placeholder text</span></span>
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">aria-live</span>=<span class="cs">"polite"</span> <span class="ca">className</span>=<span class="cs">"sr-only"</span>&gt;</span>
+  <span class="line">  {resultCount !== <span class="ck">null</span> ? `${resultCount} results found` : <span class="cs">""</span>}</span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// This same &lt;div&gt; stays MOUNTED throughout — only its TEXT CONTENT changes</span></span>
+  <span class="line"><span class="cm">// as searches complete, which is what triggers the announcement</span></span>
+          </div>
+          The key mistake to AVOID is creating the live-region element and populating it with content AT THE SAME TIME (e.g. conditionally rendering the whole `&lt;div aria-live&gt;` element only once results exist) — screen readers need the element to already be present and being "observed" in the accessibility tree BEFORE the content change happens, in order to detect and announce that change. The correct approach keeps the live region MOUNTED and present in the DOM from the start (even if empty/hidden visually via a "screen-reader-only" CSS class), and only updates its inner text content as results come in — this way the screen reader reliably detects and announces the change, since it was already watching that specific region for updates.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the accessibility tree, and how does it relate to ARIA attributes?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The accessibility tree is a SEPARATE, parallel structure the browser builds alongside the DOM, specifically containing the information assistive technology (screen readers, voice control software, etc.) actually reads from — each node has a computed ROLE, NAME, and various STATES/PROPERTIES. Native HTML elements get sensible accessibility tree entries automatically (a `&lt;button&gt;` automatically gets role="button" and its text content as its name); ARIA attributes exist specifically to MODIFY or SUPPLEMENT entries in this tree when native HTML alone doesn't fully express what's needed — adding a role, overriding a name (via aria-label), or exposing additional state (like aria-expanded on a collapsible section). Critically, ARIA attributes ONLY affect this tree — they never touch the DOM's visual rendering or its actual interactive/keyboard behavior, which is why ARIA alone is never sufit to make a custom interactive widget fully accessible without accompanying JavaScript behavior.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is "no ARIA is better than bad ARIA" a genuinely important principle, rather than just a nice-sounding guideline?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Without ANY ARIA, a plain, unstyled `&lt;div&gt;` is simply announced as generic, unstructured content — not ideal, but at least NOT actively MISLEADING; a screen reader user correctly understands they're looking at unstructured content and can navigate accordingly. Incorrect or conflicting ARIA, however, can make assistive technology CONFIDENTLY announce something FALSE — e.g. `role="button"` on an element that isn't actually keyboard-operable tells a screen reader user "this IS a functioning button," leading them to expect button-like keyboard behavior that doesn't actually exist, creating genuine confusion and a WORSE experience than if no role had been declared at all (where the ambiguity might at least prompt more cautious exploration). Bad ARIA actively lies to assistive technology and its users about what an element actually does, which is a strictly worse outcome than simply providing no extra information.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is using ARIA roles genuinely necessary, rather than just a substitute for semantic HTML someone was too lazy to use?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          ARIA roles are genuinely necessary specifically when building a CUSTOM WIDGET pattern that has NO native HTML equivalent at all — tabbed interfaces (`tablist`/`tab`/`tabpanel`), tooltips (`tooltip`), comboboxes/autocomplete widgets, and tree views are classic examples where HTML simply doesn't provide a corresponding native element, so ARIA roles are the ONLY way to expose the correct semantics to assistive technology. It's ALSO legitimately necessary for expressing DYNAMIC STATE that native HTML doesn't capture — e.g. `aria-expanded` on a collapsible section's toggle button, or `aria-selected` within a custom tab interface — since these states genuinely need to be communicated regardless of the underlying element. ARIA becomes a poor substitute specifically when it's used to RE-CREATE something HTML already provides natively (like `role="button"` on a div, instead of just using `&lt;button&gt;`) — the distinction is whether ARIA is filling a genuine gap in HTML's native vocabulary, or working around a native element that could have been used directly.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fully audit and fix a custom dropdown/select component to make it genuinely accessible?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Check whether a native `&lt;select&gt;` could actually satisfy the design requirements first — per the "first rule of ARIA," this eliminates almost ALL of the following manual work if it's a viable option.<br>
+          <strong>2.</strong> If a genuinely custom widget is required, apply the correct ARIA pattern — typically `role="listbox"` on the options container, `role="option"` on each option, with `aria-selected` reflecting the current selection, and the trigger button using `aria-haspopup="listbox"` and `aria-expanded` reflecting open/closed state.<br>
+          <strong>3.</strong> Implement full KEYBOARD support manually — Arrow keys to move between options, Enter/Space to select, Escape to close, Home/End to jump to first/last option — none of this comes for free with ARIA roles alone.<br>
+          <strong>4.</strong> Manage FOCUS correctly — typically keeping focus on the trigger button while using `aria-activedescendant` to indicate the currently highlighted option (rather than moving actual DOM focus to each option), a common pattern for listbox-style widgets.<br>
+          <strong>5.</strong> Test with an ACTUAL screen reader (not just visual inspection) to confirm the selected value, available options, and state changes are all announced correctly and match the sighted, mouse-driven experience.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · ARIA Roles · Semantic HTML · Accessibility
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

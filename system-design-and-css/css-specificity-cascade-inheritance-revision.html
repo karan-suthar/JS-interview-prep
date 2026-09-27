@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Specificity, Cascade &amp; Inheritance — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ff79c6;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Specificity badge ── */
+  .spec-badge {
+    display: inline-flex; gap: 4px; font-family: var(--font-mono); font-size: 12px;
+    background: rgba(106,176,255,0.1); border: 1px solid rgba(106,176,255,0.3);
+    border-radius: 6px; padding: 4px 10px; color: var(--accent); font-weight: 600;
+  }
+  .spec-part { padding: 0 3px; }
+  .spec-id { color: var(--red); }
+  .spec-class { color: var(--amber); }
+  .spec-elem { color: var(--teal); }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Priority ladder ── */
+  .ladder { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+  .ladder-item {
+    display: flex; align-items: center; gap: 12px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 1rem;
+  }
+  .ladder-rank {
+    font-family: var(--font-head); font-size: 14px; font-weight: 700; width: 28px; text-align: center;
+    color: var(--bg); background: var(--accent); border-radius: 50%; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ladder-text { font-size: 13px; color: var(--text2); }
+  .ladder-text strong { color: var(--text); font-family: var(--font-mono); font-size: 12.5px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · CSS</div>
+    <h1>CSS Specificity, Cascade &amp; Inheritance</h1>
+    <p>Debugging Any Specificity Conflict Quickly — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Three Pillars</a>
+    <a class="topic-pill" href="#s2">2. Specificity Calculation</a>
+    <a class="topic-pill" href="#s3">3. Cascade Order</a>
+    <a class="topic-pill" href="#s4">4. Inheritance</a>
+    <a class="topic-pill" href="#s5">5. The Full Resolution Algorithm</a>
+    <a class="topic-pill" href="#s6">6. Debugging a Conflict</a>
+    <a class="topic-pill" href="#s7">7. Worked Examples</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Three Pillars
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Three Pillars — How the Browser Decides</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>When MULTIPLE CSS rules could apply to the SAME element and property, the browser resolves the conflict using, in order: <strong>1. Origin &amp; Importance</strong> (where the rule came from, and whether it's `!important`), <strong>2. Specificity</strong> (how precisely the selector targets the element), <strong>3. Source Order</strong> (which rule appears LAST in the stylesheet). <strong>Inheritance</strong> is a SEPARATE mechanism — it only applies when NO rule directly targets an element for a given property at all.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Pillar</th><th>Answers the question...</th></tr></thead>
+      <tbody>
+        <tr><td>Cascade</td><td>"When multiple rules conflict, which one WINS?"</td></tr>
+        <tr><td>Specificity</td><td>"How do I MEASURE how strongly a given selector targets an element?"</td></tr>
+        <tr><td>Inheritance</td><td>"If NOTHING explicitly styles this element for a property, where does its value come from?"</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Specificity Calculation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Specificity Calculation — The Point System</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Specificity is calculated as a THREE-PART value (often written as three numbers, like a version number) — it's NOT a single number you can add up naively; a selector with more IDs always beats one with more classes, no matter how many classes.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Selector type</th><th>Column</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td>ID selectors</td><td class="spec-id">Column A (highest)</td><td>#header, #nav-menu</td></tr>
+        <tr><td>Class, attribute, pseudo-class selectors</td><td class="spec-class">Column B (middle)</td><td>.btn, [type="text"], :hover, :nth-child()</td></tr>
+        <tr><td>Element and pseudo-element selectors</td><td class="spec-elem">Column C (lowest)</td><td>div, p, ::before, ::after</td></tr>
+        <tr><td>Universal selector, combinators</td><td>0 (no contribution)</td><td>*, &gt;, +, ~, (space)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Worked specificity calculations</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10.5">div.card .title { }</text>
+        <text x="400" y="25" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">= (0, 2, 1)</text>
+        <text x="500" y="25" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="9">2 classes, 1 element</text>
+
+        <text x="20" y="55" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10.5">#sidebar p { }</text>
+        <text x="400" y="55" fill="#ff6b6b" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">= (1, 0, 1)</text>
+        <text x="500" y="55" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="9">1 ID, 1 element</text>
+
+        <text x="20" y="85" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10.5">.nav .item.active { }</text>
+        <text x="400" y="85" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">= (0, 3, 0)</text>
+        <text x="500" y="85" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="9">3 classes</text>
+
+        <text x="20" y="115" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="10.5">button:hover { }</text>
+        <text x="400" y="115" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">= (0, 1, 1)</text>
+        <text x="500" y="115" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="9">1 pseudo-class, 1 element</text>
+
+        <text x="350" y="155" text-anchor="middle" fill="#ffaaaa" font-family="Inter, sans-serif" font-size="11" font-weight="600">(1, 0, 1) BEATS (0, 3, 0) — because Column A (ID) is compared FIRST</text>
+        <text x="350" y="175" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">ONE id always outranks ANY number of classes — you never "add up" across columns</text>
+        <text x="350" y="200" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Comparison works like comparing version numbers: (1,0,0) vs (0,99,99) → (1,0,0) wins</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The most common specificity mistake: treating it as ONE combined number instead of three SEPARATE, hierarchically-compared columns.</strong> A selector with 50 classes still LOSES to a selector with just 1 ID — you compare Column A first, and only move to Column B if Column A is TIED.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Cascade Order
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Cascade Order — Beyond Just Specificity</h2>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span>Specificity is only ONE ingredient in the cascade — ORIGIN (where a rule comes from) and IMPORTANCE (`!important`) are checked BEFORE specificity even comes into play, and can override a "more specific" selector entirely.</span>
+    </div>
+
+    <div class="ladder">
+      <div class="ladder-item">
+        <div class="ladder-rank">1</div>
+        <div class="ladder-text">Highest priority: <strong>User-agent !important</strong> (extremely rare, browser default styles marked important)</div>
+      </div>
+      <div class="ladder-item">
+        <div class="ladder-rank">2</div>
+        <div class="ladder-text"><strong>User !important</strong> (a user's own custom stylesheet, marked important — rare, accessibility-related)</div>
+      </div>
+      <div class="ladder-item">
+        <div class="ladder-rank">3</div>
+        <div class="ladder-text"><strong>Author !important</strong> (YOUR site's CSS, marked !important — the practically relevant "important" tier for most developers)</div>
+      </div>
+      <div class="ladder-item">
+        <div class="ladder-rank">4</div>
+        <div class="ladder-text"><strong>Author normal</strong> (your site's regular CSS — specificity and source order decide ties WITHIN this tier)</div>
+      </div>
+      <div class="ladder-item">
+        <div class="ladder-rank">5</div>
+        <div class="ladder-text"><strong>User normal</strong> (a user's own custom stylesheet, without !important)</div>
+      </div>
+      <div class="ladder-item">
+        <div class="ladder-rank">6</div>
+        <div class="ladder-text">Lowest priority: <strong>User-agent normal</strong> (the browser's own default stylesheet — e.g. default button styling)</div>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Within the SAME origin/importance tier, the order is: <strong>Specificity</strong> first, then <strong>Source Order</strong> (the LAST rule wins, if specificity is tied) as the final tiebreaker.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Source order tiebreaker example — EQUAL specificity (0,1,0) for both */</span></span>
+  <span class="line">.btn { color: <span class="cs">blue</span>; }</span>
+  <span class="line">.btn { color: <span class="cs">red</span>; } <span class="cm">/* This WINS — same specificity, but declared LAST */</span></span>
+  <span class="line"><span class="cm">/* Result: the button is RED */</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Inheritance
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Inheritance</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Inheritance only kicks in when NO rule directly sets a property for an element — in that case, certain properties automatically take their PARENT's computed value. Not all properties inherit by default; this is deliberately chosen per-property based on what usually makes sense.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Category</th><th>Examples</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Inherit by DEFAULT</td><td>color, font-family, font-size, line-height, visibility, text-align, cursor</td><td>Typography/text-related properties usually SHOULD flow down — you don't want to re-declare font-family on every single nested element</td></tr>
+        <tr><td>Do NOT inherit by default</td><td>margin, padding, border, width, height, background, display, position</td><td>Box-model/layout properties are usually specific to EACH element's own box — a child inheriting its parent's exact margin would rarely make sense</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Explicit inheritance-control keywords */</span></span>
+  <span class="line">.child {</span>
+  <span class="line">  color: inherit;  <span class="cm">/* force this property to take the PARENT's value, even if it wouldn't normally inherit */</span></span>
+  <span class="line">  border: initial; <span class="cm">/* reset to the property's default initial value, ignoring inheritance/cascade */</span></span>
+  <span class="line">  all: unset;      <span class="cm">/* reset EVERY property — to inherited value if it naturally inherits, else initial */</span></span>
+  <span class="line">  color: revert;   <span class="cm">/* reset to what it would be WITHOUT any author styles — falls back to user-agent default */</span></span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Keyword</th><th>Behavior</th></tr></thead>
+      <tbody>
+        <tr><td>inherit</td><td>Explicitly take the parent element's COMPUTED value for this property</td></tr>
+        <tr><td>initial</td><td>Reset to the property's CSS-specification default value (ignores inheritance and the cascade entirely)</td></tr>
+        <tr><td>unset</td><td>Acts like `inherit` if the property naturally inherits, or like `initial` if it doesn't — a convenient "do the sensible default" reset</td></tr>
+        <tr><td>revert</td><td>Rolls back to the value the property WOULD have had with NO author styles applied at all (i.e., the user-agent/browser default)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — The Full Resolution Algorithm
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>The Full Resolution Algorithm, Step by Step</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The complete decision sequence the browser follows for a conflicting property</div>
+      <svg class="diagram-svg" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+        <rect x="220" y="10" width="260" height="40" rx="8" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="35" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Multiple rules target this property</text>
+
+        <path d="M350 50 L350 75" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowSpec)"/>
+        <rect x="200" y="75" width="300" height="40" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="350" y="100" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="10">1. Any !important? Highest wins</text>
+
+        <path d="M350 115 L350 140" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowSpec)"/>
+        <rect x="200" y="140" width="300" height="40" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="165" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">2. Compare origin/importance tier</text>
+
+        <path d="M350 180 L350 205" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowSpec)"/>
+        <rect x="200" y="205" width="300" height="40" rx="8" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="230" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">3. Compare specificity (A, B, C)</text>
+
+        <path d="M350 245 L350 260" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowSpec)"/>
+        <rect x="200" y="260" width="300" height="18" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="350" y="273" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">4. LAST declared rule wins (source order)</text>
+
+        <defs>
+          <marker id="arrowSpec" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>This exact 4-step order is the single most useful thing to internalize for debugging</strong> — at each step, if there's a CLEAR winner, resolution stops there; you only move to the NEXT step if the current one is a TIE.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Debugging a Conflict
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Debugging a Specificity Conflict, Fast</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Step</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td>1. Inspect the element</td><td>Open DevTools, select the element — the Styles panel shows EVERY matching rule, with overridden (crossed-out) declarations clearly visible</td></tr>
+        <tr><td>2. Find what's actually winning</td><td>The Styles panel lists rules in PRIORITY order (winning rule at top) — no manual calculation needed, DevTools has already resolved it for you</td></tr>
+        <tr><td>3. Check for !important first</td><td>An `!important` declaration is visually flagged — if present, it explains the override regardless of specificity</td></tr>
+        <tr><td>4. Compare specificity of the competing rules</td><td>If no !important is involved, compare the (A,B,C) specificity of the rules manually, or hover over a selector in some browsers' DevTools to see its calculated specificity directly</td></tr>
+        <tr><td>5. Check source order as a last resort</td><td>If specificity is EXACTLY tied, the rule appearing LATER in the cascade (later stylesheet, or later in the same file) wins</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>The fastest real-world debugging approach is almost always just: open DevTools, inspect the element, and read the Styles panel</strong> — it already shows you which rule won and visually crosses out the ones that lost, doing the specificity math for you. Manual calculation matters most for EXPLAINING why, in an interview or code review, not for day-to-day debugging.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Worked Examples
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Worked Examples — Full Conflict Resolution</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Example 1: specificity alone decides */</span></span>
+  <span class="line">.card p { color: <span class="cs">black</span>; }        <span class="cm">/* (0, 1, 1) */</span></span>
+  <span class="line">#sidebar p { color: <span class="cs">blue</span>; }       <span class="cm">/* (1, 0, 1) — WINS, has an ID */</span></span>
+  <span class="line"><span class="cm">/* Result: blue — regardless of which rule appears FIRST or LAST in the file */</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Example 2: !important overrides HIGHER specificity */</span></span>
+  <span class="line">#sidebar p { color: <span class="cs">blue</span>; }              <span class="cm">/* (1, 0, 1) */</span></span>
+  <span class="line">.card p { color: <span class="cs">red</span> !important; }      <span class="cm">/* (0, 1, 1), but !important WINS regardless */</span></span>
+  <span class="line"><span class="cm">/* Result: red — !important is checked BEFORE specificity comparison */</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Example 3: tied specificity, source order decides */</span></span>
+  <span class="line">.title { font-weight: <span class="cs">normal</span>; }  <span class="cm">/* (0, 1, 0) */</span></span>
+  <span class="line">.title { font-weight: <span class="cs">bold</span>; }    <span class="cm">/* (0, 1, 0) — tied, but declared LAST → WINS */</span></span>
+  <span class="line"><span class="cm">/* Result: bold */</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Example 4: inline style beats ANY selector-based rule (except !important) */</span></span>
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">style</span>=<span class="cs">"color: green;"</span> <span class="ca">class</span>=<span class="cs">"card"</span>&gt;...&lt;/<span class="ct">div</span>&gt;</span>
+  <span class="line">#super #specific #selector .card { color: <span class="cs">purple</span>; } <span class="cm">/* (3, 1, 0) — still LOSES */</span></span>
+  <span class="line"><span class="cm">/* Result: green — inline styles have a specificity ABOVE any selector-based rule */</span></span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Specificity is a THREE-COLUMN comparison, never a single summed number</strong> — this is by far the most common misconception; 100 classes never outrank a single ID, because Column A is compared FIRST and completely independently of Column B.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Inline styles (the HTML `style="..."` attribute) have a specificity HIGHER than any selector-based CSS rule</strong> — effectively "above" even an ID selector, though it's sometimes modeled as its own separate tier rather than literally part of the (A,B,C) system; only `!important` can override an inline style.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The universal selector (*) and combinators (&gt;, +, ~, space) contribute ZERO to specificity</strong> — a highly complex-looking selector chain using only combinators and the universal selector can have surprisingly LOW specificity if it contains no actual ID/class/element parts.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>!important should generally be treated as a LAST resort, not a standard tool</strong> — overusing it creates a codebase where NORMAL specificity rules stop being predictable, forcing future developers to reach for `!important` themselves just to override an existing `!important`, spiraling into a maintenance problem.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSS Custom Properties (variables, --my-var) DO inherit, by default, regardless of what property they're eventually used in</strong> — this is a distinct, separate inheritance behavior from the "does this specific CSS property inherit" table in Section 4.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>`unset` behaves DIFFERENTLY depending on whether the specific property naturally inherits or not</strong> — it's not a single fixed behavior; it dynamically resolves to `inherit` OR `initial` based on that property's own default inheritance behavior, which can surprise people expecting one consistent effect.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>CSS Layers (@layer) add an ADDITIONAL tier to the cascade, checked BEFORE specificity, similar in spirit to origin</strong> — a newer feature explicitly designed to give developers more CONTROL over cascade order without needing to fight with specificity or `!important`; worth mentioning as current, modern knowledge if relevant.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Pseudo-CLASSES (:hover, :nth-child) count toward specificity (Column B) — but pseudo-ELEMENTS (::before, ::after) count in Column C, same as a plain element selector</strong> — a subtle but real distinction (note the single vs double colon syntax difference too).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The `:where()` pseudo-class ALWAYS has ZERO specificity, regardless of what's inside it</strong> — while `:is()` and `:not()` take on the specificity of their MOST specific argument; `:where()` is specifically useful for writing reset/base styles that are trivially easy to override later without any specificity fights.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Source order as a tiebreaker depends on the FINAL, computed order of ALL stylesheets/rules the browser sees</strong> — including the order `&lt;link&gt;`/`&lt;style&gt;` tags appear in the HTML, and (for CSS-in-JS or bundled styles) the order the build tool ultimately outputs them in, which can sometimes surprise developers who assumed source-file order alone determines it.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Specificity debugging is a skill interviewers often test with a live, on-the-spot code snippet — being able to WALK THROUGH the resolution algorithm methodically (rather than guessing) is what demonstrates real fluency here.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What is CSS specificity, and how is it calculated?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Specificity is a way of measuring how PRECISELY a CSS selector targets an element, used to decide which of several conflicting rules should apply. It's calculated as a THREE-PART value: Column A counts ID selectors, Column B counts class/attribute/pseudo-class selectors, and Column C counts element/pseudo-element selectors. These columns are compared HIERARCHICALLY, like a version number — Column A is compared first, and only if it's tied do you move to comparing Column B, and so on. This means a selector with even ONE ID always beats a selector with any number of classes, since Column A takes absolute priority over Column B.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does !important get checked BEFORE specificity in the cascade, rather than specificity simply being the final word?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `!important` exists specifically as an EMERGENCY OVERRIDE mechanism — a way for a developer to say "this declaration must win, REGARDLESS of how specific the competing selector is." If specificity were checked FIRST and always had the final say, there would be no way to override a highly-specific but WRONG or outdated rule without literally rewriting an equally-or-more-specific selector to match it — which can be impractical, especially when the conflicting rule comes from third-party CSS you can't directly edit (a library, a CMS-generated stylesheet). By checking importance BEFORE specificity, `!important` provides an escape hatch that works regardless of the competing rule's specificity — though this power is exactly why it should be used sparingly, since overusing it undermines the predictability of the specificity system for everyone working in the codebase.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would source order end up being the deciding factor in a real-world specificity conflict?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Whenever TWO (or more) competing rules have EXACTLY the same specificity value (identical A, B, and C counts) AND belong to the same origin/importance tier — in this case, specificity alone can't break the tie, so the cascade falls back to whichever rule was declared LATER, either later in the same stylesheet, or in a stylesheet/style block that's loaded/rendered AFTER the other. A common real-world example is two `.button` class selectors with the same specificity — one from a base/reset stylesheet and one from a component-specific stylesheet — where simply controlling the ORDER these stylesheets are linked/imported in determines which one wins, entirely independent of specificity.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you determine which of these two rules wins: "#nav .menu-item.active" versus ".navigation #menu .item"?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Step 1 — count each selector's parts:</strong> `#nav .menu-item.active` has 1 ID (#nav), 2 classes (.menu-item, .active), 0 elements → specificity (1, 2, 0). `.navigation #menu .item` has 1 ID (#menu), 2 classes (.navigation, .item), 0 elements → specificity (1, 2, 0).<br>
+          <strong>Step 2 — compare column by column:</strong> Column A: both have 1 ID — TIED. Column B: both have 2 classes — TIED. Column C: both have 0 elements — TIED.<br>
+          <strong>Step 3 — since specificity is EXACTLY tied</strong> (and assuming neither uses `!important` and both are the same origin), the decision falls to SOURCE ORDER — whichever rule is declared LATER in the cascade wins, regardless of which selector "looks" more complex or specific-sounding at a glance. This example specifically demonstrates why counting the actual A/B/C values matters more than a selector's apparent visual complexity or length.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between the inherit, initial, unset, and revert CSS keywords?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          `inherit` forces a property to explicitly take its PARENT element's computed value, even for properties that don't naturally inherit by default. `initial` resets a property to its CSS-specification-defined default/initial value, ignoring both inheritance and any cascaded rules entirely. `unset` is a convenient "smart reset" — it behaves like `inherit` if the property is one that naturally inherits by default, or like `initial` if it's a property that doesn't naturally inherit — letting you reset without needing to remember which category the specific property falls into. `revert` rolls the property back to whatever value it WOULD have had with NO author-level CSS applied at all — typically falling back to the browser's own user-agent default stylesheet value, which is different from `initial`'s CSS-specification default (these can sometimes differ, e.g. for `display` on different elements).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why do typography-related properties (color, font-family) inherit by default, while box-model properties (margin, padding, width) do not?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          This was a deliberate design choice in the CSS specification based on what's PRACTICALLY useful in the vast majority of real-world cases. Typography properties like `color` and `font-family` are usually meant to apply CONSISTENTLY across a whole section of content — you typically want all the text inside an article to share the same font and color unless specifically overridden, so having these flow down automatically from a parent (like `body`) saves having to redeclare them on every single nested element. Box-model properties like `margin`, `padding`, and `width`, on the other hand, describe an element's OWN individual spacing/sizing needs relative to ITS specific content and layout context — a child element inheriting its parent's exact margin value would rarely make sense, since each element's ideal spacing is usually independent of its parent's. This split reflects a genuinely useful DEFAULT for common use cases, not an arbitrary technical limitation — and any property CAN still be forced to inherit explicitly via the `inherit` keyword when actually needed.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you deliberately reach for :where() instead of a normal selector when writing reusable/base CSS?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When writing BASE, RESET, or LIBRARY-style CSS that's meant to be easily overridden later by whoever consumes it — `:where()` always contributes ZERO specificity, regardless of how complex the selector inside it is, meaning even a simple single-class selector written by a consuming developer will trivially override it, with no specificity fights required. This is especially valuable for CSS reset stylesheets, component library base styles, or any "sensible defaults" CSS meant to sit at the very bottom of the cascade's specificity hierarchy — contrast this with using normal selectors for the same purpose, which could accidentally end up MORE specific than intended, making it annoyingly hard for consumers to override without resorting to `!important` or artificially inflating their own selector's specificity just to win.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you fix a CSS conflict where a component's styles are being overridden by a global stylesheet, WITHOUT resorting to !important?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Use DevTools to identify the EXACT competing rule and its specificity — confirm whether the global rule is winning due to higher specificity, or merely due to LATER source order at equal specificity.<br>
+          <strong>2.</strong> If it's a SOURCE ORDER issue (tied specificity), the simplest fix is often just ensuring the component's stylesheet loads/is declared AFTER the global one — no selector changes needed at all.<br>
+          <strong>3.</strong> If the global rule genuinely has HIGHER specificity, increase the component rule's specificity just enough to win — e.g. adding one extra class or a scoping wrapper class, rather than reaching for `!important` immediately.<br>
+          <strong>4.</strong> Consider whether CSS Modules, scoped styles (e.g. in a component framework), or a naming convention like BEM would prevent this entire CLASS of conflict from recurring, by ensuring component styles and global styles simply don't have OVERLAPPING selectors to begin with.<br>
+          <strong>5.</strong> If available, consider using `@layer` to explicitly place component styles in a cascade layer that's declared to take priority over the global styles' layer — a modern, purpose-built solution for exactly this kind of "global vs component" cascade conflict, without needing specificity tricks or `!important` at all.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · CSS Specificity · Cascade Order · Inheritance
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
