@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a News Feed — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ff79c6;
+    --accent2: #6ab0ff;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,121,198,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,121,198,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,121,198,0.1); color: var(--accent);
+    border: 1px solid rgba(255,121,198,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ff79c6 50%, #6ab0ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,121,198,0.1); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc4d9e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Requirements grid ── */
+  .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .req-item {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.9rem 1rem; border-top: 3px solid var(--accent);
+  }
+  .req-icon { font-size: 18px; margin-bottom: 6px; }
+  .req-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .req-desc { font-size: 11.5px; color: var(--text2); line-height: 1.5; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,121,198,0.12); border-color: rgba(255,121,198,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Component Design</div>
+    <h1>Designing a News Feed</h1>
+    <p>Infinite Scroll · Optimistic Likes · Real-Time via WebSocket · Offline Support — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Full Requirements</a>
+    <a class="topic-pill" href="#s2">2. Infinite Scroll</a>
+    <a class="topic-pill" href="#s3">3. Optimistic Likes</a>
+    <a class="topic-pill" href="#s4">4. Real-Time via WebSocket</a>
+    <a class="topic-pill" href="#s5">5. Offline Support</a>
+    <a class="topic-pill" href="#s6">6. How It All Fits Together</a>
+    <a class="topic-pill" href="#s7">7. Gotchas</a>
+    <a class="topic-pill" href="#s8">8. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Full Requirements
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Full Requirements</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A news feed is one of the richest frontend system-design questions precisely because its FOUR pillars pull in different directions: infinite scroll needs careful DATA FETCHING; optimistic likes need careful STATE/ROLLBACK handling; real-time updates need to MERGE cleanly with a paginated list; and offline support needs a coherent strategy for ALL of the above when there's no network at all.</span>
+    </div>
+
+    <div class="req-grid">
+      <div class="req-item">
+        <div class="req-icon">📜</div>
+        <div class="req-title">Infinite Scroll</div>
+        <div class="req-desc">Load more posts as the user nears the bottom, without jank or duplicate fetches</div>
+      </div>
+      <div class="req-item">
+        <div class="req-icon">❤️</div>
+        <div class="req-title">Optimistic Likes</div>
+        <div class="req-desc">Instant visual feedback on like/unlike, with correct rollback on failure</div>
+      </div>
+      <div class="req-item">
+        <div class="req-icon">🔌</div>
+        <div class="req-title">Real-Time Updates</div>
+        <div class="req-desc">New posts/likes from OTHER users arrive live via WebSocket, merged cleanly</div>
+      </div>
+      <div class="req-item">
+        <div class="req-icon">📴</div>
+        <div class="req-title">Offline Support</div>
+        <div class="req-desc">The feed remains usable (read-only, and ideally queued actions) with no connection</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Infinite Scroll
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Infinite Scroll</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// IntersectionObserver watching a "sentinel" element at the bottom of the list</span></span>
+  <span class="line"><span class="ck">const</span> sentinelRef = useRef(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">useEffect(() =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> observer = <span class="ck">new</span> IntersectionObserver(</span>
+  <span class="line">    ([entry]) =&gt; {</span>
+  <span class="line">      <span class="ck">if</span> (entry.isIntersecting &amp;&amp; !isLoading &amp;&amp; hasMore) {</span>
+  <span class="line">        loadNextPage();</span>
+  <span class="line">      }</span>
+  <span class="line">    },</span>
+  <span class="line">    { rootMargin: <span class="cs">"400px"</span> } <span class="cm">// start loading BEFORE the sentinel is actually visible</span></span>
+  <span class="line">  );</span>
+  <span class="line">  <span class="ck">if</span> (sentinelRef.current) observer.observe(sentinelRef.current);</span>
+  <span class="line">  <span class="ck">return</span> () =&gt; observer.disconnect();</span>
+  <span class="line">}, [isLoading, hasMore]);</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Cursor-based pagination request — NOT page numbers</span></span>
+  <span class="line">GET /api/feed?cursor=eyJpZCI6ICI0NTYifQ&amp;limit=<span class="cn">20</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Design decision</th><th>Reasoning</th></tr></thead>
+      <tbody>
+        <tr><td>IntersectionObserver over scroll event listeners</td><td>Far more performant — doesn't fire on every scroll pixel, and doesn't require manual scroll-position math or throttling</td></tr>
+        <tr><td>rootMargin to trigger loading EARLY</td><td>Starts fetching the next page BEFORE the user actually reaches the bottom, so new content is ready by the time they scroll there — avoiding a visible loading pause</td></tr>
+        <tr><td>Cursor-based pagination (not page numbers)</td><td>A feed's underlying data changes CONSTANTLY (new posts arrive) — page NUMBERS shift under you as new items are added; a cursor (pointing to a specific item) remains stable regardless of what's added ABOVE it</td></tr>
+        <tr><td>isLoading / hasMore guards</td><td>Prevents duplicate fetches if the sentinel triggers multiple times, and stops fetching once the feed is exhausted</td></tr>
+        <tr><td>Virtualization (from the earlier windowing topic)</td><td>For a VERY long, continuously-growing feed, combining infinite scroll with list virtualization prevents unbounded DOM growth as more and more pages load</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Page-number-based pagination breaks on a live feed</strong> — if new posts are added to the TOP of the feed between page loads, "page 2" now refers to DIFFERENT items than it did a moment ago, causing skipped or duplicated posts. Cursor-based pagination (pointing to "everything after post X") is immune to this since it's anchored to a specific item, not a shifting numeric offset.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Optimistic Likes
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Optimistic Likes</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The optimistic update flow — success vs. failure/rollback</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="160" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="100" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">User clicks "Like"</text>
+
+        <path d="M180 40 L220 40" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowFeed)"/>
+
+        <rect x="220" y="20" width="180" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="310" y="37" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">UI updates INSTANTLY</text>
+        <text x="310" y="52" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">heart fills, count +1 — before server responds</text>
+
+        <path d="M400 40 L440 40" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowFeed)"/>
+
+        <rect x="440" y="20" width="180" height="40" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="530" y="45" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">POST /like (background)</text>
+
+        <path d="M530 60 L400 100" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowFeed)"/>
+        <rect x="280" y="100" width="200" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="380" y="125" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">✓ Success — nothing to do,</text>
+        <text x="380" y="138" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="7.5">optimistic state WAS correct</text>
+
+        <path d="M530 60 L620 100" stroke="#ff6b6b" stroke-width="1.5" marker-end="url(#arrowFeedRed)"/>
+        <rect x="520" y="100" width="180" height="55" rx="6" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="610" y="120" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">✗ Failure — ROLL BACK</text>
+        <text x="610" y="135" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">heart un-fills, count -1,</text>
+        <text x="610" y="147" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">show an error toast</text>
+
+        <defs>
+          <marker id="arrowFeed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+          <marker id="arrowFeedRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff6b6b"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">async function</span> <span class="cf">toggleLike</span>(postId, currentlyLiked) {</span>
+  <span class="line">  <span class="cm">// 1. Snapshot the PREVIOUS state, in case we need to roll back</span></span>
+  <span class="line">  <span class="ck">const</span> previousState = getPost(postId);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// 2. Apply the optimistic update IMMEDIATELY, synchronously</span></span>
+  <span class="line">  updatePost(postId, {</span>
+  <span class="line">    liked: !currentlyLiked,</span>
+  <span class="line">    likeCount: previousState.likeCount + (currentlyLiked ? -<span class="cn">1</span> : <span class="cn">1</span>),</span>
+  <span class="line">  });</span>
+  <span class="line"></span>
+  <span class="line">  <span class="cm">// 3. Fire the actual request in the background</span></span>
+  <span class="line">  <span class="ck">try</span> {</span>
+  <span class="line">    <span class="ck">await</span> <span class="cf">api</span>.toggleLike(postId, !currentlyLiked);</span>
+  <span class="line">    <span class="cm">// success — the optimistic state WAS correct, nothing more to do</span></span>
+  <span class="line">  } <span class="ck">catch</span> (err) {</span>
+  <span class="line">    <span class="cm">// 4. FAILURE — roll back to the exact previous snapshot</span></span>
+  <span class="line">    updatePost(postId, previousState);</span>
+  <span class="line">    showErrorToast(<span class="cs">"Couldn't like this post — try again"</span>);</span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Rapid double-clicking (like → unlike → like, quickly) needs careful handling</strong> — a naive implementation can send OUT-OF-ORDER requests to the server, or roll back an update that's since been superseded by a newer click. Debouncing rapid toggles, or tracking a per-post "latest intended state" and only syncing that final state, are common mitigations.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Real-Time via WebSocket
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Real-Time Updates via WebSocket</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">const</span> ws = <span class="ck">new</span> WebSocket(<span class="cs">"wss://api.example.com/feed-updates"</span>);</span>
+  <span class="line"></span>
+  <span class="line">ws.onmessage = (event) =&gt; {</span>
+  <span class="line">  <span class="ck">const</span> update = JSON.parse(event.data);</span>
+  <span class="line">  <span class="ck">switch</span> (update.type) {</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"NEW_POST"</span>:</span>
+  <span class="line">      <span class="cm">// Don't just inject it at the top — see the "New posts" banner pattern below</span></span>
+  <span class="line">      queuePendingPost(update.post);</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"LIKE_UPDATE"</span>:</span>
+  <span class="line">      <span class="cm">// Merge into EXISTING post data — but respect any local optimistic state in flight</span></span>
+  <span class="line">      mergeLikeCount(update.postId, update.likeCount);</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">  }</span>
+  <span class="line">};</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Reconnection with exponential backoff — WebSockets DO drop unexpectedly</span></span>
+  <span class="line"><span class="ck">let</span> reconnectDelay = <span class="cn">1000</span>;</span>
+  <span class="line">ws.onclose = () =&gt; {</span>
+  <span class="line">  setTimeout(() =&gt; {</span>
+  <span class="line">    reconnectDelay = Math.min(reconnectDelay * <span class="cn">2</span>, <span class="cn">30000</span>); <span class="cm">// cap the backoff</span></span>
+  <span class="line">    connectWebSocket();</span>
+  <span class="line">  }, reconnectDelay);</span>
+  <span class="line">};</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Don't auto-inject new live posts directly at the top of a feed the user is actively scrolling through</strong> — it's disorienting and can cause an unwanted layout shift right under their cursor/reading position. The standard pattern is a "New posts available ↑" BANNER, letting the user choose WHEN to actually pull in the new content.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Design decision</th><th>Reasoning</th></tr></thead>
+      <tbody>
+        <tr><td>"New posts" banner instead of auto-injecting</td><td>Preserves the user's current scroll position and reading context — respects their control over the experience</td></tr>
+        <tr><td>Reconnection with exponential backoff</td><td>WebSocket connections drop for many reasons (network blips, server restarts); backoff avoids hammering the server with reconnect attempts while still recovering automatically</td></tr>
+        <tr><td>Merging live updates without clobbering local optimistic state</td><td>If a LIKE_UPDATE arrives for a post the user JUST optimistically liked locally, naively overwriting with the server's count could cause a visible flicker/inconsistency — needs careful reconciliation logic</td></tr>
+        <tr><td>Fallback to polling if WebSocket is unavailable</td><td>Some networks/proxies block WebSocket connections entirely — a graceful degradation path (periodic polling) keeps the feature at least partially functional</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Offline Support
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Offline Support</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// 1. Cache already-loaded feed data locally (IndexedDB, via a library or raw API)</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">cacheFeedPage</span>(posts) {</span>
+  <span class="line">  <span class="ck">const</span> db = <span class="ck">await</span> openFeedDB();</span>
+  <span class="line">  <span class="ck">await</span> db.put(<span class="cs">"posts"</span>, posts);</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// 2. When offline, serve from the local cache instead of failing outright</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">loadFeed</span>() {</span>
+  <span class="line">  <span class="ck">if</span> (!navigator.onLine) {</span>
+  <span class="line">    <span class="ck">return</span> <span class="ck">await</span> <span class="cf">getCachedPosts</span>();</span>
+  <span class="line">  }</span>
+  <span class="line">  <span class="ck">return</span> <span class="ck">await</span> <span class="cf">fetch</span>(<span class="cs">"/api/feed"</span>).then((r) =&gt; r.json());</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// 3. Queue actions (like, comment) performed WHILE offline, sync when back online</span></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">toggleLike</span>(postId, liked) {</span>
+  <span class="line">  applyOptimisticUpdate(postId, liked); <span class="cm">// UI updates regardless of connectivity</span></span>
+  <span class="line">  <span class="ck">if</span> (!navigator.onLine) {</span>
+  <span class="line">    <span class="ck">await</span> <span class="cf">queueOfflineAction</span>({ <span class="ca">type</span>: <span class="cs">"LIKE"</span>, postId, liked });</span>
+  <span class="line">    <span class="ck">return</span>; <span class="cm">// will sync automatically once connectivity returns</span></span>
+  <span class="line">  }</span>
+  <span class="line">  <span class="ck">await</span> <span class="cf">api</span>.toggleLike(postId, liked);</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line">window.addEventListener(<span class="cs">"online"</span>, syncQueuedActions); <span class="cm">// flush the queue on reconnect</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Layer</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Service Worker + Cache API</td><td>Caches STATIC assets (JS/CSS/images) so the app shell loads even with no connection</td></tr>
+        <tr><td>IndexedDB</td><td>Persists actual FEED DATA (posts, already-fetched pages) for offline viewing — localStorage is too small/synchronous for this volume of data</td></tr>
+        <tr><td>navigator.onLine + online/offline events</td><td>Lets the app detect connectivity changes and react (switch data sources, trigger sync)</td></tr>
+        <tr><td>An offline action QUEUE</td><td>Stores user actions (likes, comments) performed while offline, replaying them once connectivity returns — usually also persisted to IndexedDB so it survives a page reload while still offline</td></tr>
+        <tr><td>Background Sync API (where supported)</td><td>Lets queued actions sync even if the user has closed the tab, once connectivity returns — a more robust alternative to only syncing on the 'online' event while the tab is open</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Realistically, "offline support" for a news feed usually means READ access to already-seen content, plus queued WRITE actions</strong> — it's rarely expected to support loading genuinely NEW content while offline (since that data doesn't exist locally yet); setting this scope explicitly is an important part of a strong answer.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — How It All Fits Together
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>How It All Fits Together</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The full architecture — data sources feeding into ONE unified feed state</div>
+      <svg class="diagram-svg" viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="150" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="95" y="45" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">REST: infinite scroll</text>
+
+        <rect x="20" y="80" width="150" height="40" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="95" y="105" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="9">WebSocket: live updates</text>
+
+        <rect x="20" y="140" width="150" height="40" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="95" y="165" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">IndexedDB: offline cache</text>
+
+        <path d="M170 40 L280 110" stroke="#555a6e" stroke-width="1"/>
+        <path d="M170 100 L280 110" stroke="#555a6e" stroke-width="1"/>
+        <path d="M170 160 L280 130" stroke="#555a6e" stroke-width="1"/>
+
+        <rect x="280" y="90" width="200" height="60" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="380" y="115" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Unified Feed State</text>
+        <text x="380" y="132" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">reconciles all 3 sources +</text>
+        <text x="380" y="144" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">local optimistic updates</text>
+
+        <path d="M480 120 L560 120" stroke="#5cffb0" stroke-width="1.5" marker-end="url(#arrowArch)"/>
+
+        <rect x="560" y="95" width="120" height="50" rx="6" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="620" y="115" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="9">Rendered UI</text>
+        <text x="620" y="130" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">(virtualized list)</text>
+
+        <text x="350" y="210" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">All three sources write into ONE source of truth — the UI never needs to know</text>
+        <text x="350" y="225" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">which specific channel a given piece of data came from, only render the reconciled result</text>
+
+        <defs>
+          <marker id="arrowArch" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5cffb0"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The core architectural insight:</strong> REST (paginated history), WebSocket (live updates), and IndexedDB (offline cache) are three DIFFERENT data sources feeding into ONE unified client-side feed state — the rendering layer should be completely decoupled from WHICH source a given post/update came from, simplifying the UI logic considerably.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Page-number pagination silently breaks on a live-updating feed</strong> — new posts shifting everything down causes duplicate or skipped items on subsequent page loads; cursor-based pagination is the correct default for ANY feed that can change while being paginated.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Auto-injecting new WebSocket posts directly into the visible feed disrupts the user's scroll position and reading flow</strong> — the "new posts available" banner pattern exists specifically to avoid this common, jarring UX mistake.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An optimistic like update can be silently OVERWRITTEN by an incoming WebSocket like-count update</strong> if reconciliation isn't handled carefully — e.g. the user optimistically likes a post, then a WebSocket message with the (not-yet-updated) OLD server count arrives and incorrectly reverts the visible count; some form of "trust local optimistic state until the corresponding request resolves" logic is needed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Rapid, repeated like/unlike toggling can create out-of-order network requests</strong> if not handled — the LAST request to actually complete might not reflect the user's FINAL intended state; tracking only the latest intended state (and potentially cancelling/ignoring superseded in-flight requests) avoids this.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>WebSocket connections WILL drop unexpectedly in real-world usage</strong> (network changes, server restarts, mobile devices switching networks) — an implementation with NO reconnection logic at all will silently stop receiving live updates with no visible indication to the user that anything is wrong.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>"Offline support" is often vaguely scoped in interview answers</strong> — being explicit about WHAT specifically works offline (viewing already-cached posts, queuing new actions) versus what CAN'T (loading genuinely new content that was never fetched) demonstrates more precise, realistic system thinking.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Combining infinite scroll with a long-running WebSocket connection without virtualization can cause serious memory growth</strong> over a long session — a feed that's been scrolled through for an hour, receiving continuous live updates, needs SOME mechanism (virtualization, or periodically trimming very old off-screen items from memory) to avoid unbounded growth.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Queued offline actions need conflict resolution logic for when they finally sync</strong> — e.g. what happens if a post the user liked WHILE offline was deleted by its author before the queued like request finally syncs? A robust design considers and handles these edge cases explicitly, even if the actual behavior is just "fail gracefully and inform the user."</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not all networks/environments support WebSockets reliably</strong> — some corporate proxies or restrictive environments block them; a resilient design mentions a FALLBACK mechanism (like polling) rather than assuming WebSocket connectivity is always guaranteed to succeed.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Persisting the offline action queue only in memory (not IndexedDB/localStorage) means queued actions are LOST if the user closes the tab or the browser crashes while still offline</strong> — genuinely resilient offline support requires the queue itself to survive a page reload, not just survive momentarily within the current session.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc4d9e);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>A news feed question is a genuine SYSTEM DESIGN exercise for the frontend — the strongest answers explicitly name the trade-offs at each layer, and describe how the pieces INTEGRATE, rather than treating each requirement in complete isolation.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between page-number-based and cursor-based pagination, and why does it matter for a news feed specifically?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Page-number pagination (`?page=2`) assumes the underlying dataset is STABLE between requests — "page 2" means "items 21-40," a meaning that depends entirely on nothing having changed in items 1-20 since the last request. Cursor-based pagination (`?cursor=abc123`) instead means "everything after THIS SPECIFIC item," anchoring the pagination to a concrete, stable reference point rather than a shifting numeric position. For a news feed specifically, NEW posts are constantly being added at the top — if you're on "page 2" using page-number pagination and 5 new posts get added above everything, your NEXT "page 3" request now returns items that OVERLAP with what page 2 already showed (or skips items entirely, depending on the exact shift), causing visible duplicates or gaps. Cursor-based pagination is immune to this, since it doesn't care how many new items were added ABOVE the cursor — it just returns everything after that specific anchor point, correctly, regardless of what's happened above it.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why shouldn't new posts arriving via WebSocket be automatically inserted at the top of the feed the instant they arrive?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If the user is actively scrolled DOWN, reading posts further into the feed, and new content silently gets inserted ABOVE the currently-visible viewport, this shifts the POSITION of everything the user is currently looking at — potentially causing a jarring, disorienting jump, or worse, causing the user to accidentally interact with a DIFFERENT post than the one they intended, right as the layout shifts beneath their cursor. This is fundamentally the same category of problem as unwanted Cumulative Layout Shift, just caused by a real-time data update instead of a slow-loading image. The "new posts available" banner pattern defers this disruptive insertion until the USER explicitly chooses to see the new content (typically by clicking the banner or scrolling back to the top themselves), keeping the user in full control of when their current reading context gets disrupted.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose to roll back an optimistic like update, versus silently retrying the failed request instead?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Roll back immediately (and inform the user) for errors that are UNLIKELY to succeed on a simple retry — e.g. a 403/401 (the user's session expired or they lack permission), or a 404 (the post was deleted) — these represent a genuine, persistent failure state where showing the optimistic "liked" state any longer would be actively misleading. Consider a silent, brief RETRY (perhaps once or twice, with a short delay) before rolling back for errors that are plausibly TRANSIENT — a timeout, a 500/503 server error, or a brief network blip — since these often succeed on a quick retry without needing to bother the user with an error state OR revert their visible action, if the underlying issue was genuinely temporary. The right choice depends on whether the specific failure reason suggests the action is fundamentally impossible right now, or just momentarily unlucky.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you prevent an incoming WebSocket like-count update from incorrectly overwriting a user's own just-made optimistic like update?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// Track which posts have a PENDING optimistic action in flight</span></span>
+  <span class="line"><span class="ck">const</span> pendingLikeActions = <span class="ck">new</span> Set(); <span class="cm">// postIds with an in-flight like/unlike request</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">function</span> <span class="cf">handleWebSocketLikeUpdate</span>(postId, serverLikeCount) {</span>
+  <span class="line">  <span class="ck">if</span> (pendingLikeActions.has(postId)) {</span>
+  <span class="line">    <span class="ck">return</span>; <span class="cm">// IGNORE this update — trust the local optimistic state until OUR request resolves</span></span>
+  <span class="line">  }</span>
+  <span class="line">  updatePost(postId, { likeCount: serverLikeCount }); <span class="cm">// safe to apply — no local action in flight</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">toggleLike</span>(postId, liked) {</span>
+  <span class="line">  pendingLikeActions.add(postId);</span>
+  <span class="line">  applyOptimisticUpdate(postId, liked);</span>
+  <span class="line">  <span class="ck">try</span> {</span>
+  <span class="line">    <span class="ck">await</span> <span class="cf">api</span>.toggleLike(postId, liked);</span>
+  <span class="line">  } <span class="ck">catch</span> {</span>
+  <span class="line">    rollback(postId);</span>
+  <span class="line">  } <span class="ck">finally</span> {</span>
+  <span class="line">    pendingLikeActions.delete(postId); <span class="cm">// NOW safe to accept WebSocket updates for this post again</span></span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+          </div>
+          The key idea is tracking, per post, whether there's currently a LOCAL, in-flight optimistic action the user just initiated — while that's true, incoming WebSocket updates for that SAME post are deliberately IGNORED, trusting the local optimistic state as more current/authoritative until the user's own request has actually resolved (success or failure). Once the local request settles (the `finally` block), the post is removed from the pending set, and subsequent WebSocket updates are trusted normally again — this prevents the specific race where a slightly-stale server broadcast arrives in the brief window between the user's click and their own request's response, which would otherwise incorrectly stomp on their just-made change.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What should "offline support" concretely mean for a news feed — what should and shouldn't work with no connection?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A realistic, well-scoped offline experience for a news feed typically means: the user can still VIEW any posts that were already loaded/cached during a previous online session (served from IndexedDB); actions like LIKING a post are accepted and reflected optimistically in the UI immediately, then QUEUED locally and automatically synced once connectivity returns; and the app clearly COMMUNICATES its offline state (a banner or indicator) so the user understands why new content isn't appearing. What realistically should NOT be expected to work offline: loading genuinely NEW posts that were never fetched before going offline (that data simply doesn't exist locally, and there's no way to conjure it without a network request) — being explicit about this boundary, rather than vaguely implying "the whole feed works offline," reflects a more accurate and defensible scope for the feature.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is exponential backoff important for WebSocket reconnection, rather than just retrying immediately every time the connection drops?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          If a WebSocket connection drops because the SERVER is having trouble (overloaded, restarting, or experiencing an outage), every connected client immediately retrying at full speed creates a "thundering herd" problem — potentially thousands of clients all hammering the server with reconnection attempts SIMULTANEOUSLY, right when it's least able to handle the load, which can actually make server recovery slower or prevent it from recovering at all. Exponential backoff spaces out retry attempts progressively (1s, 2s, 4s, 8s...up to some capped maximum), meaning the RECONNECTION LOAD on a recovering server ramps up gradually rather than hitting it all at once — while still ensuring the client eventually reconnects successfully once the server is healthy again, without requiring a page refresh or manual user intervention.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When combining infinite scroll with a live feed, when would you need to consider trimming old items from memory, rather than letting the list grow forever?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          This becomes a real concern for a genuinely LONG-RUNNING session — a user who keeps a feed tab open for hours, continuously scrolling and receiving live updates, can accumulate an unbounded amount of post data in memory over time, even with DOM-level virtualization limiting the actual rendered nodes (virtualization only limits DOM node count, not necessarily the underlying JS data array holding ALL loaded posts' data). For a typical, moderate session (a user scrolling through a few hundred posts over some minutes), this usually isn't a practical problem worth extra engineering complexity. For an application explicitly designed for very long-lived sessions (like a dashboard meant to stay open all day), it becomes worth implementing some form of data trimming — e.g. keeping only the most recent N posts' full data in memory, and re-fetching older ones on-demand if the user scrolls back up to them — trading a small amount of potential re-fetch latency for bounded, predictable memory usage over arbitrarily long sessions.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you design the queued offline actions system to handle a conflict — like a queued "like" action for a post that gets deleted before the queue syncs?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> When the app comes back ONLINE, process the queued actions IN ORDER, sending each to the server as normal API requests.<br>
+          <strong>2.</strong> For the specific "like a since-deleted post" scenario, the server will naturally respond with an error (likely a 404, since the post no longer exists) — the client should catch this specific error case explicitly.<br>
+          <strong>3.</strong> On this kind of "the target no longer exists" error, the correct handling is typically to SILENTLY DISCARD that specific queued action (there's nothing meaningful left to retry or roll back to — the post is simply gone) rather than treating it as a fatal error that blocks the rest of the queue from syncing.<br>
+          <strong>4.</strong> Continue processing the REMAINING queued actions normally — one failed/discarded action shouldn't block or corrupt the sync of other, unrelated queued actions.<br>
+          <strong>5.</strong> Optionally, surface a SUBTLE, non-blocking notification to the user (e.g. "Some of your offline actions couldn't be completed") rather than either silently failing with no indication at all, or interrupting them with an intrusive error for something that's ultimately a minor, unavoidable edge case.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · News Feed Design · Infinite Scroll · Optimistic UI · WebSocket · Offline
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+document.querySelectorAll('.code-block .line').forEach(line => {
+  const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) textNodes.push(node);
+  textNodes.forEach(textNode => {
+    textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+  });
+});
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

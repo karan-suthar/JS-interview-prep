@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Custom Properties &amp; Design Tokens — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #bd93f9;
+    --accent2: #5cffb0;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(189,147,249,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(189,147,249,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(189,147,249,0.1); color: var(--accent);
+    border: 1px solid rgba(189,147,249,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #bd93f9 50%, #5cffb0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(189,147,249,0.1); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7c4fd1);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Live theme demo ── */
+  .theme-demo-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .demo-label { font-size: 10.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .theme-toggle-btn {
+    font-family: var(--font-mono); font-size: 11.5px; padding: 6px 14px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); cursor: pointer; margin-bottom: 12px;
+  }
+  .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .theme-card {
+    --card-bg: #ffffff; --card-text: #1a1a1a; --card-accent: #6a4fd1;
+    background: var(--card-bg); color: var(--card-text); border-radius: 8px; padding: 1rem 1.2rem;
+    transition: all 0.25s;
+  }
+  .theme-card.dark-theme { --card-bg: #1a1a2e; --card-text: #e8eaf0; --card-accent: #bd93f9; }
+  .theme-card h4 { font-family: var(--font-head); margin-bottom: 6px; }
+  .theme-card p { font-size: 13px; margin-bottom: 10px; }
+  .theme-card button {
+    background: var(--card-accent); color: white; border: none; border-radius: 6px;
+    padding: 6px 14px; font-family: var(--font-body); font-size: 12.5px; cursor: pointer;
+  }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(189,147,249,0.12); border-color: rgba(189,147,249,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · CSS Custom Properties</div>
+    <h1>CSS Custom Properties &amp; Design Tokens</h1>
+    <p>Defining, Overriding, Theming — with a Live Demo and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Defining &amp; Using</a>
+    <a class="topic-pill" href="#s2">2. Cascade &amp; Inheritance</a>
+    <a class="topic-pill" href="#s3">3. Overriding &amp; Scoping</a>
+    <a class="topic-pill" href="#s4">4. Fallback Values</a>
+    <a class="topic-pill" href="#s5">5. Theming — Live Demo</a>
+    <a class="topic-pill" href="#s6">6. Design Tokens Pattern</a>
+    <a class="topic-pill" href="#s7">7. Custom Properties vs Sass Variables</a>
+    <a class="topic-pill" href="#s8">8. @property (Advanced)</a>
+    <a class="topic-pill" href="#s9">9. Gotchas</a>
+    <a class="topic-pill" href="#s10">10. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — Defining & Using
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Defining &amp; Using Custom Properties</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A CSS custom property (informally called a "CSS variable") is defined with a name starting with TWO dashes (<ic>--my-variable</ic>), and READ using the <ic>var()</ic> function. Unlike Sass/LESS variables, these are REAL, LIVE values the browser evaluates at RUNTIME, not compile-time text substitutions.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Defining custom properties — typically on :root for global availability */</span></span>
+  <span class="line">:root {</span>
+  <span class="line">  --primary-color: <span class="cn">#6a4fd1</span>;</span>
+  <span class="line">  --spacing-unit: <span class="cn">8</span>px;</span>
+  <span class="line">  --border-radius: <span class="cn">6</span>px;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Using them with var() */</span></span>
+  <span class="line">.button {</span>
+  <span class="line">  background: var(--primary-color);</span>
+  <span class="line">  padding: var(--spacing-unit) calc(var(--spacing-unit) * <span class="cn">2</span>);</span>
+  <span class="line">  border-radius: var(--border-radius);</span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Naming</td><td>Must start with `--`; case-sensitive; can contain letters, digits, hyphens, underscores</td></tr>
+        <tr><td>Where defined</td><td>Any selector — `:root` is common for GLOBAL tokens, but any element can define/override its own</td></tr>
+        <tr><td>Value type</td><td>Essentially ANY valid CSS token sequence — colors, lengths, even partial values, unlike typed variables in other languages</td></tr>
+        <tr><td>Accessible from JS</td><td>Yes — `element.style.getPropertyValue('--x')` and `element.style.setProperty('--x', value)`</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Cascade & Inheritance
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Cascade &amp; Inheritance — Custom Properties Are Different</h2>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Custom properties INHERIT BY DEFAULT — regardless of what property they're eventually USED in.</strong> This is a genuinely different rule from normal CSS properties (recall: most box-model properties like `margin`/`padding` do NOT inherit by default) — custom properties always flow down the DOM tree unless explicitly overridden by a descendant.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Inheritance flowing down, with a scoped override along the way</div>
+      <svg class="diagram-svg" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="150" y="10" width="200" height="40" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="250" y="35" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9.5">:root { --color: blue; }</text>
+
+        <path d="M250 50 L150 90" stroke="#555a6e" stroke-width="1"/>
+        <path d="M250 50 L350 90" stroke="#555a6e" stroke-width="1"/>
+
+        <rect x="60" y="90" width="180" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="150" y="112" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">.card { color: var(--color) }</text>
+        <text x="150" y="126" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">→ resolves to BLUE (inherited)</text>
+
+        <rect x="260" y="90" width="180" height="40" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="112" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="9">.sidebar { --color: green; }</text>
+        <text x="350" y="126" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">→ OVERRIDES for itself + children</text>
+
+        <path d="M350 130 L350 160" stroke="#555a6e" stroke-width="1"/>
+        <rect x="260" y="160" width="180" height="40" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="350" y="182" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="9">.link { color: var(--color) }</text>
+        <text x="350" y="196" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7.5">→ resolves to GREEN (from sidebar)</text>
+      </svg>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>This inheritance behavior is EXACTLY what makes custom properties so powerful for theming and scoped component overrides — a single override at any point in the tree cascades down to every descendant automatically, without needing to explicitly re-declare it at each level.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Overriding & Scoping
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Overriding &amp; Scoping</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Global default */</span></span>
+  <span class="line">:root { --button-bg: <span class="cn">#6a4fd1</span>; }</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Component-level SCOPED override — only affects .danger-zone and its descendants */</span></span>
+  <span class="line">.danger-zone {</span>
+  <span class="line">  --button-bg: <span class="cn">#ff4444</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line">.button { background: var(--button-bg); } <span class="cm">/* automatically picks up whichever scope it's in */</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Media-query-based override — responsive design tokens */</span></span>
+  <span class="line">:root { --container-padding: <span class="cn">16</span>px; }</span>
+  <span class="line">@media (min-width: <span class="cn">768</span>px) {</span>
+  <span class="line">  :root { --container-padding: <span class="cn">32</span>px; }</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">/* Every element using var(--container-padding) automatically adapts —</span></span>
+  <span class="line"><span class="cm">   no need to write separate responsive rules for EACH consuming element */</span></span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>This is the core theming mechanism:</strong> re-declaring the SAME custom property name at a more specific scope (a class, a media query, a data attribute selector) OVERRIDES it for that scope and everything nested within it — every consuming rule using `var()` automatically reflects the new value, with zero changes needed at the point of USE.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Fallback Values
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Fallback Values in var()</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* var() accepts a SECOND argument — used if the custom property is UNDEFINED */</span></span>
+  <span class="line">.button {</span>
+  <span class="line">  color: var(--button-text-color, <span class="cs">white</span>); <span class="cm">/* falls back to white if --button-text-color isn't set */</span></span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Fallbacks can even reference ANOTHER custom property */</span></span>
+  <span class="line">.button {</span>
+  <span class="line">  color: var(--button-text-color, var(--default-text-color, <span class="cs">black</span>));</span>
+  <span class="line">}</span>
+  <span class="line"><span class="cm">// Tries --button-text-color first, then --default-text-color, then finally "black"</span></span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>The fallback only activates if the custom property is genuinely UNDEFINED (never declared anywhere in scope)</strong> — NOT if it's declared but happens to be an INVALID value for that context; an invalid value instead makes the property fall back to its normal `initial`/`inherited` value entirely (see gotchas).</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Theming Live Demo
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Theming With Custom Properties — Live Demo</h2>
+    </div>
+
+    <div class="theme-demo-wrap">
+      <div class="demo-label">Click the button below to toggle a real, live theme switch</div>
+      <button class="theme-toggle-btn" onclick="document.getElementById('themeCard').classList.toggle('dark-theme')">Toggle Theme</button>
+      <div class="theme-card" id="themeCard">
+        <h4>Card Title</h4>
+        <p>This card's colors are driven entirely by CSS custom properties — toggling a single class swaps EVERY themed value at once.</p>
+        <button>Action Button</button>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* The exact mechanism behind the demo above */</span></span>
+  <span class="line">.theme-card {</span>
+  <span class="line">  --card-bg: <span class="cn">#ffffff</span>;</span>
+  <span class="line">  --card-text: <span class="cn">#1a1a1a</span>;</span>
+  <span class="line">  --card-accent: <span class="cn">#6a4fd1</span>;</span>
+  <span class="line">  background: var(--card-bg);</span>
+  <span class="line">  color: var(--card-text);</span>
+  <span class="line">}</span>
+  <span class="line">.theme-card.dark-theme {</span>
+  <span class="line">  --card-bg: <span class="cn">#1a1a2e</span>; <span class="cm">/* just override the TOKENS — nothing else needs to change */</span></span>
+  <span class="line">  --card-text: <span class="cn">#e8eaf0</span>;</span>
+  <span class="line">  --card-accent: <span class="cn">#bd93f9</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* JS just toggles a CLASS — no inline styles, no re-rendering, no JS color logic */</span></span>
+  <span class="line">element.classList.toggle(<span class="cs">'dark-theme'</span>);</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>This is precisely why custom properties are the modern standard for theming:</strong> toggling ONE class changes a handful of TOKEN values, and every rule referencing those tokens updates automatically and instantly — no JavaScript needs to know about or manipulate individual style properties directly.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Design Tokens Pattern
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>The Design Tokens Pattern — Primitive vs Semantic</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Mature design systems typically use TWO layers of custom properties: <strong>primitive tokens</strong> (raw values — a color palette, a spacing scale) and <strong>semantic tokens</strong> (meaningful NAMES that reference a primitive token for a specific PURPOSE). This indirection is what makes large-scale theming maintainable.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* ── Layer 1: Primitive tokens — the raw palette, rarely referenced directly ── */</span></span>
+  <span class="line">:root {</span>
+  <span class="line">  --color-purple-500: <span class="cn">#6a4fd1</span>;</span>
+  <span class="line">  --color-red-500: <span class="cn">#ff4444</span>;</span>
+  <span class="line">  --color-gray-900: <span class="cn">#1a1a1a</span>;</span>
+  <span class="line">  --color-gray-50: <span class="cn">#f5f5f5</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* ── Layer 2: Semantic tokens — named by PURPOSE, referenced throughout the app ── */</span></span>
+  <span class="line">:root {</span>
+  <span class="line">  --color-brand: var(--color-purple-500);</span>
+  <span class="line">  --color-danger: var(--color-red-500);</span>
+  <span class="line">  --color-text-primary: var(--color-gray-900);</span>
+  <span class="line">  --color-surface: var(--color-gray-50);</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Components reference SEMANTIC tokens — never the raw primitives directly */</span></span>
+  <span class="line">.alert-danger { background: var(--color-danger); }</span>
+  <span class="line">.button-primary { background: var(--color-brand); }</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Layer</th><th>Purpose</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Primitive tokens</td><td>The raw, literal design values — a color scale, spacing scale, font sizes</td><td>--color-purple-500: #6a4fd1</td></tr>
+        <tr><td>Semantic tokens</td><td>Named by INTENT/PURPOSE, pointing to a primitive — this is what components actually consume</td><td>--color-brand: var(--color-purple-500)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Why this indirection matters:</strong> if the BRAND color needs to change, you update ONE semantic token's definition (`--color-brand`) — every component using `--color-brand` updates automatically, without ever needing to know or care WHICH primitive color it currently points to. This decoupling is the entire point of a design token system.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Custom Properties vs Sass Variables
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Custom Properties vs Sass/LESS Variables</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Aspect</th><th>CSS Custom Properties</th><th>Sass/LESS Variables</th></tr></thead>
+      <tbody>
+        <tr><td>When resolved</td><td class="yes">RUNTIME — in the browser, live</td><td class="no">COMPILE TIME — before the browser ever sees the CSS</td></tr>
+        <tr><td>Can be changed via JavaScript</td><td class="yes">✓ Yes — genuinely dynamic</td><td class="no">✗ No — already baked into static output CSS</td></tr>
+        <tr><td>Responds to media queries naturally</td><td class="yes">✓ Yes — redefine the property inside the query</td><td class="no">✗ No — would require duplicating entire rule blocks</td></tr>
+        <tr><td>Inherits through the DOM / cascade</td><td class="yes">✓ Yes</td><td class="no">✗ No — it's just textual substitution, no runtime concept of "cascade" at all</td></tr>
+        <tr><td>Scoped per-element/component naturally</td><td class="yes">✓ Yes — just redeclare in a more specific selector</td><td class="no">Limited — typically only via manual mixins/functions</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>The key distinction to articulate:</strong> Sass variables are a BUILD-TIME text substitution tool — by the time the browser sees the CSS, they're already gone, replaced with literal values. CSS custom properties are REAL runtime values the browser tracks and can react to dynamically — which is exactly why only custom properties can power live theme switching, responsive tokens, and JS-driven style updates.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — @property (Advanced)
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>@property — Typed Custom Properties (Advanced)</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Registering a custom property with an explicit TYPE and default */</span></span>
+  <span class="line">@property --rotation-angle {</span>
+  <span class="line">  syntax: <span class="cs">'&lt;angle&gt;'</span>;      <span class="cm">/* declares this MUST be an angle value */</span></span>
+  <span class="line">  inherits: <span class="ck">false</span>;</span>
+  <span class="line">  initial-value: <span class="cn">0deg</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line">.spinner {</span>
+  <span class="line">  transform: rotate(var(--rotation-angle));</span>
+  <span class="line">  transition: --rotation-angle <span class="cn">0.3</span>s; <span class="cm">/* SMOOTHLY animates — only possible because it's TYPED */</span></span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Normal (untyped) custom properties are treated as plain TEXT by the browser, which means they CANNOT be smoothly ANIMATED/TRANSITIONED — the browser has no idea how to interpolate between two arbitrary token sequences. <ic>@property</ic> lets you register a custom property with an actual TYPE (angle, color, length, etc.), which enables genuine smooth animation/transition between values, plus better validation.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Custom properties inherit by default, unlike most regular CSS properties</strong> — this is precisely the opposite of the DEFAULT non-inheritance behavior for things like margin/padding covered in the specificity/cascade topic; a common point of confusion when the two topics are studied close together.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An INVALID value for a custom property does NOT trigger the var() fallback</strong> — the fallback only applies if the property is UNDEFINED entirely; if it's defined but produces an invalid value in the context it's used (e.g. a custom property holding "not-a-color" used in a color context), the property instead becomes its "guaranteed-invalid value," typically resulting in the initial or inherited value for that property — a subtle, frequently misunderstood distinction.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Untyped custom properties (the normal kind) CANNOT be smoothly animated/transitioned</strong> — the browser treats their value as opaque text, with no inherent understanding of how to interpolate between two values; `@property` with an explicit `syntax` is REQUIRED to enable smooth animation of a custom property's value.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Custom properties are NOT available in media query CONDITIONS themselves</strong> (e.g. you can't write `@media (min-width: var(--breakpoint))`) — they can only be used as VALUES within declarations, not as part of the media query's own condition logic (though this is evolving with newer CSS features like container queries and environment variables in some contexts).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Custom properties defined on :root are technically defined on the &lt;html&gt; element</strong> — `:root` is just a slightly higher-specificity way of selecting `html`; functionally near-identical for most purposes, but worth knowing precisely what it targets if asked.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>calc() combined with custom properties is extremely powerful but has real limits</strong> — you can't easily change UNITS mid-calculation (e.g. can't cleanly combine a unitless custom property with `px` without deliberate multiplication), and complex nested calc() expressions can occasionally hit browser parsing/performance edge cases in very deeply nested scenarios.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>JavaScript reading a custom property via getComputedStyle returns it as a STRING, always</strong> — including surrounding whitespace sometimes; numeric custom properties intended for calculation in JS often need explicit `.trim()` and `parseFloat()`/`parseInt()` handling, unlike a native, already-typed CSSOM property.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Overriding a custom property inside a shadow DOM boundary (Web Components) doesn't automatically pierce through unless the CONSUMING styles are also inside/crossing that boundary appropriately</strong> — custom properties DO cross shadow DOM boundaries (unlike most CSS), but the exact inheritance/scoping behavior across component boundaries is a more advanced nuance worth being aware of if working with Web Components specifically.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Overusing DEEPLY nested custom property indirection (a token referencing a token referencing a token, many layers deep) can make debugging "where does this value actually come from" genuinely harder</strong> — the two-layer primitive/semantic pattern (Section 6) is a deliberately CONSTRAINED, well-understood depth; going much deeper without good reason trades maintainability for cleverness.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A custom property with NO fallback and NO definition anywhere in scope resolves to nothing usable</strong> — `var(--undefined-property)` with no fallback effectively makes the declaration invalid, again falling back to the property's initial/inherited value, NOT to some kind of empty string or silent no-op as might be intuitively assumed.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 10 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#7c4fd1);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Custom properties are a favorite modern CSS topic because they connect directly to real, practical design-system and theming work — strong answers demonstrate you've actually BUILT something with them, not just memorized the syntax.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the fundamental difference between a CSS custom property and a Sass/LESS variable?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A Sass/LESS variable is resolved at COMPILE TIME — before the browser ever sees the resulting CSS, the preprocessor has already substituted every variable reference with its literal value, producing plain, static CSS with no trace of the original variable. A CSS custom property is a genuine RUNTIME value that the browser itself tracks and resolves live, in the actual rendered page — it can be read and changed via JavaScript, can respond to media queries by simply being redefined within them, and participates in the normal CSS cascade/inheritance mechanism. This runtime nature is what makes custom properties uniquely capable of things Sass variables fundamentally cannot do: live theme switching without a page reload, JS-driven dynamic styling, and per-component scoped overrides that adapt automatically based on DOM context.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why do custom properties inherit by default, when most other CSS properties (like margin or padding) do not?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Custom properties were specifically designed to function as CONFIGURATION VALUES/TOKENS that flow through a component tree — the entire theming use case (Section 5) depends on being able to set a value ONCE at some ancestor level and have it automatically apply to every descendant that references it via `var()`, without needing to explicitly re-declare it at every single nested level. If custom properties did NOT inherit by default, achieving this same theming behavior would require either duplicating the property declaration at every element that needs it, or using `inherit` explicitly everywhere — defeating much of their practical usefulness. Regular CSS properties like `margin` don't inherit by default because each element's box-model spacing is usually independently meaningful to THAT element, not something that should automatically propagate from a parent — a fundamentally different use case from configuration/token values.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you reach for the two-layer primitive/semantic token pattern instead of just defining colors directly wherever needed?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Specifically once a project grows beyond a small, single-purpose page into something with a genuine DESIGN SYSTEM used across multiple components/pages, especially if MULTIPLE THEMES (light/dark, brand variations, white-labeling) are a real requirement — the indirection pays off exactly when you need to change what a semantic concept like "danger color" or "brand color" MEANS, without hunting down and updating every individual component that happens to use that specific raw color value. For a small, one-off project with no theming needs and a handful of components, directly using primitive values might be simpler and perfectly adequate — the two-layer pattern's benefit scales with the SIZE and THEMING complexity of the project, and introducing it prematurely for a trivial project can be unnecessary overhead.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you implement a light/dark theme toggle using CSS custom properties, without requiring a page reload or re-rendering the entire component tree?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">/* 1. Define semantic tokens at :root for the DEFAULT (light) theme */</span></span>
+  <span class="line">:root {</span>
+  <span class="line">  --bg-color: <span class="cn">#ffffff</span>;</span>
+  <span class="line">  --text-color: <span class="cn">#1a1a1a</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* 2. Override the SAME token names under a data attribute / class for dark mode */</span></span>
+  <span class="line">[data-theme=<span class="cs">"dark"</span>] {</span>
+  <span class="line">  --bg-color: <span class="cn">#1a1a2e</span>;</span>
+  <span class="line">  --text-color: <span class="cn">#e8eaf0</span>;</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* 3. EVERY component throughout the app just references the semantic tokens */</span></span>
+  <span class="line">body { background: var(--bg-color); color: var(--text-color); }</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* 4. JS toggling is a SINGLE, trivial operation */</span></span>
+  <span class="line">document.documentElement.setAttribute(<span class="cs">'data-theme'</span>,</span>
+  <span class="line">  currentTheme === <span class="cs">'light'</span> ? <span class="cs">'dark'</span> : <span class="cs">'light'</span>);</span>
+          </div>
+          Because EVERY component throughout the app references the SAME small set of semantic token names (never hardcoded literal colors), and because custom properties naturally CASCADE/inherit down from the point of the override, changing just ONE attribute on the root `&lt;html&gt;` element instantly updates every themed value across the entire page simultaneously — the browser re-resolves all the `var()` references and repaints, with ZERO JavaScript needing to know about or touch individual component styles, and no component tree re-render required at all (this is pure CSS re-evaluation, not a React/framework re-render).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What happens if you use var(--some-property) and --some-property is never defined anywhere, with no fallback provided?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The `var()` reference becomes what the spec calls a "guaranteed-invalid value" for that declaration — this does NOT crash anything or throw an error, but it means the specific CSS DECLARATION using that `var()` is treated as invalid and essentially ignored, causing the property to fall back to its normal `initial` value (for non-inherited properties) or its `inherited` value from the parent (for properties that naturally inherit) — NOT to some empty/blank state as might be intuitively expected. For example, `color: var(--undefined-color);` with no fallback and no definition anywhere would result in the element's `color` falling back to whatever it would normally be WITHOUT that declaration at all (typically inherited from its parent, since `color` naturally inherits).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can't a normal (untyped) custom property be smoothly animated with a CSS transition, and how does @property solve this?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A normal custom property's value is treated by the browser as an opaque sequence of TEXT TOKENS, not as a value with any specific, understood TYPE (like a number, a color, or an angle) — smoothly animating/transitioning a value requires the browser to INTERPOLATE between a start and end value (compute intermediate values along the way), which fundamentally requires understanding what TYPE of value it's dealing with (you can interpolate between two colors or two numbers, but not between two arbitrary, untyped strings of text in any meaningful way). `@property` solves this by letting you explicitly REGISTER a custom property with a specific `syntax` (like `&lt;angle&gt;`, `&lt;color&gt;`, or `&lt;length&gt;`), giving the browser the type information it needs to correctly interpolate between values — which is precisely what enables smooth, animatable custom properties that wouldn't otherwise be possible.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you scope a custom property override to a specific component's class, rather than redefining it globally on :root?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the override is meant to affect ONLY a specific component or section of the page, rather than the entire application — for example, a "danger zone" section of a settings page that needs its buttons to use a red/warning color scheme instead of the app's normal brand color, WITHOUT affecting buttons anywhere else on the page. Scoping the override to that specific component's class (e.g. `.danger-zone { --button-bg: red; }`) means the override only applies within that component's DOM subtree, thanks to custom properties' natural inheritance behavior — components OUTSIDE that scope continue using the global `:root` default undisturbed. Redefining on `:root` instead would be the WRONG choice here, since it would incorrectly affect every consumer of that token throughout the entire application, not just the intended, specific component.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you debug a situation where a custom property isn't resolving to the value you expect, using browser DevTools?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Select the affected element in DevTools and check the Styles/Computed panel — modern browser DevTools show the RESOLVED value of custom properties directly, similar to how they show resolved values for any other property, letting you see exactly what value is actually being used.<br>
+          <strong>2.</strong> Check the "Computed" tab specifically for the custom property's NAME (e.g. searching for `--button-bg`) — this reveals which rule/scope is actually WINNING for that property, following the same cascade logic as any other CSS property (specificity, source order, etc. — but remember, since it INHERITS by default, the winning declaration might be on an ANCESTOR element, not the element itself).<br>
+          <strong>3.</strong> Walk UP the DOM tree in the Elements panel, checking each ancestor's styles, to find exactly where the property is being SET or OVERRIDDEN, since an unexpected value often traces back to an override on a parent/ancestor element you hadn't considered.<br>
+          <strong>4.</strong> Check for typos in the property NAME itself (a very common bug — `--buton-bg` vs `--button-bg` silently fails with no error, since undefined custom properties don't throw, they just resolve to invalid/fallback as covered in the gotchas).<br>
+          <strong>5.</strong> If using `calc()` or nested `var()` fallbacks, verify each piece resolves as expected by temporarily simplifying the expression to isolate which specific part is producing the unexpected value.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · CSS Custom Properties · Design Tokens · Theming
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+document.querySelectorAll('.code-block .line').forEach(line => {
+  const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) textNodes.push(node);
+  textNodes.forEach(textNode => {
+    textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+  });
+});
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

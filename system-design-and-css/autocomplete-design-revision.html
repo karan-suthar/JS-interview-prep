@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing an Autocomplete — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #5cffb0;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #5cffb0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks — white-space:pre preserves exact indentation ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Checklist grid ── */
+  .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+  .checklist-item {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.8rem 1rem; text-align: center; border-top: 3px solid var(--accent);
+  }
+  .checklist-icon { font-size: 20px; margin-bottom: 6px; }
+  .checklist-label { font-family: var(--font-mono); font-size: 11px; color: var(--text2); }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Key legend ── */
+  .key-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+  .key-cap {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; font-size: 12.5px; color: var(--text2);
+  }
+  .key-cap kbd {
+    font-family: var(--font-mono); font-size: 11px; background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 4px; padding: 2px 7px; color: var(--accent);
+  }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1200px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Component Design</div>
+    <h1>Designing an Autocomplete</h1>
+    <p>Debouncing · Caching · Keyboard Nav · Accessibility · API Contract — with Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Full Requirements</a>
+    <a class="topic-pill" href="#s2">2. Debouncing</a>
+    <a class="topic-pill" href="#s3">3. Caching</a>
+    <a class="topic-pill" href="#s4">4. Race Conditions</a>
+    <a class="topic-pill" href="#s5">5. Keyboard Navigation</a>
+    <a class="topic-pill" href="#s6">6. Accessibility</a>
+    <a class="topic-pill" href="#s7">7. API Contract</a>
+    <a class="topic-pill" href="#s8">8. Full Implementation</a>
+    <a class="topic-pill" href="#s9">9. Gotchas</a>
+    <a class="topic-pill" href="#s10">10. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Full Requirements
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Full Requirements Checklist</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>An autocomplete looks simple but is a genuinely rich system-design question — it touches PERFORMANCE (debouncing, caching), CORRECTNESS (race conditions), USABILITY (keyboard nav), INCLUSIVITY (accessibility), and API DESIGN all at once. Treating it as "just an input with a dropdown" misses most of what makes it interesting.</span>
+    </div>
+
+    <div class="checklist-grid">
+      <div class="checklist-item"><div class="checklist-icon">⏱️</div><div class="checklist-label">Debouncing</div></div>
+      <div class="checklist-item"><div class="checklist-icon">💾</div><div class="checklist-label">Caching</div></div>
+      <div class="checklist-item"><div class="checklist-icon">🏁</div><div class="checklist-label">Race Conditions</div></div>
+      <div class="checklist-item"><div class="checklist-icon">⌨️</div><div class="checklist-label">Keyboard Nav</div></div>
+      <div class="checklist-item"><div class="checklist-icon">♿</div><div class="checklist-label">Accessibility</div></div>
+      <div class="checklist-item"><div class="checklist-icon">🔌</div><div class="checklist-label">API Contract</div></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Debouncing
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Debouncing User Input</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Without debouncing, EVERY keystroke fires an API request — typing "keyboard" (8 characters) fires 8 requests, most of which become instantly irrelevant as the user keeps typing. Debouncing waits for a short PAUSE in typing before actually firing the request.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Without vs with debouncing, typing "cat"</div>
+      <svg class="diagram-svg" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">✗ No debounce — 3 requests</text>
+        <rect x="30" y="35" width="80" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="70" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">GET ?q=c</text>
+        <rect x="130" y="35" width="80" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="170" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">GET ?q=ca</text>
+        <rect x="230" y="35" width="80" height="25" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="270" y="52" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">GET ?q=cat</text>
+        <text x="170" y="85" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">wasteful — the first 2 results are useless the moment "cat" is typed</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">✓ Debounced (300ms) — 1 request</text>
+        <rect x="420" y="35" width="30" height="20" rx="3" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="435" y="49" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="6.5">c</text>
+        <rect x="460" y="35" width="30" height="20" rx="3" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="475" y="49" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="6.5">ca</text>
+        <rect x="500" y="35" width="30" height="20" rx="3" fill="var(--bg3)" stroke="#555a6e" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="515" y="49" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="6.5">cat</text>
+        <text x="475" y="70" text-anchor="middle" fill="#555a6e" font-family="JetBrains Mono, monospace" font-size="7">(300ms pause after last keystroke)</text>
+        <rect x="560" y="35" width="100" height="25" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="610" y="52" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">GET ?q=cat</text>
+        <text x="540" y="90" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">only ONE meaningful request fires</text>
+
+        <text x="350" y="130" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Typical debounce delays: 200-400ms — long enough to skip mid-typing keystrokes, short enough to still feel responsive</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">debounce</span>(fn, delay) {</span>
+  <span class="line">  <span class="ck">let</span> timeoutId;</span>
+  <span class="line">  <span class="ck">return function</span> (...args) {</span>
+  <span class="line">    clearTimeout(timeoutId); <span class="cm">// cancel any PENDING call — resets the wait</span></span>
+  <span class="line">    timeoutId = setTimeout(() =&gt; fn.apply(<span class="ck">this</span>, args), delay);</span>
+  <span class="line">  };</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">const</span> debouncedSearch = debounce(fetchSuggestions, <span class="cn">300</span>);</span>
+  <span class="line">inputEl.addEventListener(<span class="cs">"input"</span>, (e) =&gt; debouncedSearch(e.target.value));</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Caching
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Caching Results</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Users frequently RE-TYPE or BACKSPACE through queries they've already searched (typing "java" then backspacing to "jav" then retyping "java"). An in-memory cache, keyed by the exact query string, avoids re-fetching identical requests instantly.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">const</span> cache = <span class="ck">new</span> Map(); <span class="cm">// query string → results array</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">fetchSuggestions</span>(query) {</span>
+  <span class="line">  <span class="ck">if</span> (cache.has(query)) {</span>
+  <span class="line">    <span class="ck">return</span> cache.get(query); <span class="cm">// instant — no network request at all</span></span>
+  <span class="line">  }</span>
+  <span class="line">  <span class="ck">const</span> results = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/search?q=${encodeURIComponent(query)}`)</span>
+  <span class="line">    .then((r) =&gt; r.json());</span>
+  <span class="line">  cache.set(query, results);</span>
+  <span class="line">  <span class="ck">return</span> results;</span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Cache design decision</th><th>Consideration</th></tr></thead>
+      <tbody>
+        <tr><td>Cache key</td><td>Usually the exact, normalized query string (consider lowercasing/trimming for better hit rates)</td></tr>
+        <tr><td>Cache eviction</td><td>An unbounded Map can grow indefinitely for a long session — consider an LRU cache with a max size for production use</td></tr>
+        <tr><td>Staleness</td><td>Cached results can become outdated if the underlying data changes — consider a TTL (time-to-live) for cache entries in a real system</td></tr>
+        <tr><td>Cache scope</td><td>In-memory (lost on page refresh) is usually sufficient — persisting to localStorage is rarely necessary and adds complexity for this specific pattern</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Race Conditions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Race Conditions — Out-of-Order Responses</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Even WITH debouncing, network requests can complete OUT OF ORDER</strong> — a request for "ca" might, due to network variability, resolve AFTER a later request for "cat" — showing STALE, incorrect results if not handled, even though the requests were fired in the correct order.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The race condition — request 1 resolves AFTER request 2</div>
+      <svg class="diagram-svg" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="25" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">Request A: "ca"  ──────────────────────────▶ (slow, resolves LATE)</text>
+        <text x="20" y="55" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="9.5">Request B: "cat" ──────▶ (fast, resolves FIRST)</text>
+
+        <rect x="480" y="15" width="120" height="22" rx="4" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="540" y="30" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8">A resolves 2nd</text>
+        <rect x="240" y="45" width="120" height="22" rx="4" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="300" y="60" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">B resolves 1st</text>
+
+        <text x="350" y="100" text-anchor="middle" fill="#ffaaaa" font-family="Inter, sans-serif" font-size="10.5">Without protection: B's correct "cat" results render, then A's STALE</text>
+        <text x="350" y="115" text-anchor="middle" fill="#ffaaaa" font-family="Inter, sans-serif" font-size="10.5">"ca" results OVERWRITE them a moment later — showing outdated results!</text>
+
+        <text x="350" y="145" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Fix: track the LATEST request, and ignore/discard any response that isn't from the most recent one</text>
+      </svg>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Fix 1: track a request ID/token, ignore stale responses</span></span>
+  <span class="line"><span class="ck">let</span> latestRequestId = <span class="cn">0</span>;</span>
+  <span class="line"></span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">fetchSuggestions</span>(query) {</span>
+  <span class="line">  <span class="ck">const</span> requestId = ++latestRequestId; <span class="cm">// this request's unique "ticket number"</span></span>
+  <span class="line">  <span class="ck">const</span> results = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/search?q=${query}`).then((r) =&gt; r.json());</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">if</span> (requestId !== latestRequestId) <span class="ck">return</span>; <span class="cm">// a NEWER request has since been fired — discard this stale one</span></span>
+  <span class="line">  renderResults(results);</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Fix 2 (preferred where available): AbortController — actually CANCELS the stale request</span></span>
+  <span class="line"><span class="ck">let</span> controller;</span>
+  <span class="line"><span class="ck">async function</span> <span class="cf">fetchSuggestions</span>(query) {</span>
+  <span class="line">  controller?.abort(); <span class="cm">// cancel any IN-FLIGHT previous request</span></span>
+  <span class="line">  controller = <span class="ck">new</span> AbortController();</span>
+  <span class="line">  <span class="ck">const</span> results = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/search?q=${query}`, { signal: controller.signal })</span>
+  <span class="line">    .then((r) =&gt; r.json());</span>
+  <span class="line">  renderResults(results);</span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Approach</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Request ID / token tracking</td><td>Simple, works everywhere — but the stale request still completes and wastes bandwidth, just gets IGNORED on arrival</td></tr>
+        <tr><td>AbortController</td><td>Genuinely CANCELS the in-flight request, saving bandwidth/server load too — the more complete, modern solution</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Keyboard Navigation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Keyboard Navigation</h2>
+    </div>
+
+    <div class="key-legend">
+      <div class="key-cap"><kbd>↓</kbd> Move highlight to next suggestion</div>
+      <div class="key-cap"><kbd>↑</kbd> Move highlight to previous suggestion</div>
+      <div class="key-cap"><kbd>Enter</kbd> Select the currently highlighted suggestion</div>
+      <div class="key-cap"><kbd>Escape</kbd> Close the suggestion list</div>
+      <div class="key-cap"><kbd>Home</kbd> / <kbd>End</kbd> Jump to first/last suggestion</div>
+      <div class="key-cap"><kbd>Tab</kbd> Close the list, move focus normally onward</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line">inputEl.addEventListener(<span class="cs">"keydown"</span>, (e) =&gt; {</span>
+  <span class="line">  <span class="ck">switch</span> (e.key) {</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"ArrowDown"</span>:</span>
+  <span class="line">      e.preventDefault(); <span class="cm">// stop the cursor from moving in the input itself</span></span>
+  <span class="line">      setHighlightedIndex((i) =&gt; Math.min(i + <span class="cn">1</span>, results.length - <span class="cn">1</span>));</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"ArrowUp"</span>:</span>
+  <span class="line">      e.preventDefault();</span>
+  <span class="line">      setHighlightedIndex((i) =&gt; Math.max(i - <span class="cn">1</span>, <span class="cn">0</span>));</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"Enter"</span>:</span>
+  <span class="line">      <span class="ck">if</span> (highlightedIndex &gt;= <span class="cn">0</span>) {</span>
+  <span class="line">        e.preventDefault();</span>
+  <span class="line">        selectResult(results[highlightedIndex]);</span>
+  <span class="line">      }</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">    <span class="ck">case</span> <span class="cs">"Escape"</span>:</span>
+  <span class="line">      closeSuggestions();</span>
+  <span class="line">      <span class="ck">break</span>;</span>
+  <span class="line">  }</span>
+  <span class="line">});</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Focus stays on the TEXT INPUT the entire time</strong> — keyboard navigation moves a visual/logical "highlighted" state among the suggestions, but DOM focus never actually leaves the input. This is intentional and is precisely why <ic>aria-activedescendant</ic> (Section 6) is needed to communicate the highlighted item to screen readers.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Accessibility
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Accessibility — The Combobox Pattern</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line">&lt;<span class="ct">label</span> <span class="ca">id</span>=<span class="cs">"search-label"</span> <span class="ca">htmlFor</span>=<span class="cs">"search-input"</span>&gt;Search&lt;/<span class="ct">label</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">input</span></span>
+  <span class="line">  <span class="ca">id</span>=<span class="cs">"search-input"</span></span>
+  <span class="line">  <span class="ca">role</span>=<span class="cs">"combobox"</span></span>
+  <span class="line">  <span class="ca">aria-expanded</span>={isOpen}</span>
+  <span class="line">  <span class="ca">aria-controls</span>=<span class="cs">"suggestions-list"</span></span>
+  <span class="line">  <span class="ca">aria-activedescendant</span>={highlightedId || <span class="ck">undefined</span>}</span>
+  <span class="line">  <span class="ca">aria-autocomplete</span>=<span class="cs">"list"</span></span>
+  <span class="line">/&gt;</span>
+  <span class="line">&lt;<span class="ct">ul</span> <span class="ca">id</span>=<span class="cs">"suggestions-list"</span> <span class="ca">role</span>=<span class="cs">"listbox"</span>&gt;</span>
+  <span class="line">  {results.map((r, i) =&gt; (</span>
+  <span class="line">    &lt;<span class="ct">li</span></span>
+  <span class="line">      <span class="ca">key</span>={r.id}</span>
+  <span class="line">      <span class="ca">id</span>={`option-${r.id}`}</span>
+  <span class="line">      <span class="ca">role</span>=<span class="cs">"option"</span></span>
+  <span class="line">      <span class="ca">aria-selected</span>={i === highlightedIndex}</span>
+  <span class="line">    &gt;</span>
+  <span class="line">      {r.label}</span>
+  <span class="line">    &lt;/<span class="ct">li</span>&gt;</span>
+  <span class="line">  ))}</span>
+  <span class="line">&lt;/<span class="ct">ul</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">div</span> <span class="ca">aria-live</span>=<span class="cs">"polite"</span> <span class="ca">className</span>=<span class="cs">"sr-only"</span>&gt;</span>
+  <span class="line">  {results.length} suggestions available</span>
+  <span class="line">&lt;/<span class="ct">div</span>&gt;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Attribute</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>role="combobox" (on the input)</td><td>Identifies the input as a combobox widget — a text input paired with a suggestion list</td></tr>
+        <tr><td>aria-expanded</td><td>Tells assistive tech whether the suggestion list is currently open</td></tr>
+        <tr><td>aria-controls</td><td>Links the input to the ID of the suggestions list it controls</td></tr>
+        <tr><td>aria-activedescendant</td><td>Since DOM focus NEVER leaves the input (Section 5), this attribute tells assistive tech WHICH option is currently "virtually" highlighted</td></tr>
+        <tr><td>role="listbox" / role="option"</td><td>Identifies the suggestions container and each individual suggestion appropriately</td></tr>
+        <tr><td>aria-live="polite" region</td><td>Announces the RESULT COUNT as it changes — critical, since a screen reader user typing wouldn't otherwise know results appeared/changed at all</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>This combobox pattern directly reuses the aria-activedescendant technique and aria-live announcement pattern from broader ARIA fundamentals — an autocomplete is essentially a concrete, real-world APPLICATION of those general accessibility concepts.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — API Contract
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>API Contract Design</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// Request</span></span>
+  <span class="line">GET /api/search?q=cat&amp;limit=<span class="cn">10</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Response</span></span>
+  <span class="line">{</span>
+  <span class="line">  <span class="ca">"query"</span>: <span class="cs">"cat"</span>,</span>
+  <span class="line">  <span class="ca">"results"</span>: [</span>
+  <span class="line">    { <span class="ca">"id"</span>: <span class="cs">"123"</span>, <span class="ca">"label"</span>: <span class="cs">"Catalog"</span>, <span class="ca">"highlightRanges"</span>: [[<span class="cn">0</span>,<span class="cn">3</span>]] },</span>
+  <span class="line">    { <span class="ca">"id"</span>: <span class="cs">"456"</span>, <span class="ca">"label"</span>: <span class="cs">"Category"</span>, <span class="ca">"highlightRanges"</span>: [[<span class="cn">0</span>,<span class="cn">3</span>]] }</span>
+  <span class="line">  ],</span>
+  <span class="line">  <span class="ca">"hasMore"</span>: <span class="ck">false</span></span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Design decision</th><th>Consideration</th></tr></thead>
+      <tbody>
+        <tr><td>limit parameter</td><td>Caps the number of results — an autocomplete typically only needs 5-10 suggestions, not a full paginated result set</td></tr>
+        <tr><td>Echoing "query" back in the response</td><td>Lets the client verify the response actually matches its current input, an extra safety check alongside request-ID tracking</td></tr>
+        <tr><td>highlightRanges</td><td>Lets the server indicate WHICH part of each label matched the query, so the client can bold/highlight the matching substring without re-implementing fuzzy matching logic client-side</td></tr>
+        <tr><td>Debounce/rate-limiting server-side too</td><td>Client-side debouncing helps, but a robust API should also rate-limit per-client server-side, since clients can't be fully trusted to behave well</td></tr>
+        <tr><td>Response time SLA</td><td>Autocomplete APIs typically need to respond very fast (well under 100-200ms) to feel responsive — this often means a specialized search index (like Elasticsearch) rather than a generic database query</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Full Implementation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Putting It All Together</h2>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="ck">function</span> <span class="cf">useAutocomplete</span>() {</span>
+  <span class="line">  <span class="ck">const</span> [query, setQuery] = useState(<span class="cs">""</span>);</span>
+  <span class="line">  <span class="ck">const</span> [results, setResults] = useState([]);</span>
+  <span class="line">  <span class="ck">const</span> [highlightedIndex, setHighlightedIndex] = useState(-<span class="cn">1</span>);</span>
+  <span class="line">  <span class="ck">const</span> cache = useRef(<span class="ck">new</span> Map());</span>
+  <span class="line">  <span class="ck">const</span> controllerRef = useRef(<span class="ck">null</span>);</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> debouncedFetch = useMemo(</span>
+  <span class="line">    () =&gt; debounce(<span class="ck">async</span> (q) =&gt; {</span>
+  <span class="line">      <span class="ck">if</span> (cache.current.has(q)) {</span>
+  <span class="line">        setResults(cache.current.get(q)); <span class="cm">// cache hit — instant, no network</span></span>
+  <span class="line">        <span class="ck">return</span>;</span>
+  <span class="line">      }</span>
+  <span class="line">      controllerRef.current?.abort(); <span class="cm">// cancel any in-flight PREVIOUS request</span></span>
+  <span class="line">      controllerRef.current = <span class="ck">new</span> AbortController();</span>
+  <span class="line">      <span class="ck">try</span> {</span>
+  <span class="line">        <span class="ck">const</span> data = <span class="ck">await</span> <span class="cf">fetch</span>(`/api/search?q=${q}`, { signal: controllerRef.current.signal })</span>
+  <span class="line">          .then((r) =&gt; r.json());</span>
+  <span class="line">        cache.current.set(q, data.results);</span>
+  <span class="line">        setResults(data.results);</span>
+  <span class="line">        setHighlightedIndex(-<span class="cn">1</span>); <span class="cm">// reset highlight for the NEW result set</span></span>
+  <span class="line">      } <span class="ck">catch</span> (err) {</span>
+  <span class="line">        <span class="ck">if</span> (err.name !== <span class="cs">"AbortError"</span>) <span class="cf">console</span>.error(err);</span>
+  <span class="line">      }</span>
+  <span class="line">    }, <span class="cn">300</span>),</span>
+  <span class="line">    []</span>
+  <span class="line">  );</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">const</span> onInputChange = (value) =&gt; {</span>
+  <span class="line">    setQuery(value);</span>
+  <span class="line">    <span class="ck">if</span> (value.trim() === <span class="cs">""</span>) { setResults([]); <span class="ck">return</span>; }</span>
+  <span class="line">    debouncedFetch(value);</span>
+  <span class="line">  };</span>
+  <span class="line"></span>
+  <span class="line">  <span class="ck">return</span> { query, results, highlightedIndex, onInputChange, setHighlightedIndex };</span>
+  <span class="line">}</span>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Notice how the pieces compose:</strong> debouncing reduces HOW OFTEN a request fires; caching skips the network entirely for repeated queries; AbortController protects against race conditions for the requests that DO go out. Each addresses a DIFFERENT concern, and a robust implementation needs all three working together, not just one.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Debouncing alone does NOT solve race conditions</strong> — a common mistake is assuming debouncing is sufficient; even a single, debounced, "final" request can still be affected by ordinary network latency variance if the user types again before that request resolves.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting to reset highlightedIndex when new results arrive</strong> — if the user had item #3 highlighted and a NEW, shorter result set arrives, index #3 might not exist anymore, or might now point to a completely different, unrelated item.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>DOM focus should stay on the input during keyboard navigation, NOT move to each list item</strong> — moving actual focus to list items breaks the typical expected interaction model and typically requires MORE, not less, accessibility work to get right; the aria-activedescendant pattern exists specifically to avoid needing to move real focus.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>An empty query string should typically clear results immediately, WITHOUT even attempting a debounced fetch</strong> — a common oversight is fetching an empty query and displaying "no results," when the correct behavior is usually just showing nothing/a default state instantly.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The cache can grow unbounded over a long session if no eviction strategy exists</strong> — for a genuinely production system, this matters; for an interview/demo-scale answer, mentioning the AWARENESS of this limitation (even if not fully implementing LRU eviction live) demonstrates more senior-level thinking.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Clicking a suggestion with the MOUSE needs separate handling from keyboard selection</strong> — using `onMouseDown` (which fires BEFORE the input's blur event) rather than `onClick` (which can fire AFTER blur has already closed/hidden the suggestions) is a common, subtle bug avoidance technique for click-to-select.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Closing the suggestion list on blur needs care to not break mouse-click selection</strong> — naively closing the list immediately `onBlur` can prevent a mouse click on a suggestion from ever registering, since the blur fires first and hides the very element the user was trying to click.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Forgetting server-side rate limiting, relying ONLY on client-side debouncing</strong> — client-side debouncing is a UX/performance optimization, not a security or abuse-prevention mechanism; a malicious or buggy client could bypass it entirely, so genuine rate-limiting belongs on the server too.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Announcing EVERY single result count change via aria-live="assertive" is disruptive</strong> — "polite" is almost always the right choice for this kind of frequent, non-urgent update, consistent with the general aria-live guidance from the broader accessibility topic.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Not handling the loading state can leave the UI feeling unresponsive between the debounce delay and the actual response</strong> — a brief loading indicator (careful not to cause layout shift) improves perceived responsiveness during the network round-trip, especially on slower connections.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 10 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Autocomplete is a classic "frontend system design" question specifically BECAUSE it forces you to juggle multiple concerns simultaneously — strong answers explicitly name and address EACH concern rather than jumping straight to code.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between debouncing and throttling, and which is more appropriate for an autocomplete input?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Debouncing waits for a PAUSE in activity before acting — it keeps RESETTING a timer on every new event, only firing once events stop for the specified delay. Throttling instead guarantees a function runs at most once per fixed time INTERVAL, regardless of how many events occur, firing periodically DURING continuous activity rather than only after it stops. For an autocomplete, debouncing is the better fit — you specifically want to wait until the user PAUSES typing (indicating they've likely finished a meaningful chunk of their query) before firing a request, rather than firing periodically WHILE they're still actively typing, which would still generate wasted requests for partial, soon-to-be-superseded queries.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can a race condition still occur even with debouncing already in place?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Debouncing controls WHEN a request gets FIRED — reducing the frequency of outgoing requests — but it has no control whatsoever over network conditions AFTER a request has been sent, like variable latency, server processing time, or routing differences between requests. If the user types "ca", pauses briefly (triggering a debounced request), then quickly types more to reach "cat" (triggering a second debounced request), BOTH requests are legitimately, correctly fired — but nothing guarantees they'll RESOLVE in the same order they were SENT. A slower network path for the "ca" request could cause it to resolve after the "cat" request, meaning the correct, more specific "cat" results get overwritten moments later by the stale "ca" results — debouncing reduces how often this scenario can occur, but doesn't structurally prevent it once two or more requests ARE in flight simultaneously.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose the request-ID tracking approach over AbortController for handling race conditions?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When the underlying request mechanism doesn't support cancellation at all — for example, some older browser APIs, certain third-party SDK wrappers around network requests, or non-fetch-based mechanisms (like some WebSocket-based request/response patterns) may not expose an `AbortController`-compatible cancellation mechanism. Request-ID tracking works as a purely CLIENT-SIDE bookkeeping technique regardless of whether the underlying request can actually be cancelled — it simply ignores/discards a response once it arrives if a newer request has since superseded it, without needing any cooperation from the request mechanism itself. `AbortController` is preferable whenever available since it saves real bandwidth/server load by genuinely cancelling the stale request rather than letting it complete uselessly — but request-ID tracking remains a useful, universally-applicable fallback.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you make an autocomplete's suggestion list accessible to a screen reader user, given that keyboard focus never leaves the text input?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1.</strong> Mark the input with `role="combobox"`, and set `aria-expanded` to reflect whether the suggestion list is currently visible.<br>
+          <strong>2.</strong> Link the input to the suggestions list via `aria-controls`, pointing to the list's ID.<br>
+          <strong>3.</strong> As the user navigates suggestions with arrow keys (without DOM focus ever moving), update `aria-activedescendant` on the INPUT to the ID of the currently highlighted `&lt;li role="option"&gt;` element — this is the specific mechanism that lets a screen reader announce "which option is currently highlighted" despite focus staying on the input the whole time.<br>
+          <strong>4.</strong> Mark the suggestions container with `role="listbox"` and each suggestion with `role="option"`, using `aria-selected` to reflect the current highlight.<br>
+          <strong>5.</strong> Include a separate `aria-live="polite"` region announcing the result COUNT as it changes (e.g. "5 suggestions available"), since a screen reader user typing wouldn't otherwise be notified that new results appeared at all — this doesn't rely on focus or activedescendant, it's a proactive announcement of a state change.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What should a well-designed autocomplete API contract include, beyond just a list of matching strings?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Beyond the basic list of results, a well-designed contract typically includes: a `limit` request parameter, capping the response to a small, UI-appropriate number of suggestions (autocomplete rarely needs more than 5-10); the ORIGINAL query ECHOED BACK in the response, letting the client double-check the response still matches its current input state as an extra safety net alongside request-ID/abort-based race protection; structured result OBJECTS (with a stable `id`, not just a display string) so the client can reliably track/select specific items even if display labels are ambiguous or repeat; and often HIGHLIGHT RANGE information indicating which substring of each result matched the query, so the client can visually bold the matching portion without needing to re-implement its own (potentially inconsistent) fuzzy-matching logic.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is client-side debouncing insufficient as the ONLY protection against API abuse, and what else is needed?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Client-side debouncing is JavaScript code running entirely within the USER'S browser — a malicious actor (or simply a different, non-debounced client, like a script calling the API directly rather than through your UI) can trivially bypass it entirely, since there's nothing on the SERVER enforcing this behavior; it's purely a client-side UX/performance optimization, not a security boundary. A robust API needs genuine SERVER-SIDE rate limiting (e.g. capping requests per API key/IP/user to some reasonable threshold per time window), independent of whatever the "well-behaved" client happens to do — this protects the backend from abuse, accidental request storms (like a buggy client with a broken debounce implementation), or deliberate attacks, none of which client-side debouncing has any power to prevent.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would in-memory caching alone be insufficient, requiring a more sophisticated caching strategy?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          For a SHORT-lived, single-page-session autocomplete (like a typical search box), a simple in-memory `Map` cache is usually entirely sufficient — the cache naturally clears on page refresh, which is fine since suggestion data is rarely expected to persist across sessions anyway. It becomes insufficient specifically when: the underlying DATA changes frequently enough that stale cached results become a genuine correctness problem (requiring a TTL/expiration strategy, not just an unbounded cache); the user's session is VERY long and generates enough unique queries that an unbounded cache could meaningfully impact memory usage (requiring LRU eviction with a max size); or the SAME suggestions need to be shared/reused ACROSS different components or page loads (which might justify a more persistent cache, like sessionStorage, though this is a less common requirement for typical autocomplete use cases).
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you handle a mouse click on a suggestion without it being accidentally cancelled by the input's blur event closing the list first?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">// ✗ Problem: onClick fires AFTER blur — but blur already closed/hid the list</span></span>
+  <span class="line">&lt;<span class="ct">li</span> <span class="ca">onClick</span>={() =&gt; selectResult(item)}&gt;{item.label}&lt;/<span class="ct">li</span>&gt;</span>
+  <span class="line">&lt;<span class="ct">input</span> <span class="ca">onBlur</span>={closeSuggestions} /&gt;</span>
+  <span class="line"><span class="cm">// Clicking the li: mousedown → input BLURS (closeSuggestions runs, li disappears)</span></span>
+  <span class="line"><span class="cm">// → click event never has anything left to fire on, or fires on now-hidden content</span></span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ✓ Fix: use onMouseDown, which fires BEFORE the blur event, and preventDefault</span></span>
+  <span class="line">&lt;<span class="ct">li</span></span>
+  <span class="line">  <span class="ca">onMouseDown</span>={(e) =&gt; {</span>
+  <span class="line">    e.preventDefault(); <span class="cm">// prevents the input from blurring AT ALL for this interaction</span></span>
+  <span class="line">    selectResult(item);</span>
+  <span class="line">  }}</span>
+  <span class="line">&gt;</span>
+  <span class="line">  {item.label}</span>
+  <span class="line">&lt;/<span class="ct">li</span>&gt;</span>
+          </div>
+          The core fix is using `onMouseDown` (which fires BEFORE the browser processes the resulting blur) instead of `onClick` (which fires after mouseup, by which point blur has already happened and possibly closed the list). Calling `e.preventDefault()` inside the mousedown handler additionally prevents the input from losing focus at all for this specific interaction, avoiding the blur-triggered close entirely and letting the selection logic run cleanly against still-visible, still-mounted suggestion elements.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Autocomplete Design · Debouncing · Caching · Race Conditions · A11y
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+document.querySelectorAll('.code-block .line').forEach(line => {
+  const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) textNodes.push(node);
+  textNodes.forEach(textNode => {
+    textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+  });
+});
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
