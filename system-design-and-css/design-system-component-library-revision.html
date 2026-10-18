@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designing a Scalable Design System — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #5cffb0;
+    --accent2: #bd93f9;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(92,255,176,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(92,255,176,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(92,255,176,0.1); color: var(--accent);
+    border: 1px solid rgba(92,255,176,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #5cffb0 50%, #bd93f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(92,255,176,0.1); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #2db87a);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Layer cards ── */
+  .layer-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; }
+  .layer-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.85rem 1.1rem; display: flex; gap: 14px; align-items: flex-start; border-left: 3px solid var(--accent);
+  }
+  .layer-badge {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 5px;
+    background: rgba(92,255,176,0.12); color: var(--teal); border: 1px solid rgba(92,255,176,0.3); flex-shrink: 0; margin-top: 2px;
+  }
+  .layer-title { font-family: var(--font-head); font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--text); }
+  .layer-desc { font-size: 12.5px; color: var(--text2); line-height: 1.55; }
+
+  /* ── Live button demo ── */
+  .live-demo { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1rem 1.2rem; margin-bottom: 1rem; }
+  .demo-label { font-size: 10.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .demo-controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .demo-controls button {
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer;
+  }
+  .demo-controls button:hover { border-color: var(--accent); color: var(--accent); }
+  .ds-stage { --btn-bg: #6a4fd1; --btn-fg: #ffffff; --btn-radius: 8px; padding: 18px; border-radius: 10px; background: #fff; display: flex; gap: 10px; align-items: center; transition: all 0.25s; }
+  .ds-stage.brand-teal { --btn-bg: #0fa97a; }
+  .ds-stage.brand-pink { --btn-bg: #d6336c; }
+  .ds-stage.dark { background: #15151f; }
+  .ds-stage.dark .ds-ghost { color: #e8eaf0; border-color: #555; }
+  .ds-stage.round { --btn-radius: 999px; }
+  .ds-btn { background: var(--btn-bg); color: var(--btn-fg); border: none; border-radius: var(--btn-radius); padding: 8px 18px; font-family: var(--font-body); font-size: 13px; cursor: pointer; transition: all 0.25s; }
+  .ds-ghost { background: transparent; color: var(--btn-bg); border: 1.5px solid var(--btn-bg); border-radius: var(--btn-radius); padding: 7px 18px; font-family: var(--font-body); font-size: 13px; cursor: pointer; transition: all 0.25s; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(92,255,176,0.12); border-color: rgba(92,255,176,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1400px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Frontend System Design</div>
+    <h1>Designing a Scalable Design System</h1>
+    <p>Tokens · Theming · Versioning · API Decisions — with a Live Token Demo and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. The Layers</a>
+    <a class="topic-pill" href="#s2">2. Design Tokens</a>
+    <a class="topic-pill" href="#s3">3. Theming</a>
+    <a class="topic-pill" href="#s4">4. Component API Decisions</a>
+    <a class="topic-pill" href="#s5">5. Versioning &amp; Releases</a>
+    <a class="topic-pill" href="#s6">6. Build &amp; Distribution</a>
+    <a class="topic-pill" href="#s7">7. Quality &amp; Governance</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — The Layers
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>The Layers of a Design System</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A design system is NOT just a component library. It's a stack of layers — each one depends only on the layer BELOW it, which is what lets you change one without rewriting the rest. A strong interview answer names the layers explicitly before diving into any single one.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">The dependency stack — each layer only knows about the one beneath it</div>
+      <svg class="diagram-svg" viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+        <rect x="150" y="10" width="400" height="38" rx="6" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="350" y="34" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">Product apps (consumers)</text>
+
+        <rect x="150" y="58" width="400" height="38" rx="6" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="82" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">Patterns / composed components (DataTable, Form)</text>
+
+        <rect x="150" y="106" width="400" height="38" rx="6" fill="#1c1430" stroke="#bd93f9" stroke-width="1.5"/>
+        <text x="350" y="130" text-anchor="middle" fill="#bd93f9" font-family="JetBrains Mono, monospace" font-size="10">Primitive components (Button, Input, Dialog)</text>
+
+        <rect x="150" y="154" width="400" height="38" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="178" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">Semantic + component tokens</text>
+
+        <rect x="150" y="202" width="400" height="38" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="350" y="226" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10">Primitive tokens (raw palette, scales)</text>
+
+        <path d="M120 222 L120 28" stroke="#555a6e" stroke-width="1.5" marker-end="url(#arrowDS)"/>
+        <text x="30" y="130" fill="#555a6e" font-family="Inter, sans-serif" font-size="9" transform="rotate(-90 30 130)">depends on ↓ / flows up ↑</text>
+        <defs>
+          <marker id="arrowDS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#555a6e"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="layer-stack">
+      <div class="layer-card"><span class="layer-badge">L1</span><div><div class="layer-title">Primitive tokens</div><div class="layer-desc">Raw values: a color palette, spacing scale, type scale, radii. Rarely used directly by components.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">L2</span><div><div class="layer-title">Semantic &amp; component tokens</div><div class="layer-desc">Intent-named aliases (<ic>color-action-primary</ic>) and per-component hooks (<ic>button-bg</ic>) — this is where theming happens.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">L3</span><div><div class="layer-title">Primitive components</div><div class="layer-desc">Single-purpose, accessible building blocks with a stable public API.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">L4</span><div><div class="layer-title">Patterns</div><div class="layer-desc">Opinionated compositions of primitives — higher-level, higher-churn, more product-specific.</div></div></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — Design Tokens
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Design Tokens — The Single Source of Truth</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Tokens are platform-agnostic design decisions stored as DATA (usually JSON), then COMPILED into whatever each platform needs — CSS custom properties for web, Swift/Kotlin constants for native, even Figma variables. Storing them as data, not hand-written CSS, is what makes one design change propagate everywhere.</span>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// tokens.json — the source of truth (e.g. Style Dictionary / W3C Design Tokens format)</span></span>
+  <span class="line">{</span>
+  <span class="line">  <span class="ca">"color"</span>: {</span>
+  <span class="line">    <span class="ca">"purple"</span>: { <span class="ca">"500"</span>: { <span class="ca">"$value"</span>: <span class="cs">"#6a4fd1"</span> } },       <span class="cm">// primitive</span></span>
+  <span class="line">    <span class="ca">"action"</span>: {</span>
+  <span class="line">      <span class="ca">"primary"</span>: { <span class="ca">"$value"</span>: <span class="cs">"{color.purple.500}"</span> }    <span class="cm">// semantic → references a primitive</span></span>
+  <span class="line">    }</span>
+  <span class="line">  },</span>
+  <span class="line">  <span class="ca">"button"</span>: {</span>
+  <span class="line">    <span class="ca">"bg"</span>: { <span class="ca">"$value"</span>: <span class="cs">"{color.action.primary}"</span> }         <span class="cm">// component token → references a semantic</span></span>
+  <span class="line">  }</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// Build step compiles that SAME source into multiple outputs:</span></span>
+  <span class="line"><span class="cm">//   → tokens.css   :root { --color-action-primary: #6a4fd1; --button-bg: var(--color-action-primary); }</span></span>
+  <span class="line"><span class="cm">//   → tokens.ts    export const colorActionPrimary = "#6a4fd1";</span></span>
+  <span class="line"><span class="cm">//   → Tokens.swift static let actionPrimary = UIColor(hex: "#6a4fd1")</span></span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Tier</th><th>Naming principle</th><th>Who references it</th></tr></thead>
+      <tbody>
+        <tr><td>Primitive</td><td>Describes WHAT it is (<ic>purple-500</ic>, <ic>space-4</ic>)</td><td>Only the semantic tier — never components directly</td></tr>
+        <tr><td>Semantic</td><td>Describes its PURPOSE (<ic>action-primary</ic>, <ic>surface-raised</ic>)</td><td>Components and the component-token tier</td></tr>
+        <tr><td>Component</td><td>Describes ONE component's hook (<ic>button-bg</ic>, <ic>input-border</ic>)</td><td>That single component — gives consumers a narrow, safe override point</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Name tokens by PURPOSE, never by appearance, at the semantic tier.</strong> A token called <ic>color-blue</ic> that later becomes green is a lie baked into your API; <ic>color-action-primary</ic> survives a rebrand untouched. This naming rule is one of the highest-leverage decisions in the whole system.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Theming
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Theming Architecture</h2>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: one component, tokens swapped at runtime — no component code changes</div>
+      <div class="demo-controls">
+        <button onclick="dsSet('brand-teal')">Brand: Teal</button>
+        <button onclick="dsSet('brand-pink')">Brand: Pink</button>
+        <button onclick="dsSet('dark')">Toggle Dark</button>
+        <button onclick="dsSet('round')">Toggle Shape</button>
+        <button onclick="dsReset()">Reset</button>
+      </div>
+      <div class="ds-stage" id="dsStage">
+        <button class="ds-btn">Primary</button>
+        <button class="ds-ghost">Secondary</button>
+      </div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">/* Components consume ONLY component/semantic tokens — never raw values */</span></span>
+  <span class="line">.btn {</span>
+  <span class="line">  background: var(--button-bg);</span>
+  <span class="line">  border-radius: var(--button-radius);</span>
+  <span class="line">  padding: var(--button-padding-y) var(--button-padding-x);</span>
+  <span class="line">}</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* A theme is just a re-mapping of tokens at some scope */</span></span>
+  <span class="line">[data-theme=<span class="cs">"dark"</span>] {</span>
+  <span class="line">  --color-surface: var(--color-gray-900);</span>
+  <span class="line">  --color-text: var(--color-gray-50);</span>
+  <span class="line">}</span>
+  <span class="line">[data-brand=<span class="cs">"acme"</span>] {</span>
+  <span class="line">  --color-action-primary: var(--color-teal-500);</span>
+  <span class="line">}</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Theming axis</th><th>Mechanism</th><th>Why it composes</th></tr></thead>
+      <tbody>
+        <tr><td>Color mode (light/dark)</td><td>Re-map semantic tokens under <ic>[data-theme]</ic> or <ic>prefers-color-scheme</ic></td><td>Orthogonal to brand — independent attribute</td></tr>
+        <tr><td>Brand / white-label</td><td>Re-map the primitive→semantic aliases under <ic>[data-brand]</ic></td><td>Independent of mode, so 2 modes × N brands needs no N×2 stylesheets</td></tr>
+        <tr><td>Density (compact/comfortable)</td><td>Re-map spacing tokens</td><td>Same component, different rhythm</td></tr>
+        <tr><td>Per-component override</td><td>Override a single component token at a local scope</td><td>Narrow, safe escape hatch — no need for CSS specificity wars</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The key architectural property:</strong> themes are DATA (token mappings), not CODE (separate component variants). Adding a new brand means adding a token file — zero component changes, zero new bugs in component logic.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Component API Decisions
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Component API Decisions</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>A component's public API is a CONTRACT you can't easily take back.</strong> Every prop you ship becomes something some consumer depends on. API design is the hardest part of a design system precisely because the cost of a wrong decision is paid across EVERY consuming team, for years.</span>
+    </div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Prop explosion (config-driven)</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">Card</span></span>
+  <span class="line">  title=<span class="cs">"Hi"</span></span>
+  <span class="line">  subtitle=<span class="cs">"..."</span></span>
+  <span class="line">  showHeader showFooter</span>
+  <span class="line">  headerIcon={&lt;<span class="ct">Icon</span> /&gt;}</span>
+  <span class="line">  footerAlign=<span class="cs">"right"</span></span>
+  <span class="line">  footerButtons={[...]}</span>
+  <span class="line">/&gt;</span>
+  <span class="line"><span class="cm">// every new need = a new prop</span></span>
+  <span class="line"><span class="cm">// API grows forever, never shrinks</span></span>
+        </div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Composition (compound components)</div>
+        <div class="code-block">
+  <span class="line">&lt;<span class="ct">Card</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Card.Header</span>&gt;</span>
+  <span class="line">    &lt;<span class="ct">Icon</span> /&gt; Hi</span>
+  <span class="line">  &lt;/<span class="ct">Card.Header</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Card.Body</span>&gt;...&lt;/<span class="ct">Card.Body</span>&gt;</span>
+  <span class="line">  &lt;<span class="ct">Card.Footer</span>&gt;...&lt;/<span class="ct">Card.Footer</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">Card</span>&gt;</span>
+  <span class="line"><span class="cm">// new layouts need ZERO new props</span></span>
+        </div>
+      </div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>API decision</th><th>Recommended approach</th><th>Reasoning</th></tr></thead>
+      <tbody>
+        <tr><td>Variants</td><td>A small closed set via an enum-like prop (<ic>variant="primary|secondary|ghost"</ic>)</td><td>Constrains consumers to the design language; boolean-flag combos (<ic>primary secondary</ic>) create impossible states</td></tr>
+        <tr><td>Polymorphism</td><td>An <ic>as</ic> / <ic>asChild</ic> prop to render a different element (link styled as button)</td><td>Avoids duplicating components for the same look on different semantic elements</td></tr>
+        <tr><td>State ownership</td><td>Support BOTH controlled (<ic>value</ic>/<ic>onChange</ic>) and uncontrolled (<ic>defaultValue</ic>)</td><td>Simple cases stay simple; complex cases can take full control</td></tr>
+        <tr><td>Styling escape hatch</td><td>Forward <ic>className</ic> and <ic>style</ic>, plus <ic>ref</ic> forwarding</td><td>Consumers WILL need one-off adjustments; refuse them and they fork or wrap you</td></tr>
+        <tr><td>Rest props</td><td>Spread remaining props onto the root element</td><td>Lets consumers add <ic>data-*</ic>, <ic>aria-*</ic>, event handlers without you anticipating each one</td></tr>
+        <tr><td>Accessibility</td><td>Build it IN by default; make the accessible path the easy path</td><td>If a11y is opt-in, most consumers won't opt in</td></tr>
+        <tr><td>Behavior vs. styling</td><td>Optionally split into headless (behavior + a11y) and styled layers</td><td>Lets teams with different visual languages reuse the hard part — behavior</td></tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// A well-formed primitive: forwards ref, merges className, spreads rest, closed variant set</span></span>
+  <span class="line"><span class="ck">const</span> Button = forwardRef(<span class="ck">function</span> <span class="cf">Button</span>(</span>
+  <span class="line">  { variant = <span class="cs">"primary"</span>, size = <span class="cs">"md"</span>, as: Comp = <span class="cs">"button"</span>, className, ...rest },</span>
+  <span class="line">  ref</span>
+  <span class="line">) {</span>
+  <span class="line">  <span class="ck">return</span> (</span>
+  <span class="line">    &lt;<span class="ct">Comp</span></span>
+  <span class="line">      ref={ref}</span>
+  <span class="line">      className={cx(<span class="cs">"btn"</span>, `btn--${variant}`, `btn--${size}`, className)}</span>
+  <span class="line">      {...rest}</span>
+  <span class="line">    /&gt;</span>
+  <span class="line">  );</span>
+  <span class="line">});</span>
+    </div>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Rule of thumb:</strong> it's far easier to ADD an API surface later than to REMOVE one. Start narrow, ship the smallest API that serves real use cases, and grow it only when multiple teams demonstrate the same need.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Versioning & Releases
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Versioning &amp; Release Strategy</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">What counts as a breaking change — semver for a component library</div>
+      <svg class="diagram-svg" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="200" height="75" rx="8" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <text x="120" y="42" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">MAJOR (x.0.0)</text>
+        <text x="120" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">remove/rename a prop</text>
+        <text x="120" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">change default behavior</text>
+        <text x="120" y="84" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">rename a token</text>
+
+        <rect x="250" y="20" width="200" height="75" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="42" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">MINOR (0.x.0)</text>
+        <text x="350" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">add a new prop/component</text>
+        <text x="350" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">add a new token</text>
+        <text x="350" y="84" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">deprecate (still works)</text>
+
+        <rect x="480" y="20" width="200" height="75" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="580" y="42" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">PATCH (0.0.x)</text>
+        <text x="580" y="60" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">bug fix, no API change</text>
+        <text x="580" y="72" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">a11y fix</text>
+        <text x="580" y="84" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">internal refactor</text>
+
+        <text x="350" y="130" text-anchor="middle" fill="#ffaaaa" font-family="Inter, sans-serif" font-size="10.5" font-weight="600">The subtle ones: a VISUAL change (padding, color) is "breaking" for consumers with pixel-sensitive layouts</text>
+        <text x="350" y="148" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Semver tracks the API, but a design system's real surface also includes its rendered output and DOM structure</text>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Strategy</th><th>How it works</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Deprecate → warn → remove</td><td>Mark old API deprecated in a MINOR (with a console warning + docs), remove only in the next MAJOR</td><td>Gives consumers a migration window; costs you maintaining both paths temporarily</td></tr>
+        <tr><td>Codemods</td><td>Ship an automated script (jscodeshift) that rewrites consumers' code for each breaking change</td><td>Dramatically lowers upgrade cost, which is what lets you actually ship majors</td></tr>
+        <tr><td>Changesets / conventional commits</td><td>Contributors declare the bump type per change; tooling computes versions and changelogs</td><td>Keeps versioning honest and automated instead of a release-day argument</td></tr>
+        <tr><td>Monorepo with independent package versions</td><td>Tokens, components, icons published as separate packages</td><td>Consumers upgrade only what they need; adds cross-package compatibility matrix to manage</td></tr>
+        <tr><td>Canary / pre-release channels</td><td>Publish <ic>next</ic> or <ic>canary</ic> tags for early adopters</td><td>Surfaces real-world breakage before a stable release hits everyone</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>The mindset shift:</strong> in a design system, the product is not the code — it's the TRUST that consumers can upgrade safely. Every versioning practice (deprecation windows, codemods, honest semver) exists to protect that trust, because once teams fear upgrades, they pin old versions forever and the system fragments.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Build & Distribution
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Build &amp; Distribution</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Concern</th><th>Decision</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Module format</td><td>Ship ESM (plus CJS if needed) with <ic>"sideEffects": false</ic></td><td>Enables tree-shaking so consumers only bundle components they import</td></tr>
+        <tr><td>Entry points</td><td>Named exports from a barrel AND per-component subpath exports</td><td>Barrels are convenient but can defeat tree-shaking in some toolchains — subpaths are the safe fallback</td></tr>
+        <tr><td>CSS strategy</td><td>Pick ONE: CSS Modules / vanilla-extract (build-time), or CSS-in-JS (runtime)</td><td>Runtime CSS-in-JS adds cost and complicates SSR/streaming; build-time extraction keeps the runtime light</td></tr>
+        <tr><td>Peer dependencies</td><td>React/etc. as <ic>peerDependencies</ic>, not dependencies</td><td>Avoids shipping two copies of React and breaking hooks</td></tr>
+        <tr><td>Types</td><td>Ship <ic>.d.ts</ic> and keep them accurate</td><td>For many consumers, the type definitions ARE the documentation they actually read</td></tr>
+        <tr><td>SSR / RSC safety</td><td>Avoid touching <ic>window</ic> at import time; mark client-only components</td><td>Prevents breaking server rendering and hydration mismatches in consumers</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Bundle size is a feature of the library.</strong> A design system that adds 300KB to every consuming app will get ripped out, no matter how good its components are. Measure it in CI and treat regressions like test failures.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Quality & Governance
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Quality &amp; Governance</h2>
+    </div>
+
+    <div class="layer-stack">
+      <div class="layer-card"><span class="layer-badge">TEST</span><div><div class="layer-title">Unit + interaction tests</div><div class="layer-desc">Behavior and keyboard interaction verified per component, using accessible queries (roles/labels).</div></div></div>
+      <div class="layer-card"><span class="layer-badge">VISUAL</span><div><div class="layer-title">Visual regression testing</div><div class="layer-desc">Screenshot diffs on every story catch the unintended style changes that unit tests can't see.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">A11Y</span><div><div class="layer-title">Automated accessibility checks</div><div class="layer-desc">axe in CI per story catches regressions early — but automation only catches a fraction; manual screen-reader testing still matters.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">DOCS</span><div><div class="layer-title">Living documentation (Storybook)</div><div class="layer-desc">Every component and state documented as an executable story — docs that can't drift from the code.</div></div></div>
+      <div class="layer-card"><span class="layer-badge">GOV</span><div><div class="layer-title">Contribution &amp; governance model</div><div class="layer-desc">A clear path for product teams to propose/contribute components, so the core team isn't a bottleneck (or a gatekeeper nobody can reach).</div></div></div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Governance model</th><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr><td>Centralized (dedicated team owns everything)</td><td>Consistency, high quality bar</td><td>Becomes a bottleneck; product teams wait or fork</td></tr>
+        <tr><td>Federated (contributions from product teams, core reviews)</td><td>Scales; components reflect real needs</td><td>Needs strong review standards or quality drifts</td></tr>
+        <tr><td>Hybrid (core owns primitives, teams own patterns)</td><td>Stable foundation + fast-moving edges</td><td>Requires an explicit, understood boundary between the two</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Naming tokens by appearance instead of purpose</strong> (<code>color-blue</code>, <code>spacing-large</code>) bakes a lie into your API the moment the design changes — semantic names survive rebrands, visual names don't.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Components that reference primitive tokens directly skip the semantic layer</strong> — which silently breaks theming, because a theme re-maps semantic tokens and the component never looked at them.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Prop explosion is the default failure mode</strong> — every one-off request adds "just one more prop," and the API only ever grows. Prefer composition and a deliberately small set of variants, and say no to bespoke props that serve one team.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Boolean props for variants create impossible states</strong> — <code>&lt;Button primary secondary danger /&gt;</code> is valid TypeScript and meaningless design. A single <code>variant</code> union makes illegal states unrepresentable.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Visual changes are breaking changes even if the API is untouched</strong> — a padding tweak can break a consumer's pixel-tuned layout or snapshot tests; semver tracks API, but consumers experience rendered output and DOM structure too.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Renaming a design token is a breaking change</strong> — consumers who override or reference it directly (in CSS or JS) break; treat the token names as public API, with the same deprecation process as props.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Shipping a barrel file without <code>sideEffects: false</code> can defeat tree-shaking</strong> — consumers import one button and bundle the entire library, which is exactly how design systems earn a reputation for bloat.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Runtime CSS-in-JS complicates SSR and adds per-render cost</strong> — a real consideration with streaming SSR and React Server Components; many modern systems moved to build-time CSS extraction for this reason.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Making accessibility opt-in means most consumers won't</strong> — the accessible behavior (focus management, roles, keyboard handling) must be the default, with the library doing the hard parts so consumers can't easily get them wrong.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Over-abstracting too early</strong> — building a flexible "universal" component from one use case produces the wrong abstraction; wait until at least 2-3 real, independent use cases show the true shared shape (the "rule of three").</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#2db87a);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>This is a senior-level frontend system design question. Interviewers listen for trade-off reasoning and for the idea that a design system is a PRODUCT with consumers, a contract, and a trust model — not merely a folder of shared components.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between a component library and a design system?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A component library is CODE — a set of reusable UI components. A design system is the broader whole: design tokens (the shared decisions), the component library implementing them, usage guidelines and documentation, accessibility standards, contribution/governance processes, and the design-tool artifacts (like Figma libraries) kept in sync with code. The library is one deliverable OF the system. This distinction matters because a library with no tokens, docs, or governance tends to drift into inconsistency — teams fork components, bypass them, or use them differently, and you get the cost of a shared library without the consistency benefit that justified building it.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why use three token tiers (primitive, semantic, component) instead of just one flat set of variables?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Each tier answers a different question and gives you a different kind of flexibility. <strong>Primitives</strong> hold the raw palette/scale — they exist so you have one place that defines "what colors and sizes exist." <strong>Semantic</strong> tokens map PURPOSE onto primitives (<code>action-primary → purple-500</code>) — this is the layer a THEME re-maps, so dark mode or a new brand changes the mapping without touching components. <strong>Component</strong> tokens (<code>button-bg</code>) give each component its own narrow override point, so a consumer can tweak one component without affecting the system, and without resorting to specificity hacks. With a flat set, a rebrand means hunting down every raw value, and a one-off override has no safe place to live — you'd either mutate a shared variable (affecting everything) or hardcode a value (escaping the system). The indirection feels like overhead on day one and pays off the first time you add a second theme.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it right to build your own design system versus adopting an existing one (MUI, Radix, Chakra, shadcn/ui)?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Adopt (or build on top of) an existing one when your visual language is conventional, your team is small, or speed to market matters — you inherit years of accessibility and edge-case work for free. Build your own when you have a distinctive brand that off-the-shelf theming can't express, MULTIPLE products that need to share a coherent identity at scale, or hard requirements existing libraries can't meet (unusual platforms, strict bundle limits, deep white-labeling). The middle path is often the best: wrap or build on a HEADLESS foundation (Radix, React Aria) for behavior and accessibility — the hardest, most error-prone part — and own only the visual layer and tokens. That way you get brand control without re-solving focus management, keyboard interaction, and ARIA semantics for every component. Building from scratch is a long-term staffing commitment, not a one-time project, and that cost is what teams most often underestimate.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you design the API for a Button component that must also work as a link, support icons, and avoid prop explosion?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1. Closed variant set:</strong> a single <code>variant</code> union (<code>primary | secondary | ghost | danger</code>) and a <code>size</code> union — not boolean flags — so impossible combinations can't be expressed.<br>
+          <strong>2. Polymorphism:</strong> an <code>as</code> (or <code>asChild</code>) prop so the same styled component can render an <code>&lt;a&gt;</code> or a router <code>Link</code>, keeping correct semantics: navigation is a link, an action is a button.<br>
+          <strong>3. Icons via composition, not config:</strong> accept children, and provide small slot helpers or <code>startIcon</code>/<code>endIcon</code> only if usage proves it common — resist <code>iconPosition</code>, <code>iconSize</code>, <code>iconColor</code> props.<br>
+          <strong>4. Escape hatches:</strong> <code>forwardRef</code>, merge <code>className</code>, and spread rest props so consumers can add <code>aria-*</code>, <code>data-*</code>, and handlers without you predicting each.<br>
+          <strong>5. Built-in a11y:</strong> default <code>type="button"</code> to avoid accidental form submits, support <code>disabled</code> correctly (and <code>aria-disabled</code> for links), and make focus styles non-optional.<br>
+          <strong>6. Loading state:</strong> a <code>loading</code> prop that disables interaction and announces state, rather than every consumer hand-rolling a spinner. The guiding principle throughout is to keep the surface area small and extend only when multiple teams show the same need.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can a purely visual change (like adjusting button padding) be considered a breaking change?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Semantic versioning formally tracks the PROGRAMMATIC API, but consumers depend on the library's rendered output too. Changing padding alters the button's dimensions, which can cause text to wrap, push a layout past a breakpoint, misalign a form that was pixel-tuned around the old size, or break visual regression snapshot tests across every consuming app at once. Similarly, changing the DOM structure (adding a wrapper element) can break consumers' CSS selectors or test queries. Because the blast radius is every consumer, a mature design system treats noticeable visual and structural changes with the same care as API changes: communicate them clearly, gate larger ones behind a MAJOR (or an opt-in flag/theme), and provide a migration note. This is why visual regression testing matters — it makes unintended visual changes visible BEFORE release rather than discovered by downstream teams.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What's a headless component, and what trade-off does it make versus a fully styled one?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          A headless component provides BEHAVIOR and ACCESSIBILITY — state management, keyboard interaction, focus handling, ARIA attributes — but ships NO styling (or minimal), leaving rendering and visuals to the consumer. Libraries like Radix UI and React Aria work this way. The trade-off: consumers get full visual control and can reuse the genuinely hard part (correct dialogs, comboboxes, menus) under ANY design language, but they must supply the styling themselves, so there's more setup per component and more room for visual inconsistency if governance is weak. A fully styled component is faster to adopt and visually consistent out of the box, but is harder to re-theme beyond what its token/props surface allows. Many systems layer both: a headless core for behavior, plus a styled layer on top for the organization's own look.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you ship a major version, and how do you make that upgrade survivable for consumers?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Ship a major when you must remove or change something consumers depend on — a prop rename, a changed default, a token rename, or a structural DOM change — and the old way can't coexist. But the goal is to make majors BORING. In the preceding minor releases, introduce the replacement alongside the old API and mark the old one deprecated with a console warning and a docs note, so consumers can migrate incrementally. For the major itself, publish a clear migration guide and ideally a CODEMOD that automates the mechanical rewrites. Release a pre-release/canary channel first so early adopters surface real breakage. Batch breaking changes into infrequent, predictable majors instead of trickling them out, since every major forces N teams to schedule upgrade work. If upgrading is painful, teams pin old versions and the system fragments — so the real measure of a good release process is how cheap it makes upgrading, not how clean the codebase is.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you support light/dark mode AND multiple brands (white-labeling) without multiplying your CSS?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <div class="code-block">
+  <span class="line"><span class="cm">/* Treat mode and brand as INDEPENDENT axes, each re-mapping different token tiers */</span></span>
+  <span class="line"><span class="cm">/* Brand axis: re-maps primitive → semantic aliases */</span></span>
+  <span class="line">[data-brand=<span class="cs">"acme"</span>]   { --color-action-primary: var(--color-teal-500); }</span>
+  <span class="line">[data-brand=<span class="cs">"globex"</span>] { --color-action-primary: var(--color-orange-500); }</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">/* Mode axis: re-maps surface/text semantics */</span></span>
+  <span class="line">[data-theme=<span class="cs">"light"</span>] { --color-surface: var(--color-gray-50);  --color-text: var(--color-gray-900); }</span>
+  <span class="line">[data-theme=<span class="cs">"dark"</span>]  { --color-surface: var(--color-gray-900); --color-text: var(--color-gray-50); }</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">&lt;html data-brand="acme" data-theme="dark"&gt;  → any combination, zero extra CSS</span></span>
+          </div>
+          Because components only reference semantic/component tokens, and because each axis is controlled by an independent attribute that re-maps a DIFFERENT set of tokens, the combinations compose automatically: 2 modes × N brands requires 2 + N small token blocks, not 2N full stylesheets. Adding a new brand is a single token block with no component changes. Two details matter in practice: set the attributes on the root early (a small inline script) to avoid a flash of the wrong theme before hydration, and verify contrast for EVERY brand/mode combination — the independence that makes this cheap also means a new brand color can silently fail accessibility contrast in dark mode.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Design System · Tokens · Theming · Versioning · Component API
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  function dsSet(cls) {
+    const stage = document.getElementById('dsStage');
+    if (cls === 'brand-teal' || cls === 'brand-pink') {
+      stage.classList.remove('brand-teal', 'brand-pink');
+    }
+    stage.classList.toggle(cls, cls.startsWith('brand') ? true : undefined);
+  }
+  function dsReset() {
+    document.getElementById('dsStage').className = 'ds-stage';
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

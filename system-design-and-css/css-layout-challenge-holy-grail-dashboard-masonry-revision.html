@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Layout Challenge: Holy Grail, Dashboard, Masonry — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #ffb86c;
+    --accent2: #ff79c6;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,108,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,108,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(255,184,108,0.1); color: var(--accent);
+    border: 1px solid rgba(255,184,108,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #ffb86c 50%, #ff79c6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px; padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2); background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(255,184,108,0.1); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #cc8a3d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700; color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.8; overflow-x: auto; margin-bottom: 1rem; white-space: pre; tab-size: 2;
+  }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .ca  { color: #5cffb0; }
+  .cp  { color: #ffb86c; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Live demo shell ── */
+  .live-demo { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1rem 1.2rem; margin-bottom: 1rem; }
+  .demo-label { font-size: 10.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .demo-controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .demo-controls button {
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer;
+  }
+  .demo-controls button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .tile { border-radius: 6px; padding: 8px 10px; font-family: var(--font-mono); font-size: 10.5px; display: flex; align-items: center; justify-content: center; text-align: center; min-width: 0; }
+  .t-head { background: rgba(189,147,249,0.15); border: 1px solid rgba(189,147,249,0.45); color: var(--purple); }
+  .t-nav  { background: rgba(255,184,108,0.15); border: 1px solid rgba(255,184,108,0.45); color: var(--amber); }
+  .t-main { background: rgba(92,255,176,0.15);  border: 1px solid rgba(92,255,176,0.45);  color: var(--teal); }
+  .t-aside{ background: rgba(106,176,255,0.15); border: 1px solid rgba(106,176,255,0.45); color: var(--blue); }
+  .t-foot { background: rgba(255,121,198,0.15); border: 1px solid rgba(255,121,198,0.45); color: var(--pink); }
+
+  /* Holy grail demo */
+  .hg {
+    display: grid; gap: 6px; min-height: 230px;
+    grid-template-areas: "header header header" "nav main aside" "footer footer footer";
+    grid-template-columns: 90px 1fr 90px;
+    grid-template-rows: auto 1fr auto;
+  }
+  .hg.mobile {
+    grid-template-areas: "header" "main" "nav" "aside" "footer";
+    grid-template-columns: 1fr; grid-template-rows: auto 1fr auto auto auto;
+  }
+  .hg .t-head { grid-area: header; } .hg .t-nav { grid-area: nav; } .hg .t-main { grid-area: main; }
+  .hg .t-aside { grid-area: aside; } .hg .t-foot { grid-area: footer; }
+
+  /* Dashboard demo */
+  .dash {
+    display: grid; gap: 6px; min-height: 230px;
+    grid-template-columns: 150px 1fr; grid-template-rows: auto 1fr;
+    grid-template-areas: "side head" "side main";
+    transition: grid-template-columns 0.25s ease;
+  }
+  .dash.collapsed { grid-template-columns: 46px 1fr; }
+  .dash .d-side { grid-area: side; flex-direction: column; justify-content: flex-start; gap: 6px; overflow: hidden; white-space: nowrap; }
+  .dash .d-head { grid-area: head; }
+  .dash .d-main { grid-area: main; display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); align-content: start; background: transparent; border: none; padding: 0; }
+  .dash .d-card { background: rgba(92,255,176,0.12); border: 1px solid rgba(92,255,176,0.4); color: var(--teal); border-radius: 6px; padding: 14px 8px; font-family: var(--font-mono); font-size: 10.5px; text-align: center; }
+  .dash .d-card.wide { grid-column: span 2; }
+  .dash.collapsed .d-label { display: none; }
+
+  /* Masonry demos */
+  .masonry-grid {
+    display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    grid-auto-rows: 12px; grid-auto-flow: dense;
+  }
+  .masonry-grid .m { border-radius: 6px; font-family: var(--font-mono); font-size: 10px; display: flex; align-items: center; justify-content: center; color: #0d0f14; font-weight: 600; }
+  .masonry-flex {
+    display: flex; flex-flow: column wrap; gap: 6px; height: 330px; align-content: flex-start;
+  }
+  .masonry-flex .m { width: calc(33.333% - 4px); border-radius: 6px; font-family: var(--font-mono); font-size: 10px; display: flex; align-items: center; justify-content: center; color: #0d0f14; font-weight: 600; }
+  .c1 { background: #ffb86c; } .c2 { background: #5cffb0; } .c3 { background: #6ab0ff; }
+  .c4 { background: #ff79c6; } .c5 { background: #bd93f9; } .c6 { background: #f1fa8c; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto; }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge { display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase; }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); }
+  .feat-table th { font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left; border-bottom: 1px solid var(--border2); }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .mid { color: var(--amber); font-weight: 500; }
+
+  /* ── Before/After ── */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .before-after { grid-template-columns: 1fr; } }
+  .ba-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; }
+  .ba-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .label-before { color: var(--red); }
+  .label-after  { color: var(--teal); }
+  .ba-card .code-block { margin-bottom: 0; font-size: 12px; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2); display: flex; gap: 10px; align-items: flex-start; line-height: 1.6; }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question { padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; user-select: none; transition: background 0.15s; }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s; }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(255,184,108,0.12); border-color: rgba(255,184,108,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1600px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · CSS Layout</div>
+    <h1>CSS Layout Challenge</h1>
+    <p>Holy Grail · Sidebar Dashboard · Masonry — Grid &amp; Flexbox Only, with Live Demos and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. Choosing the Tool</a>
+    <a class="topic-pill" href="#s2">2. Holy Grail</a>
+    <a class="topic-pill" href="#s3">3. Sidebar Dashboard</a>
+    <a class="topic-pill" href="#s4">4. Masonry</a>
+    <a class="topic-pill" href="#s5">5. Debugging Checklist</a>
+    <a class="topic-pill" href="#s6">6. Gotchas</a>
+    <a class="topic-pill" href="#s7">7. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════ SECTION 1 ══════════ -->
+  <section class="section" id="s1">
+    <div class="section-header"><div class="section-num">1</div><h2>Choosing the Tool Before You Write Code</h2></div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>In a live layout challenge, the first 30 seconds matter most: <strong>name the layout's dimensionality out loud.</strong> If it has to line up in rows AND columns at once, reach for Grid. If it's a single line of items distributing space, reach for Flexbox. Then nest — outer structure in Grid, inner alignment in Flexbox.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Decision flow for the three challenges</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="260" y="10" width="180" height="34" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="350" y="32" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="10">What shape is it?</text>
+
+        <path d="M300 44 L120 80" stroke="#555a6e" stroke-width="1.2"/>
+        <path d="M350 44 L350 80" stroke="#555a6e" stroke-width="1.2"/>
+        <path d="M400 44 L580 80" stroke="#555a6e" stroke-width="1.2"/>
+
+        <rect x="20" y="80" width="200" height="52" rx="8" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="120" y="102" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Holy grail</text>
+        <text x="120" y="118" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">named regions → GRID areas</text>
+
+        <rect x="250" y="80" width="200" height="52" rx="8" fill="#2a2010" stroke="#ffb86c" stroke-width="1.5"/>
+        <text x="350" y="102" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Dashboard</text>
+        <text x="350" y="118" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">GRID shell + nested GRID/FLEX</text>
+
+        <rect x="480" y="80" width="200" height="52" rx="8" fill="#2a1024" stroke="#ff79c6" stroke-width="1.5"/>
+        <text x="580" y="102" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">Masonry</text>
+        <text x="580" y="118" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="8">GRID row-spans or FLEX column-wrap</text>
+
+        <text x="350" y="165" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Rule of thumb: Grid defines the skeleton, Flexbox aligns what's inside each cell</text>
+        <text x="350" y="183" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10.5">Say the trade-off out loud — interviewers grade the reasoning as much as the result</text>
+      </svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 2 — HOLY GRAIL ══════════ -->
+  <section class="section" id="s2">
+    <div class="section-header"><div class="section-num">2</div><h2>Challenge 1 — The Holy Grail Layout</h2></div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The "holy grail": a header and footer spanning the full width, with three columns between them — fixed-width left nav, flexible center content, fixed-width right sidebar — where the footer stays at the bottom even with little content, and the center column comes FIRST in source order for accessibility/SEO. It was famously painful with floats; with Grid it's nearly declarative.</span>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: toggle between desktop and mobile layouts — only the grid definition changes</div>
+      <div class="demo-controls">
+        <button onclick="document.getElementById('hg').classList.remove('mobile')">Desktop</button>
+        <button onclick="document.getElementById('hg').classList.add('mobile')">Mobile</button>
+      </div>
+      <div class="hg" id="hg">
+        <div class="tile t-head">header</div>
+        <div class="tile t-nav">nav</div>
+        <div class="tile t-main">main (flexible, 1fr)</div>
+        <div class="tile t-aside">aside</div>
+        <div class="tile t-foot">footer</div>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="cm">&lt;!-- Source order: main first (best for screen readers / reading order) --&gt;</span>
+&lt;<span class="ck">div</span> <span class="ca">class</span>=<span class="cs">"page"</span>&gt;
+  &lt;<span class="ck">header</span>&gt;...&lt;/<span class="ck">header</span>&gt;
+  &lt;<span class="ck">main</span>&gt;...&lt;/<span class="ck">main</span>&gt;
+  &lt;<span class="ck">nav</span>&gt;...&lt;/<span class="ck">nav</span>&gt;
+  &lt;<span class="ck">aside</span>&gt;...&lt;/<span class="ck">aside</span>&gt;
+  &lt;<span class="ck">footer</span>&gt;...&lt;/<span class="ck">footer</span>&gt;
+&lt;/<span class="ck">div</span>&gt;
+
+<span class="cm">/* ── The whole layout: Grid with named areas ── */</span>
+<span class="cf">.page</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">min-height</span>: <span class="cn">100dvh</span>;                        <span class="cm">/* footer sticks to bottom */</span>
+  <span class="cp">grid-template-columns</span>: <span class="cn">200px</span> <span class="cn">1fr</span> <span class="cn">200px</span>;
+  <span class="cp">grid-template-rows</span>: auto <span class="cn">1fr</span> auto;      <span class="cm">/* middle row absorbs the slack */</span>
+  <span class="cp">grid-template-areas</span>:
+    <span class="cs">"header header header"</span>
+    <span class="cs">"nav    main   aside"</span>
+    <span class="cs">"footer footer footer"</span>;
+}
+<span class="cf">header</span> { <span class="cp">grid-area</span>: header; }
+<span class="cf">nav</span>    { <span class="cp">grid-area</span>: nav; }
+<span class="cf">main</span>   { <span class="cp">grid-area</span>: main; <span class="cp">min-width</span>: <span class="cn">0</span>; }  <span class="cm">/* let content shrink */</span>
+<span class="cf">aside</span>  { <span class="cp">grid-area</span>: aside; }
+<span class="cf">footer</span> { <span class="cp">grid-area</span>: footer; }
+
+<span class="cm">/* ── Responsive: just redefine the areas, no HTML changes ── */</span>
+<span class="ck">@media</span> (max-width: <span class="cn">700px</span>) {
+  <span class="cf">.page</span> {
+    <span class="cp">grid-template-columns</span>: <span class="cn">1fr</span>;
+    <span class="cp">grid-template-rows</span>: auto <span class="cn">1fr</span> auto auto auto;
+    <span class="cp">grid-template-areas</span>: <span class="cs">"header"</span> <span class="cs">"main"</span> <span class="cs">"nav"</span> <span class="cs">"aside"</span> <span class="cs">"footer"</span>;
+  }
+}</div>
+
+    <div class="before-after">
+      <div class="ba-card">
+        <div class="ba-label label-before">✗ Common mistake</div>
+        <div class="code-block"><span class="cf">.page</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">height</span>: <span class="cn">100vh</span>;
+  <span class="cm">/* no min-height, no 1fr row */</span>
+  <span class="cm">/* long content overflows;</span>
+<span class="cm">     mobile URL bar breaks 100vh */</span>
+}</div>
+      </div>
+      <div class="ba-card">
+        <div class="ba-label label-after">✓ Robust</div>
+        <div class="code-block"><span class="cf">.page</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">min-height</span>: <span class="cn">100dvh</span>;
+  <span class="cp">grid-template-rows</span>:
+    auto <span class="cn">1fr</span> auto;
+  <span class="cm">/* grows with content, footer</span>
+<span class="cm">     pinned when content is short */</span>
+}</div>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="cm">/* ── Flexbox alternative (the classic "sticky footer" version) ── */</span>
+<span class="cf">.page</span> { <span class="cp">display</span>: flex; <span class="cp">flex-direction</span>: column; <span class="cp">min-height</span>: <span class="cn">100dvh</span>; }
+<span class="cf">.body</span> { <span class="cp">display</span>: flex; <span class="cp">flex</span>: <span class="cn">1</span>; }               <span class="cm">/* the 3-column row grows to fill */</span>
+<span class="cf">nav</span>, <span class="cf">aside</span> { <span class="cp">flex</span>: <span class="cn">0 0 200px</span>; }          <span class="cm">/* fixed width, no grow, no shrink */</span>
+<span class="cf">main</span> { <span class="cp">flex</span>: <span class="cn">1</span>; <span class="cp">min-width</span>: <span class="cn">0</span>; <span class="cp">order</span>: <span class="cn">0</span>; }
+<span class="cf">nav</span> { <span class="cp">order</span>: -<span class="cn">1</span>; }                       <span class="cm">/* visually first, source order unchanged */</span>
+<span class="cm">/* Works, but needs an extra wrapper and `order` for the source-order trick.</span>
+<span class="cm">   Grid areas express the same idea with less structure. */</span></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 3 — DASHBOARD ══════════ -->
+  <section class="section" id="s3">
+    <div class="section-header"><div class="section-num">3</div><h2>Challenge 2 — The Sidebar Dashboard</h2></div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>A dashboard layers three layout jobs: an <strong>app shell</strong> (fixed sidebar + header + scrolling content area), a <strong>card grid</strong> inside the content area, and <strong>small alignment tasks</strong> inside each card. Different tools suit each layer — which is exactly the nesting insight interviewers want to hear.</span>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: collapse the sidebar — only one grid-template-columns value changes (and it animates)</div>
+      <div class="demo-controls">
+        <button onclick="document.getElementById('dash').classList.toggle('collapsed')">Toggle sidebar</button>
+      </div>
+      <div class="dash" id="dash">
+        <div class="tile t-nav d-side"><span>☰</span><span class="d-label">Overview</span><span class="d-label">Reports</span><span class="d-label">Settings</span></div>
+        <div class="tile t-head d-head">header / toolbar</div>
+        <div class="d-main">
+          <div class="d-card wide">Revenue chart</div>
+          <div class="d-card">KPI</div>
+          <div class="d-card">KPI</div>
+          <div class="d-card">KPI</div>
+          <div class="d-card wide">Activity feed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="cm">/* ── Layer 1: the app shell (Grid) ── */</span>
+<span class="cf">.app</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">height</span>: <span class="cn">100dvh</span>;
+  <span class="cp">grid-template-columns</span>: <span class="cn">240px</span> <span class="cn">1fr</span>;
+  <span class="cp">grid-template-rows</span>: <span class="cn">56px</span> <span class="cn">1fr</span>;
+  <span class="cp">grid-template-areas</span>: <span class="cs">"sidebar header"</span> <span class="cs">"sidebar content"</span>;
+  <span class="cp">transition</span>: grid-template-columns <span class="cn">0.25s</span>;
+}
+<span class="cf">.app.collapsed</span> { <span class="cp">grid-template-columns</span>: <span class="cn">64px</span> <span class="cn">1fr</span>; }  <span class="cm">/* one line = collapse */</span>
+
+<span class="cf">.sidebar</span> { <span class="cp">grid-area</span>: sidebar; <span class="cp">overflow-y</span>: auto; }
+<span class="cf">.header</span>  { <span class="cp">grid-area</span>: header; }
+<span class="cf">.content</span> {
+  <span class="cp">grid-area</span>: content;
+  <span class="cp">overflow</span>: auto;               <span class="cm">/* ONLY this region scrolls; shell stays put */</span>
+  <span class="cp">min-width</span>: <span class="cn">0</span>;               <span class="cm">/* critical: lets wide tables/charts shrink */</span>
+}
+
+<span class="cm">/* ── Layer 2: the responsive card grid (Grid, no media queries) ── */</span>
+<span class="cf">.cards</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">gap</span>: <span class="cn">16px</span>;
+  <span class="cp">padding</span>: <span class="cn">16px</span>;
+  <span class="cp">grid-template-columns</span>: <span class="cn">repeat</span>(auto-fit, <span class="cn">minmax</span>(<span class="cn">240px</span>, <span class="cn">1fr</span>));
+}
+<span class="cf">.card--wide</span> { <span class="cp">grid-column</span>: <span class="cn">span 2</span>; }
+
+<span class="cm">/* ── Layer 3: inside each card (Flexbox) ── */</span>
+<span class="cf">.card-header</span> {
+  <span class="cp">display</span>: flex;
+  <span class="cp">justify-content</span>: space-between;
+  <span class="cp">align-items</span>: center;
+}
+<span class="cf">.card</span> { <span class="cp">display</span>: flex; <span class="cp">flex-direction</span>: column; }
+<span class="cf">.card-footer</span> { <span class="cp">margin-top</span>: auto; }  <span class="cm">/* pushes footer to the card's bottom */</span></div>
+
+    <table class="feat-table">
+      <thead><tr><th>Layer</th><th>Tool</th><th>Why that tool</th></tr></thead>
+      <tbody>
+        <tr><td>App shell (sidebar/header/content)</td><td>Grid</td><td>Two-dimensional skeleton; areas make intent readable; collapsing = changing one track size</td></tr>
+        <tr><td>Card collection</td><td>Grid with <ic>auto-fit + minmax()</ic></td><td>Equal-ish tiles in rows AND columns, responsive without breakpoints</td></tr>
+        <tr><td>Card header, toolbar, button rows</td><td>Flexbox</td><td>One-dimensional distribution and alignment along a single axis</td></tr>
+        <tr><td>Card with pinned footer</td><td>Flexbox column + <ic>margin-top: auto</ic></td><td>Equal-height cards whose footers line up regardless of body length</td></tr>
+        <tr><td>Sticky header inside scroller</td><td><ic>position: sticky</ic></td><td>Layout-neutral; avoids taking the header out of the grid</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The classic dashboard bug:</strong> a wide table or chart inside a grid/flex child blows out the layout and creates page-level horizontal scroll. The cause is the implicit <ic>min-width: auto</ic> on grid and flex items, which refuses to shrink below content width. The fix is <ic>min-width: 0</ic> (or <ic>overflow: auto</ic>) on the item that contains the wide content — memorize this one.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 4 — MASONRY ══════════ -->
+  <section class="section" id="s4">
+    <div class="section-header"><div class="section-num">4</div><h2>Challenge 3 — Masonry (the Hard One)</h2></div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Neither Grid nor Flexbox natively does masonry</strong> (Pinterest-style columns where each tile sits directly under the shortest column above it, with no row alignment). Both are fundamentally track- or line-based, so every "grid/flex-only" solution is a workaround with a trade-off. Saying this out loud — then picking an approach and naming its cost — is the winning answer.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Same items, different ordering behavior</div>
+      <svg class="diagram-svg" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="18" text-anchor="middle" fill="#ffb86c" font-family="Inter, sans-serif" font-size="11" font-weight="600">Grid row-spans: order runs ACROSS rows</text>
+        <rect x="40" y="30" width="70" height="50" rx="4" fill="#2a2010" stroke="#ffb86c"/><text x="75" y="60" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">1</text>
+        <rect x="118" y="30" width="70" height="80" rx="4" fill="#2a2010" stroke="#ffb86c"/><text x="153" y="75" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">2</text>
+        <rect x="196" y="30" width="70" height="35" rx="4" fill="#2a2010" stroke="#ffb86c"/><text x="231" y="52" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">3</text>
+        <rect x="40" y="88" width="70" height="60" rx="4" fill="#2a2010" stroke="#ffb86c"/><text x="75" y="122" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">4</text>
+        <rect x="196" y="73" width="70" height="55" rx="4" fill="#2a2010" stroke="#ffb86c"/><text x="231" y="105" text-anchor="middle" fill="#ffb86c" font-family="JetBrains Mono, monospace" font-size="10">5</text>
+        <text x="175" y="175" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">1 → 2 → 3 left to right, then wraps (good reading order)</text>
+
+        <text x="525" y="18" text-anchor="middle" fill="#ff79c6" font-family="Inter, sans-serif" font-size="11" font-weight="600">Flex column-wrap: order runs DOWN columns</text>
+        <rect x="390" y="30" width="70" height="50" rx="4" fill="#2a1024" stroke="#ff79c6"/><text x="425" y="60" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">1</text>
+        <rect x="390" y="88" width="70" height="80" rx="4" fill="#2a1024" stroke="#ff79c6"/><text x="425" y="132" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">2</text>
+        <rect x="468" y="30" width="70" height="60" rx="4" fill="#2a1024" stroke="#ff79c6"/><text x="503" y="65" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">3</text>
+        <rect x="468" y="98" width="70" height="40" rx="4" fill="#2a1024" stroke="#ff79c6"/><text x="503" y="123" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">4</text>
+        <rect x="546" y="30" width="70" height="70" rx="4" fill="#2a1024" stroke="#ff79c6"/><text x="581" y="70" text-anchor="middle" fill="#ff79c6" font-family="JetBrains Mono, monospace" font-size="10">5</text>
+        <text x="525" y="188" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">1 → 2 down column one, then column two... (tab order differs from visual)</text>
+      </svg>
+    </div>
+
+    <h3 style="font-family:var(--font-head);font-size:15px;margin:1rem 0 .6rem;color:var(--text)">Approach A — Grid with row spans (needs known/estimated heights)</h3>
+    <div class="live-demo">
+      <div class="demo-label">Live: grid-auto-rows: 12px, each tile spans N rows, grid-auto-flow: dense backfills gaps</div>
+      <div class="masonry-grid">
+        <div class="m c1" style="grid-row: span 6">1</div>
+        <div class="m c2" style="grid-row: span 9">2</div>
+        <div class="m c3" style="grid-row: span 5">3</div>
+        <div class="m c4" style="grid-row: span 8">4</div>
+        <div class="m c5" style="grid-row: span 4">5</div>
+        <div class="m c6" style="grid-row: span 7">6</div>
+        <div class="m c3" style="grid-row: span 10">7</div>
+        <div class="m c1" style="grid-row: span 5">8</div>
+        <div class="m c4" style="grid-row: span 6">9</div>
+        <div class="m c2" style="grid-row: span 4">10</div>
+        <div class="m c5" style="grid-row: span 8">11</div>
+        <div class="m c6" style="grid-row: span 6">12</div>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="cf">.masonry</span> {
+  <span class="cp">display</span>: grid;
+  <span class="cp">grid-template-columns</span>: <span class="cn">repeat</span>(auto-fill, <span class="cn">minmax</span>(<span class="cn">220px</span>, <span class="cn">1fr</span>));
+  <span class="cp">grid-auto-rows</span>: <span class="cn">10px</span>;           <span class="cm">/* a small "row unit" — the grid's resolution */</span>
+  <span class="cp">gap</span>: <span class="cn">12px</span>;
+  <span class="cp">grid-auto-flow</span>: dense;           <span class="cm">/* backfill gaps left by shorter tiles */</span>
+}
+<span class="cm">/* Each tile spans however many row-units its height needs: */</span>
+<span class="cf">.tile--s</span> { <span class="cp">grid-row</span>: <span class="cn">span 12</span>; }
+<span class="cf">.tile--m</span> { <span class="cp">grid-row</span>: <span class="cn">span 20</span>; }
+<span class="cf">.tile--l</span> { <span class="cp">grid-row</span>: <span class="cn">span 30</span>; }
+
+<span class="cm">/* Spans can come from known aspect ratios, a data field, or a tiny JS pass:
+   span = Math.ceil((contentHeight + gap) / (rowUnit + gap))
+   Pure CSS works when heights are predictable (images with fixed aspect ratios). */</span></div>
+
+    <h3 style="font-family:var(--font-head);font-size:15px;margin:1.4rem 0 .6rem;color:var(--text)">Approach B — Flexbox column-wrap (needs a fixed container height)</h3>
+    <div class="live-demo">
+      <div class="demo-label">Live: flex-flow: column wrap in a fixed-height box — items flow DOWN, then into the next column</div>
+      <div class="masonry-flex">
+        <div class="m c1" style="height:70px">1</div>
+        <div class="m c2" style="height:110px">2</div>
+        <div class="m c3" style="height:60px">3</div>
+        <div class="m c4" style="height:90px">4</div>
+        <div class="m c5" style="height:55px">5</div>
+        <div class="m c6" style="height:100px">6</div>
+        <div class="m c3" style="height:75px">7</div>
+        <div class="m c1" style="height:50px">8</div>
+        <div class="m c4" style="height:95px">9</div>
+        <div class="m c2" style="height:65px">10</div>
+        <div class="m c5" style="height:80px">11</div>
+        <div class="m c6" style="height:60px">12</div>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="cf">.masonry</span> {
+  <span class="cp">display</span>: flex;
+  <span class="cp">flex-flow</span>: column wrap;     <span class="cm">/* fill a column top-to-bottom, then start the next */</span>
+  <span class="cp">height</span>: <span class="cn">1200px</span>;            <span class="cm">/* REQUIRED: wrapping triggers when height is exhausted */</span>
+  <span class="cp">gap</span>: <span class="cn">12px</span>;
+  <span class="cp">align-content</span>: flex-start;
+}
+<span class="cf">.masonry &gt; *</span> { <span class="cp">width</span>: <span class="cn">calc</span>(<span class="cn">33.333%</span> - <span class="cn">8px</span>); }  <span class="cm">/* 3 columns */</span>
+
+<span class="cm">/* Downsides: the container needs a hand-picked height (too short → a stray extra
+   column; too tall → big blank bottom), and DOM/tab order runs down columns,
+   which can feel scrambled compared to the left-to-right visual scan. */</span></div>
+
+    <table class="feat-table">
+      <thead><tr><th>Approach</th><th>Pros</th><th>Cons</th><th>Best when</th></tr></thead>
+      <tbody>
+        <tr><td>Grid + row spans</td><td class="yes">Natural left-to-right order; fully responsive column count</td><td class="no">Needs known or measured heights (spans)</td><td>Fixed-aspect images, CMS-provided sizes, or a light JS measuring pass</td></tr>
+        <tr><td>Flex column-wrap</td><td class="yes">No height knowledge per item; trivial code</td><td class="no">Needs fixed container height; column-major order; awkward responsiveness</td><td>Quick demos, known item counts</td></tr>
+        <tr><td>Flex with N separate column wrappers</td><td class="yes">True shortest-column balance when JS distributes items</td><td class="no">Needs JS (or manual HTML) to assign items; reflow on resize</td><td>Production galleries needing proper balance</td></tr>
+        <tr><td>CSS multi-column (<ic>column-count</ic>)</td><td class="yes">Simplest, content-driven heights</td><td class="no">Not Grid/Flex; column-major order; awkward item splitting across columns</td><td>When the constraint is relaxed</td></tr>
+        <tr><td>Native masonry (grid-lanes / masonry track)</td><td class="yes">The real solution, in the grid model</td><td class="mid">Browser support is still emerging — verify current status before relying on it</td><td>Progressive enhancement behind <ic>@supports</ic></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Native masonry is being standardized as part of CSS Grid</strong>, but its syntax and browser support have been shifting, so treat it as progressive enhancement: ship a Grid row-span or flex fallback, and layer the native behavior behind <ic>@supports</ic> once you've checked current support (caniuse / MDN) rather than from memory.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 5 — DEBUGGING ══════════ -->
+  <section class="section" id="s5">
+    <div class="section-header"><div class="section-num">5</div><h2>Layout Debugging Checklist (Live-Coding Survival Kit)</h2></div>
+
+    <table class="feat-table">
+      <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Content pushes the layout wider than the viewport</td><td>Implicit <ic>min-width: auto</ic> on grid/flex item</td><td><ic>min-width: 0</ic> or <ic>overflow: auto</ic> on the item</td></tr>
+        <tr><td><ic>1fr</ic> columns are unequal</td><td><ic>1fr</ic> = <ic>minmax(auto, 1fr)</ic>; wide content raises the minimum</td><td>Use <ic>minmax(0, 1fr)</ic> for truly equal tracks</td></tr>
+        <tr><td>Footer floats mid-page on short content</td><td>No <ic>min-height</ic> / no flexible row</td><td><ic>min-height: 100dvh</ic> + <ic>1fr</ic> middle row (or flex column + <ic>flex: 1</ic> body)</td></tr>
+        <tr><td>Card footers don't line up</td><td>Cards aren't stretching their content</td><td>Card as flex column; footer gets <ic>margin-top: auto</ic></td></tr>
+        <tr><td>Grid area looks wrong / missing</td><td>Typo in area name or ragged <ic>grid-template-areas</ic> rows</td><td>Every row must have the same column count; names must match <ic>grid-area</ic></td></tr>
+        <tr><td>Two scrollbars / page jump on mobile</td><td><ic>100vh</ic> vs dynamic browser chrome</td><td>Use <ic>100dvh</ic>; scroll only the content region</td></tr>
+        <tr><td>Centering fails inside a flex item</td><td>Item has no height, so there's nothing to center within</td><td>Give the container height, or make the item <ic>flex: 1</ic></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>Use DevTools' Grid and Flex overlays</strong> (the "grid"/"flex" badges in the Elements panel) — they draw the tracks, areas, and gaps directly on the page. In an interview, opening them to debug is a positive signal, not a crutch.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 6 — GOTCHAS ══════════ -->
+  <section class="section" id="s6">
+    <div class="section-header"><div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div><h2>Common Gotchas &amp; Interview Traps</h2></div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Claiming Grid or Flexbox "does masonry" is the trap in this challenge.</strong> Neither does natively; every grid/flex-only version is a workaround with a stated trade-off. Say so up front.</span></li>
+      <li><span class="gi">⚠️</span><span><strong><code>1fr</code> is not truly "equal share"</strong> — it means <code>minmax(auto, 1fr)</code>, so a track with wide content can't shrink below it. Use <code>minmax(0, 1fr)</code> when you need genuinely equal columns.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>The implicit <code>min-width: auto</code> on grid/flex items</strong> is behind most "my layout overflows" bugs; wide tables, code blocks, and long unbroken strings all trigger it.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Rows in <code>grid-template-areas</code> must be rectangular and consistent</strong> — each string needs the same number of cells, and a named area must form a single rectangle (no L-shapes), or the entire declaration is invalid and silently ignored.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Reordering with <code>order</code> or grid placement changes visuals but NOT tab/reading order</strong> — fine for cosmetic moves, an accessibility problem if the visual sequence stops matching the DOM sequence for keyboard and screen-reader users.</span></li>
+      <li><span class="gi">⚠️</span><span><strong><code>grid-auto-flow: dense</code> can reorder items visually</strong> out of source order to fill holes — convenient for masonry and galleries, but it can confuse keyboard focus order, so use it only where order isn't meaningful.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Flex column-wrap masonry only wraps when the container has a constrained height</strong> — without it the column simply grows forever and nothing wraps, which looks like "flexbox is broken."</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Percentage heights need a definite parent height</strong> — a <code>height: 100%</code> child of an auto-height parent collapses, a frequent surprise when building full-height shells; prefer grid rows with <code>1fr</code> over percentage chains.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Use <code>100dvh</code> rather than <code>100vh</code> for full-height shells</strong> on mobile — <code>100vh</code> ignores the collapsing browser toolbar and can cause content to sit behind it or create double scrollbars.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Animating <code>grid-template-columns</code> works in current browsers</strong> (handy for a collapsing sidebar), but it triggers layout every frame — fine for a small shell, wasteful for large, complex content areas; consider transforming an overlay for heavier layouts.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════ SECTION 7 — Q&A ══════════ -->
+  <section class="section" id="s7">
+    <div class="section-header"><div class="section-num" style="background:linear-gradient(135deg,var(--accent),#cc8a3d);">?</div><h2>Interview Q&amp;A — Why / What / When / How</h2></div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Layout challenges are graded on process: choosing the right tool, explaining trade-offs, handling edge cases (overflow, mobile, source order), and being honest about what CSS can't do cleanly.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-what">What</span>What makes the "holy grail" layout hard, and how does Grid simplify it?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        The requirements pull against each other: full-width header and footer, three columns between them with fixed-width sides and a fluid center, a footer that stays at the bottom even with little content, and ideally the main content first in source order. With floats or tables this needed hacks like negative margins and clearfixes. Grid expresses it almost directly: <code>grid-template-areas</code> names the regions, <code>grid-template-columns: 200px 1fr 200px</code> sets fixed-fluid-fixed tracks, and <code>grid-template-rows: auto 1fr auto</code> with <code>min-height: 100dvh</code> makes the middle row absorb extra space so the footer sinks to the bottom. Source order is independent of visual placement because each element is positioned by <code>grid-area</code>, and responsiveness is just redefining the area template in a media query without touching the HTML.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why does a wide table inside a grid or flex child break the layout, and how do you fix it?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        Grid and flex items default to <code>min-width: auto</code>, which means "never shrink below your content's minimum size." A wide table, a long code line, or an unbroken URL has a large minimum content width, so the item refuses to shrink and pushes the track (and sometimes the whole page) wider than the viewport, creating unwanted horizontal scroll. The fix is to override that floor on the item containing the wide content: <code>min-width: 0</code> lets it shrink to the track's width, and adding <code>overflow: auto</code> to the wrapper makes the table scroll within its own box instead of stretching the layout. For grid tracks specifically, <code>minmax(0, 1fr)</code> removes the same implicit minimum from the track definition. It's one of the highest-frequency real-world layout bugs.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you choose Flexbox over Grid for part of a dashboard?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        Whenever the job is one-dimensional: distributing items along a single line and aligning them on the cross axis. Examples inside a dashboard: a card header with a title on the left and actions on the right (<code>justify-content: space-between</code>), a toolbar of buttons that wraps, a sidebar nav list stacked vertically with a footer pinned to the bottom (<code>margin-top: auto</code>), or a card laid out as a column so its footer aligns across equal-height siblings. Grid is the better choice for the outer structure and for the card collection, where rows and columns both matter. In practice you nest them: Grid for the shell and the card grid, Flexbox for the alignment inside each cell. The decision criterion is whether you need to control placement on two axes at once.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you build a masonry layout using only Grid or Flexbox, and what are the limits?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        First I'd state that neither does masonry natively, so I'm choosing a workaround and its trade-off. <strong>Grid approach:</strong> define columns with <code>repeat(auto-fill, minmax(220px, 1fr))</code>, set a small <code>grid-auto-rows</code> (say 10px) as a row unit, enable <code>grid-auto-flow: dense</code>, and give each tile <code>grid-row: span N</code> where N approximates its height in row units. This keeps a natural left-to-right order and a responsive column count, but needs known or measured heights — from fixed aspect ratios, data, or a small JS pass computing <code>Math.ceil((height + gap) / (rowUnit + gap))</code>. <strong>Flex approach:</strong> <code>flex-flow: column wrap</code> in a container with a fixed height and tile widths set to about a third; items flow down then wrap. Simple, but it needs a hand-picked container height and the order is column-major. <strong>For true shortest-column balancing</strong>, you'd use JS to distribute items into column wrappers, or progressively enhance with native masonry behind <code>@supports</code> once support is verified. I'd pick the grid-span version when heights are predictable.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-what">What</span>What's the difference between <code>auto-fit</code> and <code>auto-fill</code>, and when does it matter for a card grid?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        Both create as many columns as fit given the <code>minmax()</code> minimum. The difference appears only when there are fewer items than the available columns. <code>auto-fill</code> keeps the empty columns as invisible tracks, so existing cards stay at their natural size and leave blank space on the right. <code>auto-fit</code> collapses the empty tracks to zero, so the existing cards stretch (via the <code>1fr</code> maximum) to fill the full row. With enough items to fill complete rows, they behave identically. Choose <code>auto-fit</code> when you want a short list to expand across the container, and <code>auto-fill</code> when you want consistent tile width regardless of how many items there are — e.g. a product grid that should keep a stable visual rhythm.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why can visually reordering layout with <code>order</code> or grid placement be an accessibility problem?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        Keyboard tab order and screen-reader reading order follow the DOM, not the visual arrangement. If CSS places the sidebar visually first while it comes later in the DOM (or <code>dense</code> backfilling shuffles tiles), sighted keyboard users see focus jump unpredictably around the screen, and screen-reader users hear content in a different order than it appears. That mismatch violates WCAG guidance on meaningful sequence and focus order. The safe pattern is to make the DOM order the logical reading order, and use CSS reordering only for cosmetic changes that don't alter meaning — for example, keeping <code>main</code> first in the source (a good thing for screen readers) while placing it in the center column via areas is generally fine because the sequence of content still makes sense. When order and visuals genuinely diverge in a way that matters, restructure the markup instead of papering over it with CSS.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you collapse a sidebar by animating <code>grid-template-columns</code>, versus another technique?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        Animating <code>grid-template-columns</code> from, say, <code>240px 1fr</code> to <code>64px 1fr</code> is elegant for an app shell: one declaration controls the whole layout, the content column reflows automatically, and modern browsers interpolate track sizes smoothly. It's a good fit when the shell is relatively lightweight and the collapse is occasional. The cost is that it triggers layout on every frame, so with a heavy content area (large tables, charts) the animation can drop frames. In that case, alternatives are to animate a <code>transform</code> on an overlay sidebar (composite-only, no reflow) and let the content shift instantly, or to toggle the width without animation. Also consider <code>prefers-reduced-motion</code>, and make sure the collapsed state keeps nav items accessible via labels or tooltips rather than icon-only ambiguity.
+      </div></div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question"><span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you debug a layout where your grid areas aren't applying at all?</span><div class="qa-toggle">+</div></div>
+      <div class="qa-answer"><div class="qa-answer-inner">
+        <strong>1.</strong> Open DevTools and enable the Grid overlay with area names — if the template is invalid, the overlay shows no areas, which immediately tells you the declaration was dropped.<br>
+        <strong>2.</strong> Check <code>grid-template-areas</code> for ragged rows: every string must have the same number of cells, and each named area must form a single rectangle (an L-shape invalidates the whole property).<br>
+        <strong>3.</strong> Verify names match exactly (case-sensitive) between the template strings and the <code>grid-area</code> values on the children; a typo silently creates an implicit extra track instead of erroring.<br>
+        <strong>4.</strong> Confirm <code>display: grid</code> is on the right element — areas apply to DIRECT children only, so an extra wrapper div breaks placement.<br>
+        <strong>5.</strong> Ensure <code>grid-template-columns/rows</code> counts agree with the template's dimensions, and check whether a later rule or a media query is overriding the template.<br>
+        <strong>6.</strong> If content overflows, look for the implicit <code>min-width: auto</code> trap and try <code>minmax(0, 1fr)</code> or <code>min-width: 0</code>.
+      </div></div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · CSS Layout Challenge · Holy Grail · Dashboard · Masonry
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) { card.classList.toggle('open'); }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>

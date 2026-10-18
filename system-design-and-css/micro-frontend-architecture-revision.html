@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Micro-Frontend Architecture — Interview Revision Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;700&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #212638;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6e;
+    --accent: #6ab0ff;
+    --accent2: #ffb86c;
+    --teal: #5cffb0;
+    --amber: #ffb86c;
+    --red: #ff6b6b;
+    --yellow: #f1fa8c;
+    --purple: #bd93f9;
+    --blue: #6ab0ff;
+    --pink: #ff79c6;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(106,176,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(106,176,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative; z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
+  .header-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 11px;
+    background: rgba(106,176,255,0.1); color: var(--accent);
+    border: 1px solid rgba(106,176,255,0.25); border-radius: 4px;
+    padding: 3px 10px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(26px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 0%, #6ab0ff 50%, #ffb86c 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .site-header p { color: var(--text2); font-size: 15px; }
+
+  /* ── Topics Nav ── */
+  .topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2.5rem; }
+  .topic-pill {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 5px 12px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2);
+    text-decoration: none; transition: all 0.15s; cursor: pointer;
+  }
+  .topic-pill:hover { background: rgba(106,176,255,0.1); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 3.25rem; animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .section-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #4d84cc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    color: #0d0f14; flex-shrink: 0;
+  }
+  .section-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+  /* ── Code Blocks ── */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; font-family: var(--font-mono); font-size: 12.5px;
+    line-height: 1.85; overflow-x: auto; margin-bottom: 1rem;
+    tab-size: 2;
+  }
+  .code-block .line { display: block; white-space: pre; }
+  .cm  { color: #4a5068; font-style: italic; }
+  .ck  { color: #ff79c6; }
+  .cs  { color: #f1fa8c; }
+  .cn  { color: #bd93f9; }
+  .cf  { color: #6ab0ff; }
+  .cp  { color: #5cffb0; }
+  .co  { color: #ffb86c; }
+  .cx  { color: #ff6b6b; }
+  .ct  { color: #ff79c6; }
+  .ca  { color: #5cffb0; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: var(--radius); padding: 0.75rem 1rem; font-size: 13.5px; margin-bottom: 0.85rem; display: flex; gap: 10px; align-items: flex-start; }
+  .callout-icon { flex-shrink: 0; font-size: 15px; line-height: 1.5; }
+  .callout-green  { background: rgba(92,255,176,0.07);  border: 1px solid rgba(92,255,176,0.2);  color: #9affd4; }
+  .callout-amber  { background: rgba(255,184,108,0.07); border: 1px solid rgba(255,184,108,0.2); color: #ffd49a; }
+  .callout-blue   { background: rgba(106,176,255,0.07); border: 1px solid rgba(106,176,255,0.2); color: #a8d4ff; }
+  .callout-purple { background: rgba(189,147,249,0.07); border: 1px solid rgba(189,147,249,0.2); color: #d9c0ff; }
+  .callout-red    { background: rgba(255,107,107,0.07); border: 1px solid rgba(255,107,107,0.2); color: #ffaaaa; }
+
+  ic { font-family: var(--font-mono); font-size: 12.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); display: inline; }
+
+  /* ── Divider ── */
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); margin: 2.5rem 0; }
+
+  /* ── Approach cards ── */
+  .approach-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin-bottom: 10px; border-left: 3px solid var(--accent);
+  }
+  .approach-title { font-family: var(--font-head); font-size: 14.5px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .approach-tag { font-family: var(--font-mono); font-size: 10px; color: var(--accent); background: rgba(106,176,255,0.1); border: 1px solid rgba(106,176,255,0.25); border-radius: 4px; padding: 2px 8px; margin-left: 8px; }
+  .approach-desc { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+
+  /* ── Live composed-page demo ── */
+  .live-demo { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1rem 1.2rem; margin-bottom: 1rem; }
+  .demo-label { font-size: 10.5px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .demo-controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .demo-controls button {
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer;
+  }
+  .demo-controls button:hover { border-color: var(--accent); color: var(--accent); }
+  .shell { border: 1px dashed var(--border2); border-radius: 10px; padding: 10px; display: grid; grid-template-columns: 1fr 2fr; grid-template-rows: auto auto auto; gap: 8px; }
+  .shell .slot { border-radius: 8px; padding: 10px 12px; font-family: var(--font-mono); font-size: 11px; transition: all 0.3s; }
+  .slot-head { grid-column: 1 / 3; background: rgba(189,147,249,0.12); border: 1px solid rgba(189,147,249,0.4); color: var(--purple); }
+  .slot-nav { background: rgba(255,184,108,0.12); border: 1px solid rgba(255,184,108,0.4); color: var(--amber); }
+  .slot-main { background: rgba(92,255,176,0.12); border: 1px solid rgba(92,255,176,0.4); color: var(--teal); }
+  .slot-cart { grid-column: 1 / 3; background: rgba(255,121,198,0.12); border: 1px solid rgba(255,121,198,0.4); color: var(--pink); }
+  .slot .ver { float: right; opacity: 0.8; }
+  .slot.flash { box-shadow: 0 0 0 2px var(--yellow); }
+  .shell-log { margin-top: 10px; font-family: var(--font-mono); font-size: 11px; color: var(--text2); min-height: 18px; }
+
+  /* ── SVG diagram wrapper ── */
+  .diagram-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.25rem; margin-bottom: 1rem; overflow-x: auto;
+  }
+  .diagram-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .diagram-svg { width: 100%; min-width: 600px; height: auto; display: block; }
+
+  /* ── Question-type badges ── */
+  .qtype-badge {
+    display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    padding: 3px 9px; border-radius: 5px; letter-spacing: 0.06em; margin-right: 8px; text-transform: uppercase;
+  }
+  .qtype-what  { background: rgba(106,176,255,0.14); color: #a8d4ff; border: 1px solid rgba(106,176,255,0.3); }
+  .qtype-why   { background: rgba(255,184,108,0.14); color: #ffd49a; border: 1px solid rgba(255,184,108,0.3); }
+  .qtype-when  { background: rgba(92,255,176,0.14);  color: #9affd4; border: 1px solid rgba(92,255,176,0.3); }
+  .qtype-how   { background: rgba(189,147,249,0.14); color: #d9c0ff; border: 1px solid rgba(189,147,249,0.3); }
+
+  /* ── Feature table ── */
+  .feat-table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 1rem;
+    border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border);
+  }
+  .feat-table th {
+    font-family: var(--font-body); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text3); padding: 9px 12px; background: var(--bg3); text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .feat-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .feat-table tr:last-child td { border-bottom: none; }
+  .feat-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .feat-table td:first-child { font-weight: 500; color: var(--text); }
+  .yes { color: var(--teal); font-weight: 500; }
+  .no  { color: var(--red); font-weight: 500; }
+  .mid { color: var(--amber); font-weight: 500; }
+
+  /* ── Gotcha list ── */
+  .gotcha-list { list-style: none; padding: 0; margin-bottom: 1rem; }
+  .gotcha-list li {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 0.75rem 0.95rem; margin-bottom: 8px; font-size: 13px; color: var(--text2);
+    display: flex; gap: 10px; align-items: flex-start; line-height: 1.6;
+  }
+  .gotcha-list li .gi { flex-shrink: 0; }
+  .gotcha-list li code { font-family: var(--font-mono); font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .gotcha-list li strong { color: var(--text); }
+
+  /* ── Q&A Section ── */
+  .qa-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; cursor: pointer; }
+  .qa-question {
+    padding: 0.9rem 1rem; font-size: 14px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; user-select: none; transition: background 0.15s;
+  }
+  .qa-question:hover { background: var(--bg3); }
+  .qa-question .q-text { font-weight: 500; flex: 1; line-height: 1.5; }
+  .qa-toggle {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    color: var(--text3); flex-shrink: 0; transition: transform 0.2s, background 0.2s;
+  }
+  .qa-card.open .qa-toggle { transform: rotate(45deg); background: rgba(106,176,255,0.12); border-color: rgba(106,176,255,0.3); color: var(--accent); }
+  .qa-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .qa-card.open .qa-answer { max-height: 1500px; }
+  .qa-answer-inner { padding: 0.85rem 1rem 1rem; font-size: 13.5px; color: var(--text2); line-height: 1.75; border-top: 1px solid var(--border); }
+  .qa-answer-inner code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; color: var(--yellow); }
+  .qa-answer-inner strong { color: var(--text); }
+  .qa-answer-inner .code-block { margin-top: 8px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; font-size: 12px; color: var(--text3); padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--font-mono); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-tag">Web Fundamentals Interview Prep · Frontend Architecture</div>
+    <h1>Micro-Frontend Architecture</h1>
+    <p>Use Cases · Trade-offs · Module Federation · Team Topology — with a Live Demo and Why/What/When/How Q&amp;A</p>
+  </header>
+
+  <!-- Quick nav -->
+  <nav class="topic-nav" aria-label="Jump to section">
+    <a class="topic-pill" href="#s1">1. What &amp; Why</a>
+    <a class="topic-pill" href="#s2">2. When It Fits</a>
+    <a class="topic-pill" href="#s3">3. Integration Approaches</a>
+    <a class="topic-pill" href="#s4">4. Module Federation</a>
+    <a class="topic-pill" href="#s5">5. Team Topology</a>
+    <a class="topic-pill" href="#s6">6. Cross-Cutting Concerns</a>
+    <a class="topic-pill" href="#s7">7. Trade-offs</a>
+    <a class="topic-pill" href="#s8">8. Gotchas</a>
+    <a class="topic-pill" href="#s9">9. Why/What/When/How Q&amp;A</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — What & Why
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>What Micro-Frontends Are — and the Problem They Solve</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>Micro-frontends apply the microservices idea to the UI: split ONE large frontend into several smaller, independently developed, tested, and DEPLOYED applications, each owned end-to-end by a team, then compose them into a single experience for the user. The point is not smaller code — it's <strong>independent delivery</strong> for many teams working on one product.</span>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Monolith frontend vs. micro-frontends — the unit of deployment changes</div>
+      <svg class="diagram-svg" viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">Monolith frontend</text>
+        <rect x="40" y="30" width="270" height="130" rx="10" fill="#2a1414" stroke="#ff6b6b" stroke-width="1.5"/>
+        <rect x="55" y="45" width="115" height="30" rx="5" fill="var(--bg2)" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="112" y="64" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">Team A code</text>
+        <rect x="180" y="45" width="115" height="30" rx="5" fill="var(--bg2)" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="237" y="64" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">Team B code</text>
+        <rect x="55" y="85" width="115" height="30" rx="5" fill="var(--bg2)" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="112" y="104" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">Team C code</text>
+        <rect x="180" y="85" width="115" height="30" rx="5" fill="var(--bg2)" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="237" y="104" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="8.5">Team D code</text>
+        <text x="175" y="145" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600">ONE build · ONE deploy</text>
+        <text x="175" y="185" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">Team A's bug blocks Team D's release</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">Micro-frontends</text>
+        <rect x="385" y="30" width="65" height="60" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="417" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">Team A</text>
+        <text x="417" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">own deploy</text>
+        <rect x="460" y="30" width="65" height="60" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="492" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">Team B</text>
+        <text x="492" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">own deploy</text>
+        <rect x="535" y="30" width="65" height="60" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="567" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">Team C</text>
+        <text x="567" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">own deploy</text>
+        <rect x="610" y="30" width="65" height="60" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="642" y="55" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8">Team D</text>
+        <text x="642" y="70" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">own deploy</text>
+        <rect x="385" y="105" width="290" height="35" rx="6" fill="#131b28" stroke="#6ab0ff" stroke-width="1.5"/>
+        <text x="530" y="127" text-anchor="middle" fill="#6ab0ff" font-family="JetBrains Mono, monospace" font-size="9">Shell / container composes them</text>
+        <text x="530" y="185" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">Each team ships on its OWN schedule</text>
+
+        <text x="350" y="215" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">The monolith's cost is COORDINATION at scale — not code size. Micro-frontends trade that for integration complexity.</text>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Goal</th><th>How micro-frontends serve it</th></tr></thead>
+      <tbody>
+        <tr><td>Independent deployability</td><td>A team ships its slice without coordinating a release train with everyone else</td></tr>
+        <tr><td>Team autonomy &amp; ownership</td><td>One team owns a vertical slice end to end — UI, logic, and often the backend it talks to</td></tr>
+        <tr><td>Scaling the organization</td><td>Adding teams doesn't linearly add merge conflicts, build time, and review bottlenecks to one repo</td></tr>
+        <tr><td>Incremental migration</td><td>Replace a legacy app piece by piece (strangler pattern) instead of a risky big-bang rewrite</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — When It Fits
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>When Micro-Frontends Fit (and When They Don't)</h2>
+    </div>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Micro-frontends are an ORGANIZATIONAL scaling solution, not a technical one.</strong> If you don't have an organizational problem (many teams blocked on each other), you're buying real complexity for a benefit you don't need. The most common mistake is adopting them for a small team because they sound modern.</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Signal</th><th>Fits?</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>5+ teams contributing to one frontend, stepping on each other</td><td class="yes">✓ Strong fit</td><td>Coordination cost is the exact pain being solved</td></tr>
+        <tr><td>Releases bottlenecked by a shared release train / regression suite</td><td class="yes">✓ Strong fit</td><td>Independent deploys remove the bottleneck</td></tr>
+        <tr><td>Migrating a legacy app incrementally while shipping features</td><td class="yes">✓ Strong fit</td><td>Strangler pattern: route by route, old and new coexisting</td></tr>
+        <tr><td>Acquired companies / separately-built products to unify</td><td class="yes">✓ Good fit</td><td>Compose existing apps into one shell without a rewrite</td></tr>
+        <tr><td>One team of 3-8 engineers</td><td class="no">✗ Poor fit</td><td>No coordination problem to solve — you only pay the costs</td></tr>
+        <tr><td>Highly interdependent UI with constantly shared state</td><td class="no">✗ Poor fit</td><td>Seams cut through tightly coupled features, making every change cross-team</td></tr>
+        <tr><td>Performance-critical, bundle-size-sensitive app</td><td class="mid">⚠ Careful</td><td>Duplicated dependencies and extra network hops can hurt unless managed deliberately</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <span class="callout-icon">✓</span>
+      <span><strong>The interview-ready heuristic:</strong> "Is the bottleneck people or code?" If it's people — teams blocked on shared releases and merge coordination — micro-frontends can help. If it's code quality or tooling, a well-structured modular monolith (or a monorepo with clear boundaries) usually solves it with far less overhead.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — Integration Approaches
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Integration Approaches — When Do the Pieces Come Together?</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span>The central design question is <strong>WHEN</strong> the separate apps are composed: at BUILD time, at SERVER time, or at RUNTIME in the browser. This single choice drives deployment independence, performance, and complexity more than any framework decision.</span>
+    </div>
+
+    <div class="approach-card">
+      <div class="approach-title">Build-time integration (npm packages)<span class="approach-tag">composed at BUILD</span></div>
+      <div class="approach-desc">Each micro-frontend is published as an npm package; the shell installs and bundles them all into one artifact. Simple, great performance (one optimized bundle, shared deps deduped) — but you've lost independent deployment: changing one slice means rebuilding and redeploying the whole shell. This is closer to a modular monolith than true micro-frontends.</div>
+    </div>
+
+    <div class="approach-card">
+      <div class="approach-title">Runtime integration via Module Federation<span class="approach-tag">composed at RUNTIME (JS)</span></div>
+      <div class="approach-desc">The shell loads remote bundles from other deployments at runtime, sharing dependencies like React. Independent deploys with good performance and a good developer experience — the most popular modern approach. Covered in depth in Section 4.</div>
+    </div>
+
+    <div class="approach-card">
+      <div class="approach-title">iframes<span class="approach-tag">composed at RUNTIME (isolated)</span></div>
+      <div class="approach-desc">Each micro-frontend runs in its own iframe. The strongest isolation of styles, JS, and failures, with truly zero shared runtime — useful for embedding untrusted or legacy apps. Downsides: awkward responsive sizing, painful routing/deep-linking, accessibility and focus issues, duplicated loading cost, and clunky cross-frame communication (postMessage).</div>
+    </div>
+
+    <div class="approach-card">
+      <div class="approach-title">Web Components / custom elements<span class="approach-tag">composed at RUNTIME (standards)</span></div>
+      <div class="approach-desc">Each micro-frontend exposes itself as a custom element (<ic>&lt;checkout-widget&gt;</ic>), giving a framework-agnostic contract the shell can drop in. Shadow DOM offers style encapsulation. Good for mixing frameworks; trade-offs include SSR difficulty, form/a11y quirks, and inconsistent framework ergonomics.</div>
+    </div>
+
+    <div class="approach-card">
+      <div class="approach-title">Server-side / edge composition<span class="approach-tag">composed on the SERVER</span></div>
+      <div class="approach-desc">A server or CDN edge stitches HTML fragments from each team's service (SSI, ESI, Podium, Tailor-style) before sending the page. Excellent first-paint and SEO since the page arrives assembled; the cost is infrastructure complexity and a harder story for rich client-side interactivity between fragments.</div>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Approach</th><th>Independent deploy</th><th>Isolation</th><th>Performance</th><th>Complexity</th></tr></thead>
+      <tbody>
+        <tr><td>Build-time (npm)</td><td class="no">✗ No</td><td class="no">Low</td><td class="yes">Best</td><td class="yes">Low</td></tr>
+        <tr><td>Module Federation</td><td class="yes">✓ Yes</td><td class="mid">Medium</td><td class="yes">Good</td><td class="mid">Medium</td></tr>
+        <tr><td>iframes</td><td class="yes">✓ Yes</td><td class="yes">Highest</td><td class="no">Worst</td><td class="mid">Medium</td></tr>
+        <tr><td>Web Components</td><td class="yes">✓ Yes</td><td class="mid">Medium-High</td><td class="mid">Good</td><td class="mid">Medium</td></tr>
+        <tr><td>Server/edge composition</td><td class="yes">✓ Yes</td><td class="mid">Medium</td><td class="yes">Great first paint</td><td class="no">High (infra)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — Module Federation
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Module Federation — How It Works</h2>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">💡</span>
+      <span><strong>Module Federation</strong> (introduced in Webpack 5, now also available for Vite/Rspack via plugins) lets one build EXPOSE modules and another CONSUME them at runtime from a different URL — as if they were local imports, even though they're deployed separately. A <strong>host</strong> (shell) consumes; a <strong>remote</strong> exposes. An app can be both.</span>
+    </div>
+
+    <div class="live-demo">
+      <div class="demo-label">Live: a shell composing four independently-deployed slices — click to "deploy" one without touching the others</div>
+      <div class="demo-controls">
+        <button onclick="mfDeploy('head')">Deploy Header team</button>
+        <button onclick="mfDeploy('nav')">Deploy Nav team</button>
+        <button onclick="mfDeploy('main')">Deploy Catalog team</button>
+        <button onclick="mfDeploy('cart')">Deploy Cart team</button>
+        <button onclick="mfReset()">Reset</button>
+      </div>
+      <div class="shell">
+        <div class="slot slot-head" id="mf-head">header-app <span class="ver" id="v-head">v1.0.0</span></div>
+        <div class="slot slot-nav" id="mf-nav">nav-app <span class="ver" id="v-nav">v1.0.0</span></div>
+        <div class="slot slot-main" id="mf-main">catalog-app <span class="ver" id="v-main">v1.0.0</span></div>
+        <div class="slot slot-cart" id="mf-cart">cart-app <span class="ver" id="v-cart">v1.0.0</span></div>
+      </div>
+      <div class="shell-log" id="mf-log">Shell is stable. Each slice is a separate deployment with its own version.</div>
+    </div>
+
+    <div class="code-block">
+  <span class="line"><span class="cm">// ── REMOTE (cart-app) webpack.config.js — EXPOSES a module ──</span></span>
+  <span class="line"><span class="ck">const</span> { ModuleFederationPlugin } = require(<span class="cs">"webpack").container;</span></span>
+  <span class="line"></span>
+  <span class="line">new ModuleFederationPlugin({</span>
+  <span class="line">  name: <span class="cs">"cart"</span>,</span>
+  <span class="line">  filename: <span class="cs">"remoteEntry.js"</span>,        <span class="cm">// the manifest the host fetches at runtime</span></span>
+  <span class="line">  exposes: {</span>
+  <span class="line">    <span class="cs">"./CartWidget"</span>: <span class="cs">"./src/CartWidget"</span>, <span class="cm">// what other apps are allowed to import</span></span>
+  <span class="line">  },</span>
+  <span class="line">  shared: {</span>
+  <span class="line">    react:       { singleton: <span class="ck">true</span>, requiredVersion: <span class="cs">"^18.0.0"</span> },</span>
+  <span class="line">    <span class="cs">"react-dom"</span>: { singleton: <span class="ck">true</span>, requiredVersion: <span class="cs">"^18.0.0"</span> },</span>
+  <span class="line">  },</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── HOST (shell) webpack.config.js — CONSUMES that remote ──</span></span>
+  <span class="line">new ModuleFederationPlugin({</span>
+  <span class="line">  name: <span class="cs">"shell"</span>,</span>
+  <span class="line">  remotes: {</span>
+  <span class="line">    cart: <span class="cs">"cart@https://cart.example.com/remoteEntry.js"</span>, <span class="cm">// where to find it, at RUNTIME</span></span>
+  <span class="line">  },</span>
+  <span class="line">  shared: { react: { singleton: <span class="ck">true</span> }, <span class="cs">"react-dom"</span>: { singleton: <span class="ck">true</span> } },</span>
+  <span class="line">});</span>
+  <span class="line"></span>
+  <span class="line"><span class="cm">// ── In the shell's code: a normal-looking dynamic import ──</span></span>
+  <span class="line"><span class="ck">const</span> CartWidget = React.lazy(() =&gt; <span class="ck">import</span>(<span class="cs">"cart/CartWidget"</span>));</span>
+  <span class="line"></span>
+  <span class="line">&lt;<span class="ct">ErrorBoundary</span> <span class="ca">fallback</span>={&lt;<span class="ct">CartUnavailable</span> /&gt;}&gt;</span>
+  <span class="line">  &lt;<span class="ct">Suspense</span> <span class="ca">fallback</span>={&lt;<span class="ct">Spinner</span> /&gt;}&gt;</span>
+  <span class="line">    &lt;<span class="ct">CartWidget</span> /&gt;</span>
+  <span class="line">  &lt;/<span class="ct">Suspense</span>&gt;</span>
+  <span class="line">&lt;/<span class="ct">ErrorBoundary</span>&gt;</span>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Concept</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Host / Remote</td><td>The host loads code from remotes at runtime; a remote exposes modules. One app can be a host AND a remote simultaneously</td></tr>
+        <tr><td>remoteEntry.js</td><td>A small manifest published by each remote describing what it exposes and what it shares — fetched fresh at runtime so a new deploy is picked up without rebuilding the host</td></tr>
+        <tr><td>exposes</td><td>The explicit public surface of a remote — only listed modules can be imported by others (a deliberate boundary)</td></tr>
+        <tr><td>shared</td><td>Dependencies negotiated between host and remotes at runtime so heavy libraries (React) load ONCE instead of per-app</td></tr>
+        <tr><td>singleton: true</td><td>Forces exactly one instance of a library across all apps — mandatory for libraries like React where two copies break hooks and context</td></tr>
+        <tr><td>requiredVersion / eager</td><td>Declares acceptable version ranges; mismatches trigger warnings or a fallback to a separately-loaded copy unless forced</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Always wrap remotes in an Error Boundary and Suspense.</strong> A remote is a NETWORK dependency — it can be slow, unreachable, or mid-deploy. Without a fallback, one team's outage blanks the entire page, which defeats the whole point of independent, resilient slices.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 5 — Team Topology
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Team Topology — Slice by Business Domain, Not by Layer</h2>
+    </div>
+
+    <div class="diagram-wrap">
+      <div class="diagram-title">Horizontal (by tech layer) vs. vertical (by business domain) team splits</div>
+      <svg class="diagram-svg" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <text x="175" y="20" text-anchor="middle" fill="#ff9a9a" font-family="Inter, sans-serif" font-size="11" font-weight="600">✗ Horizontal split — every feature crosses every team</text>
+        <rect x="40" y="35" width="270" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="175" y="57" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">UI team</text>
+        <rect x="40" y="78" width="270" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="175" y="100" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">State/logic team</text>
+        <rect x="40" y="121" width="270" height="35" rx="5" fill="#2a1414" stroke="#ff6b6b" stroke-width="1"/>
+        <text x="175" y="143" text-anchor="middle" fill="#ff9a9a" font-family="JetBrains Mono, monospace" font-size="9">API-integration team</text>
+        <text x="175" y="180" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">"Add a promo banner" = 3 teams, 3 tickets, handoffs</text>
+
+        <text x="525" y="20" text-anchor="middle" fill="#5cffb0" font-family="Inter, sans-serif" font-size="11" font-weight="600">✓ Vertical split — a team owns a whole slice</text>
+        <rect x="385" y="35" width="85" height="120" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="427" y="62" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8.5">Search</text>
+        <text x="427" y="80" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">UI+logic+API</text>
+        <rect x="480" y="35" width="85" height="120" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="522" y="62" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8.5">Checkout</text>
+        <text x="522" y="80" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">UI+logic+API</text>
+        <rect x="575" y="35" width="85" height="120" rx="6" fill="#0a1f14" stroke="#5cffb0" stroke-width="1.5"/>
+        <text x="617" y="62" text-anchor="middle" fill="#5cffb0" font-family="JetBrains Mono, monospace" font-size="8.5">Account</text>
+        <text x="617" y="80" text-anchor="middle" fill="#8b90a0" font-family="JetBrains Mono, monospace" font-size="7">UI+logic+API</text>
+        <text x="525" y="180" text-anchor="middle" fill="#8b90a0" font-family="Inter, sans-serif" font-size="9.5">"Improve checkout" = one team, one deploy</text>
+
+        <text x="350" y="210" text-anchor="middle" fill="#555a6e" font-family="Inter, sans-serif" font-size="10">Conway's Law: your architecture will mirror your org chart — so design the org chart you want the architecture to have</text>
+      </svg>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Team type</th><th>Role</th><th>Why it exists</th></tr></thead>
+      <tbody>
+        <tr><td>Stream-aligned (feature) teams</td><td>Own a vertical business slice end to end: UI, logic, and the backend it uses</td><td>Eliminates cross-team handoffs for typical changes — the core payoff of the architecture</td></tr>
+        <tr><td>Platform team</td><td>Owns the shell, build tooling, CI/CD templates, shared-dependency policy, observability</td><td>Keeps teams' paved road smooth so autonomy doesn't become 12 snowflake setups</td></tr>
+        <tr><td>Design-system team (enabling)</td><td>Owns tokens, primitive components, accessibility standards</td><td>Visual and UX consistency across independently shipped slices</td></tr>
+        <tr><td>Enabling / architecture guild</td><td>Sets contracts, reviews cross-cutting decisions, spreads practices</td><td>Governs the seams without becoming a gatekeeper</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-purple">
+      <span class="callout-icon">🎯</span>
+      <span><strong>Split by business domain (checkout, search, account), never by technical layer.</strong> A good seam is where changes rarely need to coordinate. If a typical feature requires edits in three different micro-frontends, your boundaries are in the wrong place — and that's a design smell, not a tooling problem.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 6 — Cross-Cutting Concerns
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Cross-Cutting Concerns — Where Micro-Frontends Get Hard</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Concern</th><th>Recommended approach</th><th>Pitfall to avoid</th></tr></thead>
+      <tbody>
+        <tr><td>Routing</td><td>Shell owns top-level routes (<ic>/checkout/*</ic>); each slice owns its sub-routes</td><td>Slices fighting over the URL or each embedding their own router for the same path</td></tr>
+        <tr><td>Communication</td><td>Loose coupling: custom events, a tiny pub/sub bus, or URL/query state; props from the shell for simple cases</td><td>A shared global store that quietly re-couples every slice together</td></tr>
+        <tr><td>Shared state</td><td>Minimize it. Share identity/session and a few well-defined contracts; keep everything else local</td><td>"Shared Redux store for everything" — a distributed monolith</td></tr>
+        <tr><td>Styling isolation</td><td>CSS Modules / scoped styles / Shadow DOM / namespaced prefixes; shared tokens for consistency</td><td>Global CSS leaking between slices; resets from one team breaking another</td></tr>
+        <tr><td>Shared UI</td><td>A versioned design system consumed by all slices (ideally via Module Federation <ic>shared</ic> or tokens only)</td><td>Each team re-implementing a "slightly different" button</td></tr>
+        <tr><td>Auth</td><td>Shell handles login and passes a token/context; slices don't each implement auth</td><td>Multiple login flows or token refreshes racing each other</td></tr>
+        <tr><td>Performance</td><td>Dedupe shared deps, lazy-load slices, prefetch likely next remotes, budget bundle sizes per slice</td><td>Every slice shipping its own React; waterfall of remote loads</td></tr>
+        <tr><td>Observability</td><td>Uniform error reporting/tracing tagged by slice and version</td><td>An error in production with no idea which team's deploy caused it</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-red">
+      <span class="callout-icon">🚨</span>
+      <span><strong>The "distributed monolith" anti-pattern:</strong> if slices share a global store, must be released in lockstep, or can't function without each other's internals, you have all the operational cost of micro-frontends and NONE of the independence. The test: can one team deploy on a Tuesday afternoon without telling anyone?</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 7 — Trade-offs
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>The Trade-off Ledger</h2>
+    </div>
+
+    <table class="feat-table">
+      <thead><tr><th>Benefit</th><th>The cost you pay for it</th></tr></thead>
+      <tbody>
+        <tr><td class="yes">Independent deploys</td><td>Runtime version-compatibility risk; need contract testing between slices and the shell</td></tr>
+        <tr><td class="yes">Team autonomy</td><td>Risk of inconsistent UX, duplicated effort, and divergent practices without a strong platform + design system</td></tr>
+        <tr><td class="yes">Technology freedom (mix frameworks)</td><td>Larger bundles, harder shared state, inconsistent a11y and perf — usually a bad idea beyond migrations</td></tr>
+        <tr><td class="yes">Smaller, faster per-team builds</td><td>More repos/pipelines to maintain; integration issues appear later (in the composed whole)</td></tr>
+        <tr><td class="yes">Fault isolation</td><td>Need explicit error boundaries and fallbacks; partial-failure UX must be designed deliberately</td></tr>
+        <tr><td class="yes">Incremental migration</td><td>Temporary dual systems (two frameworks, two styling approaches) that must have an end date</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber">
+      <span class="callout-icon">⚠</span>
+      <span><strong>Pragmatic default:</strong> keep ONE framework and ONE major version of its core libraries across slices, enforced via singleton sharing. "Each team can pick its own framework" sounds liberating, but in practice it multiplies bundle size and shared-state pain; reserve it for migration windows and acquisitions.</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 8 — Gotchas
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--amber),#cc7a2e);">!</div>
+      <h2>Common Gotchas &amp; Interview Traps</h2>
+    </div>
+
+    <ul class="gotcha-list">
+      <li><span class="gi">⚠️</span><span><strong>Adopting micro-frontends for a small team</strong> is the classic mistake — they solve an organizational coordination problem; without that problem you only inherit the integration, tooling, and performance costs.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Two copies of React break hooks and context</strong> — if shared dependencies aren't declared <code>singleton</code>, a remote may bundle its own React, producing the cryptic "Invalid hook call" error that's the signature Module Federation bug.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Module Federation sharing is negotiated at RUNTIME, so version mismatches surface in production</strong>, not at build time — you need contract tests, version policies, and a staging environment that mirrors the real composition.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>A remote is a network dependency</strong> — it can fail to load, be slow, or serve a half-deployed bundle. Every remote needs an Error Boundary, a Suspense fallback, and a timeout/retry story, or one team's incident becomes everyone's outage.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Sharing a global store couples everything back together</strong> — you end up with a distributed monolith: independent repos but lockstep releases. Prefer events, URL state, and narrow contracts over shared mutable state.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Splitting by technical layer instead of business domain</strong> creates endless cross-team handoffs — the very coordination cost you were trying to escape. Slice vertically (checkout, search, account).</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Global CSS leaks across slices</strong> — one team's reset or a generic <code>.button</code> class restyles another team's UI. Use scoping (CSS Modules, Shadow DOM, prefixes) and rely on shared design tokens for consistency instead of shared global styles.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Performance regresses quietly</strong> — duplicated dependencies, serial remote-loading waterfalls, and N small bundles can make the composed app slower than the monolith it replaced; set per-slice bundle budgets and measure Core Web Vitals on the composed page, not per slice.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Mixing frameworks "because we can"</strong> multiplies bundle size and makes shared state and accessibility harder; it's justified for migrations and acquisitions, rarely as a steady-state design.</span></li>
+      <li><span class="gi">⚠️</span><span><strong>Micro-frontends don't remove the need for a design system — they raise it</strong> — without shared tokens and primitives, independently shipped slices drift visually and the product feels like a patchwork of different apps.</span></li>
+    </ul>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 9 — Why/What/When/How Q&A
+  ══════════════════════════════════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <div class="section-num" style="background:linear-gradient(135deg,var(--accent),#4d84cc);">?</div>
+      <h2>Interview Q&amp;A — Why / What / When / How</h2>
+    </div>
+
+    <div class="callout callout-purple" style="margin-bottom:1.25rem;">
+      <span class="callout-icon">🎯</span>
+      <span>Micro-frontends are an architecture-and-organization question. The strongest answers lead with the PROBLEM (team coordination), name the trade-offs honestly, and show willingness to say "don't do this" when the context doesn't justify it.</span>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are micro-frontends, and what problem do they actually solve?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Micro-frontends split a large frontend into smaller applications that are developed, tested, and deployed independently by separate teams, then composed into one user experience — the frontend analogue of microservices. The problem they solve is primarily <strong>organizational scaling</strong>, not technical: when many teams contribute to one frontend, they get blocked on shared release trains, merge conflicts, long builds, and cross-team coordination. By giving each team ownership of a vertical slice with its own deployment pipeline, a team can ship on its own schedule without waiting for others. They also enable incremental migration off a legacy app. Importantly, they are NOT a way to make the code "cleaner" or the app faster — they typically add integration complexity and some performance overhead, which is the price of independence.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why is Module Federation's shared-dependency configuration so important, and what breaks if it's wrong?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Without sharing, every remote bundles its own copy of heavy libraries, so the user downloads React several times and the page pays a large bundle and memory cost. Sharing lets the host and remotes negotiate at runtime to load one copy. For libraries with internal global state — React above all — it's a correctness issue, not just performance: two React instances means hooks and context from one copy don't work with components rendered by the other, producing the infamous "Invalid hook call" error. That's why such libraries are marked <code>singleton: true</code>. Because the negotiation happens at RUNTIME, mismatches (a remote requiring React 18 while the host provides 17) show up in production rather than failing the build — so you also need an agreed version policy, contract testing, and a staging environment that mimics the real composition. In short: misconfigured sharing yields either bloated bundles or hard-to-diagnose runtime breakage.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When would you recommend AGAINST micro-frontends?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          When there's no organizational coordination problem to solve — a single team or a few small teams who can coordinate in a standup. In that case micro-frontends add pipelines, versioning surfaces, runtime integration risk, and performance overhead for no payoff. I'd also advise against them when the product's UI is highly interdependent with constant shared state, since any seam would cut through tightly coupled features and every change would span multiple slices — creating a distributed monolith. And I'd be wary when the app is extremely bundle-size or latency sensitive and the team can't invest in managing shared dependencies carefully. A good alternative in many of these cases is a modular monolith or a monorepo with enforced module boundaries (lint rules, package-level ownership, CODEOWNERS), which delivers much of the code-organization benefit without runtime integration complexity. The diagnostic question I'd ask is: "Is our bottleneck people waiting on each other, or the structure of the code?"
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you decide where to draw the boundaries between micro-frontends?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>1. Follow business domains, not technical layers.</strong> Boundaries like search, checkout, and account map to how users and the business think — a feature change usually stays within one slice. Splitting into "UI team / state team / API team" forces every feature across all teams.<br>
+          <strong>2. Look at change coupling.</strong> Examine history: which files and features change together? Things that change together should live together; seams belong where changes rarely need coordination.<br>
+          <strong>3. Align with team ownership (Conway's Law).</strong> Each slice should be ownable end to end by one stream-aligned team, including the backend it depends on where possible.<br>
+          <strong>4. Minimize the communication surface.</strong> A good boundary can be described by a small contract — a few events, URL parameters, or props. If two slices need to share lots of state, they probably belong together.<br>
+          <strong>5. Sanity-check with a "Tuesday deploy" test.</strong> Can the team deploy its slice without telling anyone? If routine changes require coordination, the boundary is wrong.<br>
+          <strong>6. Start coarse.</strong> It's easier to split a slice later than to merge prematurely-split ones; begin with a few large slices and refine as real friction appears.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-what">What</span>What are the different ways to integrate micro-frontends, and how do you choose among them?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          The options differ by <em>when</em> composition happens. <strong>Build-time (npm packages)</strong> is simplest and fastest but sacrifices independent deployment. <strong>Runtime via Module Federation</strong> keeps independent deploys with good performance by sharing dependencies — the common modern default for a single-framework React/Vue ecosystem. <strong>iframes</strong> give the strongest isolation (useful for legacy or untrusted apps) at the cost of awkward routing, sizing, accessibility, and performance. <strong>Web Components</strong> provide a framework-agnostic contract with Shadow DOM encapsulation, good when mixing frameworks. <strong>Server/edge composition</strong> assembles HTML fragments before the page ships, excellent for first paint and SEO but heavier on infrastructure. I choose by what I need most: if independent deployability plus performance matters and the stack is homogeneous, Module Federation; if SEO and first-paint dominate, server-side composition; if I must embed a legacy or third-party app, iframes; if frameworks are heterogeneous, Web Components. And if teams don't truly need independent deploys, build-time composition is the cheapest answer.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-why">Why</span>Why do shared global state stores undermine micro-frontend independence?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Independence depends on slices being able to change internally without anyone else noticing. A shared global store makes the store's shape a universal contract: any slice that reads or writes a key becomes coupled to every other slice that touches it, so a change to the state structure requires coordinating all of them — and since they deploy separately, mismatched versions of the store contract break in production. You end up with independent repositories but lockstep releases, which is the "distributed monolith": the operational cost of micro-frontends without the benefit. Better patterns keep state LOCAL to each slice and communicate through narrow, explicit, versioned contracts: custom events or a small pub/sub bus for notifications, URL/query parameters for shareable state, and props or context from the shell for truly global concerns like the authenticated user. The guiding rule is to share as little as possible, and to make what you do share an intentional, documented interface.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-when">When</span>When is it acceptable to let teams use different frameworks within micro-frontends?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          Mainly in two situations: during a <strong>migration</strong> (the strangler pattern — React slices gradually replacing an Angular or jQuery app, with both coexisting temporarily) and after <strong>acquisitions</strong> where separately-built products must be unified quickly. Outside those, I'd discourage it as a steady-state design. Each additional framework adds its runtime to the page (larger bundles, more memory), complicates sharing state and design-system components across slices, and fragments accessibility and testing practices; hiring and cross-team mobility suffer too. Even in the justified cases, I'd treat polyglot as TEMPORARY with a defined end state and plan to converge, wrap each slice behind a framework-agnostic contract (Web Components or a mount/unmount lifecycle), and keep a single design-token source so users don't see the seams. The "technology freedom" benefit is real but frequently oversold relative to its recurring cost.
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-card" onclick="toggleQA(this)">
+      <div class="qa-question">
+        <span class="q-text"><span class="qtype-badge qtype-how">How</span>How would you make a micro-frontend system resilient and observable in production?</span>
+        <div class="qa-toggle">+</div>
+      </div>
+      <div class="qa-answer">
+        <div class="qa-answer-inner">
+          <strong>Resilience:</strong><br>
+          <strong>1.</strong> Wrap every remote in an Error Boundary with a purposeful fallback (hide the widget, show a retry, or a degraded read-only version) plus Suspense for loading states, so a failing slice never blanks the page.<br>
+          <strong>2.</strong> Add timeouts and limited retries on remote loading, and consider pinning the last-known-good remote version as a fallback.<br>
+          <strong>3.</strong> Use versioned or immutable remote URLs with a manifest/registry, enabling controlled rollouts, canaries, and instant rollback of one slice without touching the others.<br>
+          <strong>4.</strong> Run contract tests between each slice and the shell, and an integrated end-to-end suite on the composed app.<br><br>
+          <strong>Observability:</strong><br>
+          <strong>5.</strong> Tag every error, log, and performance metric with the slice name and version, so a spike traces immediately to a specific team's deploy.<br>
+          <strong>6.</strong> Measure Core Web Vitals on the COMPOSED page, with per-slice bundle budgets enforced in CI to catch silent performance regressions.<br>
+          <strong>7.</strong> Provide a shared reporting and tracing library via the platform team so every slice gets this by default rather than each team reinventing it.
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="divider"></div>
+
+  <footer class="footer">
+    Web Fundamentals Interview Prep · Micro-Frontends · Module Federation · Team Topology
+  </footer>
+
+</div>
+
+<script>
+  function toggleQA(card) {
+    card.classList.toggle('open');
+  }
+
+  document.querySelectorAll('.code-block .line').forEach(line => {
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(textNode => {
+      textNode.nodeValue = textNode.nodeValue.replace(/\r?\n\s*/g, ' ');
+    });
+  });
+
+  const mfVersions = { head: [1,0,0], nav: [1,0,0], main: [1,0,0], cart: [1,0,0] };
+  const mfNames = { head: 'Header team', nav: 'Nav team', main: 'Catalog team', cart: 'Cart team' };
+
+  function mfDeploy(key) {
+    mfVersions[key][1] += 1;
+    const v = mfVersions[key].join('.');
+    document.getElementById('v-' + key).textContent = 'v' + v;
+    const slot = document.getElementById('mf-' + key);
+    slot.classList.add('flash');
+    setTimeout(() => slot.classList.remove('flash'), 700);
+    document.getElementById('mf-log').textContent =
+      mfNames[key] + ' deployed v' + v + ' — the other three slices were untouched and needed no rebuild.';
+  }
+
+  function mfReset() {
+    Object.keys(mfVersions).forEach(k => {
+      mfVersions[k] = [1,0,0];
+      document.getElementById('v-' + k).textContent = 'v1.0.0';
+    });
+    document.getElementById('mf-log').textContent =
+      'Shell is stable. Each slice is a separate deployment with its own version.';
+  }
+
+  document.querySelectorAll('.topic-pill[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+</body>
+</html>
